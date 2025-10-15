@@ -49,7 +49,6 @@ NFR3 Good Responsiveness ............................................. NOT PASSE
 NFR4 Cultural Respect and Sensitivity .................................................... NOT PASSED
      All content related to Māori culture must be handled respectfully, with a best-effort approach to ensure the accuracy of vocabulary and cultural context.
 
-Architecture & Maintainability
 NFR5 Decoupled Three-Tier Architecture ................................................... NOT PASSED
      - The system must be architected with a clear separation of concerns into three distinct tiers: a Frontend Service, a Backend Service, and a Database.
      - Frontend Service: Responsible exclusively for rendering the user interface (UI) and handling user interactions.
