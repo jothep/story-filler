@@ -1,0 +1,75 @@
+Project Title: An Early Education App: "Māori Story-Fill"
+Team Members:
+- Xiang Zhu
+
+Overview
+This document lists all Functional and Non-Functional Requirements for the project.
+
+============================================================
+FUNCTIONAL REQUIREMENTS (FR)
+============================================================
+
+FR1  Story Content Display .................................................... NOT PASSED
+     The system must load and display designed story texts that include blank spaces to be filled.
+
+FR2  Drag-and-Drop Word Filling with Feedback ............................................. NOT PASSED
+     The system must provide a word bank containing multiple Māori words for users to drag and drop into the blank spaces of the story. Upon placement, the system will provide immediate feedback (e.g., color or sound) to indicate whether the answer is correct.
+
+FR3  Vocabulary Learning Aids ..................................... NOT PASSED
+     The system must provide a user-initiated hint feature to assist with vocabulary selection. To activate it, the user drags a word from the word bank into a designated 'hint area' on the interface. The system then displays that word's visual cue (e.g., icon or picture) and English translation. Additionally, this hint area will be interactive, allowing the user to click it to hear the audio pronunciation of both the Māori word and its English equivalent.
+
+FR4  Assisted Audio Pronunciation ....................................... NOT PASSED
+     The system must be able to read the main story passages aloud and provide clear, accurate pronunciation for individual Māori vocabulary words.
+
+FR5  Content Management ................................................... NOT PASSED
+     The system must provide a secure administrative interface that allows an authorized user (e.g., a developer or content creator) to perform Create, Read, Update, and Delete (CRUD) operations on all educational content. This includes the ability to manage stories, vocabulary words, their translations, and associated visual cues.
+
+FR6  Story Selection Interface ............................................... NOT PASSED
+     The application must provide a simple start screen or menu where users can browse and select which story they want to engage with.
+
+FR7  Story Completion Feedback ........................................................ NOT PASSED
+     Upon successfully filling in all the blanks in a story, the system must display a clear completion message or screen with congratulatory feedback and an option to return to the story selection screen.
+
+FR8  Onboarding / Instructions Screen ..................................................... NOT PASSED
+     The application must provide a simple, visually-driven instructions screen, accessible from the main menu, that explains the core drag-and-drop mechanic without relying heavily on text.
+
+============================================================
+NON-FUNCTIONAL REQUIREMENTS (NFR)
+============================================================
+
+NFR1 Child-Friendly Usability ............................................................ NOT PASSED
+     The interface must be intuitive for children aged 4-7, featuring large, easy-to-tap elements and relying on visual flow rather than text instructions.
+
+NFR2 Basic Accessibility ............................................... NOT PASSED
+     The interface should ensure good color contrast and legible fonts. Core functionalities must be operable on major desktop and mobile browsers.
+
+NFR3 Good Responsiveness ............................................. NOT PASSED
+     The application should feel smooth, without noticeable delays in loading content or providing feedback for interactions, to keep children engaged.
+
+NFR4 Cultural Respect and Sensitivity .................................................... NOT PASSED
+     All content related to Māori culture must be handled respectfully, with a best-effort approach to ensure the accuracy of vocabulary and cultural context.
+
+Architecture & Maintainability
+NFR5 Decoupled Three-Tier Architecture ................................................... NOT PASSED
+     - The system must be architected with a clear separation of concerns into three distinct tiers: a Frontend Service, a Backend Service, and a Database.
+     - Frontend Service: Responsible exclusively for rendering the user interface (UI) and handling user interactions.
+     - Backend Service: Responsible for all business logic, data processing, and API endpoints.
+     - Database: Responsible for the persistent storage and retrieval of data, accessed only by the Backend Service.
+
+NFR6 Administrative Security ..................................................... NOT PASSED
+     The administrative interface for content management must be secured against unauthorized access via a robust authentication mechanism (e.g., username and password).
+
+NFR7 Data Integrity ................................ NOT PASSED
+     The system must enforce basic data validation rules within the content management interface to prevent invalid data entry (e.g., a story must have at least one blank space).
+
+NFR8 Code Quality and Documentation ....................................... NOT PASSED
+     The source code must be well-commented, adhere to a consistent coding style, and include a README.md file that explains the project setup, architecture, and how to run it.
+
+NFR9 Environment Consistency and Reproducibility .......................................................... NOT PASSED
+     Applications must be containerized using Docker and defined using Kubernetes manifests (YAML files). This ensures a fully reproducible runtime environment, eliminating inconsistencies between development, test, and production environments.
+
+NFR10 High Availability and Resilience ............................................................. NOT PASSED
+     When deployed on Kubernetes, applications must be configured for high availability. This includes using ReplicaSets to ensure a predetermined number of pods are always running and leveraging Kubernetes' self-healing capabilities to automatically restart failed containers.
+
+NFR11 Cloud-Agnostic Portability ........................................................ NOT PASSED
+     The deployment architecture defined by Kubernetes manifests must be cloud-agnostic. This ensures that applications can be deployed on any major cloud provider's Kubernetes service (such as AWS EKS, Google GKE, Azure AKS), or on-premises clusters with minimal changes. 
