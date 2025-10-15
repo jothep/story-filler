@@ -50,7 +50,7 @@ NFR4 Cultural Respect and Sensitivity ..........................................
      All content related to Māori culture must be handled respectfully, with a best-effort approach to ensure the accuracy of vocabulary and cultural context.
 
 NFR5 Decoupled Three-Tier Architecture ................................................... NOT PASSED
-     - The system must be architected with a clear separation of concerns into three distinct tiers: a Frontend Service, a Backend Service, and a Database.
+     The system must be architected with a clear separation of concerns into three distinct tiers: a Frontend Service, a Backend Service, and a Database.
      - Frontend Service: Responsible exclusively for rendering the user interface (UI) and handling user interactions.
      - Backend Service: Responsible for all business logic, data processing, and API endpoints.
      - Database: Responsible for the persistent storage and retrieval of data, accessed only by the Backend Service.
@@ -65,10 +65,10 @@ NFR8 Code Quality and Documentation ....................................... NOT 
      The source code must be well-commented, adhere to a consistent coding style, and include a README.md file that explains the project setup, architecture, and how to run it.
 
 NFR9 Environment Consistency and Reproducibility .......................................................... NOT PASSED
-     Applications must be containerized using Docker and defined using Kubernetes manifests (YAML files). This ensures a fully reproducible runtime environment, eliminating inconsistencies between development, test, and production environments.
+     Application must be containerized using Docker and defined using Kubernetes manifests (YAML files). This ensures a fully reproducible runtime environment, eliminating inconsistencies between development, test, and production environments.
 
 NFR10 High Availability and Resilience ............................................................. NOT PASSED
-     When deployed on Kubernetes, applications must be configured for high availability. This includes using ReplicaSets to ensure a predetermined number of pods are always running and leveraging Kubernetes' self-healing capabilities to automatically restart failed containers.
+     When deployed on Kubernetes, application must be configured for high availability. This includes using ReplicaSets to ensure a predetermined number of pods are always running and leveraging Kubernetes' self-healing capabilities to automatically restart failed containers.
 
 NFR11 Cloud-Agnostic Portability ........................................................ NOT PASSED
-     The deployment architecture defined by Kubernetes manifests must be cloud-agnostic. This ensures that applications can be deployed on any major cloud provider's Kubernetes service (such as AWS EKS, Google GKE, Azure AKS), or on-premises clusters with minimal changes. 
+     The deployment architecture defined by Kubernetes manifests must be cloud-agnostic. This ensures that application can be deployed on any major cloud provider's Kubernetes service (such as AWS EKS, Google GKE, Azure AKS), or on-premises clusters with minimal changes. 
