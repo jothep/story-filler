@@ -1,3 +1,6 @@
+# stories/admin.py
 from django.contrib import admin
+from .models import Story, Word
 
-# Register your models here.
+admin.site.register(Story)
+admin.site.register(Word)
