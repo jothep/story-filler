@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Māori Story-Fill</title>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        // 导入 React 核心库
+        import React, { useState, useEffect } from 'https://esm.sh/react@18.2.0';
+        import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
+
+        // 导入 MUI 组件
+        import {
+            CssBaseline,
+            AppBar,
+            Toolbar,
+            Typography,
+            Container,
+            CircularProgress,
+            Box,
+            Grid,
+            Card,
+            CardContent,
+            Alert
+        } from 'https://esm.sh/@mui/material@5.14.18';
+
+        // Django API 的地址
+        const API_URL = 'http://127.0.0.1:8000/api/stories/';
+
+        function App() {
+            const [stories, setStories] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+
+            useEffect(() => {
+                const fetchStories = async () => {
+                    try {
+                        const response = await fetch(API_URL);
+                        if (!response.ok) {
+                            throw new Error(`HTTP 错误！状态: ${response.status}`);
+                        }
+                        const data = await response.json();
+                        setStories(data);
+                    } catch (e) {
+                        console.error("获取数据失败:", e);
+                        setError("无法从后端加载故事数据。请确认您的Django服务器正在运行，并且CORS设置正确。");
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+                fetchStories();
+            }, []);
+
+            const renderContent = () => {
+                if (loading) {
+                    return (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+                            <CircularProgress />
+                            <Typography variant="h6" sx={{ ml: 2 }}>正在加载故事...</Typography>
+                        </Box>
+                    );
+                }
+
+                if (error) {
+                    return <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>;
+                }
+                
+                if (stories.length === 0) {
+                   return <Alert severity="info" sx={{ mt: 2 }}>没有找到故事。请尝试在Django后台添加一些内容。</Alert>;
+                }
+
+                return (
+                    <Grid container spacing={3} sx={{ mt: 2 }}>
+                        {stories.map(story => (
+                            <Grid item xs={12} sm={6} md={4} key={story.id}>
+                                <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                                    <CardContent>
+                                        <Typography gutterBottom variant="h5" component="div">
+                                            {story.title}
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                            点击开始学习这个故事！
+                                        </Typography>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                        ))}
+                    </Grid>
+                );
+            };
+            
+            return (
+                <React.Fragment>
+                    <CssBaseline />
+                    <AppBar position="static">
+                        <Toolbar>
+                            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+                                Māori Story-Fill
+                            </Typography>
+                        </Toolbar>
+                    </AppBar>
+                    <Container maxWidth="lg" component="main" sx={{ py: 4 }}>
+                        {renderContent()}
+                    </Container>
+                </React.Fragment>
+            );
+        }
+
+        const container = document.getElementById('root');
+        const root = createRoot(container);
+        root.render(
+            <React.StrictMode>
+                <App />
+            </React.StrictMode>
+        );
+    </script>
+</body>
+</html>

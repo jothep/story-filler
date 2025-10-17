@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16 
+    container_name: maori_story_postgres
+    environment:
+      - POSTGRES_DB=maori_story_demo_postgres      # db name
+      - POSTGRES_USER=demo_admin       # db user 
+      - POSTGRES_PASSWORD=REMOVED_CREDENTIAL # db pw
+    ports:
+      - "5432:5432" 
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+
+volumes:
+  postgres_data:
