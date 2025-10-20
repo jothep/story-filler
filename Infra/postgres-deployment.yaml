@@ -1,0 +1,108 @@
+---
+# -----------------------------------------------
+# Service (ClusterIP)
+# -----------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-svc       
+  namespace: story-fill
+  labels:
+    app: postgres
+spec:
+  type: ClusterIP            
+  ports:
+    - port: 5432          
+      targetPort: 5432      
+  selector:
+    app: postgres
+
+---
+# -----------------------------------------------
+# StatefulSet
+# -----------------------------------------------
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-statefulset  
+  namespace: story-fill
+  labels:
+    app: postgres
+spec:
+  replicas: 1                 
+  serviceName: "postgres-svc"   
+  selector:
+    matchLabels:
+      app: postgres       
+  
+  template:
+    metadata:
+      labels:
+        app: postgres       
+    spec:
+      volumes:
+        - name: postgres-secret-volume
+          secret:
+            secretName: postgres-secret
+      containers:
+        - name: postgres
+          image: "postgres:16.10-alpine3.22" 
+          imagePullPolicy: IfNotPresent
+          
+          ports:
+            - containerPort: 5432 
+
+          env:
+            - name: POSTGRES_DB
+              value: "django_db"
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+
+          readinessProbe:
+            exec:
+              command:
+                - "/bin/sh"
+                - "-c"
+                - "pg_isready -d $(POSTGRES_DB) -U story_fill_user"
+            initialDelaySeconds: 20
+            timeoutSeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          
+          livenessProbe:
+            exec:
+              command:
+                - "/bin/sh"
+                - "-c"
+                - "pg_isready -d $(POSTGRES_DB) -U story_fill_user"
+            initialDelaySeconds: 60
+            timeoutSeconds: 5
+            periodSeconds: 10
+
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data   
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 5Gi     

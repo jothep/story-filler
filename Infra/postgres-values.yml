@@ -1,0 +1,49 @@
+# infra/postgres-values.yml
+
+# ---
+# Service Name
+# ---
+fullnameOverride: "postgres-svc"
+
+# ---
+# Image
+# ---
+image:
+  registry: "docker.io"
+  repository: "postgres"
+  tag: "16.10-alpine3.22"
+
+global:
+  security:
+    allowInsecureImages: true
+
+auth:
+  database: "django_db"
+  
+  existingSecret: "postgres-secret"
+  
+  secretKeys:
+    userKey: "POSTGRES_USER"
+    passwordKey: "POSTGRES_PASSWORD"
+
+primary:
+  persistence:
+    enabled: true
+    storageClass: ""
+    size: 10Gi
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+
+volumePermissions:
+  enabled: false
+
+# ---
+# Disable Read Replicas
+# ---
+readReplicas:
+  enabled: false

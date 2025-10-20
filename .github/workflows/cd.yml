@@ -1,0 +1,43 @@
+# .github/workflows/cd.yml
+
+# Workflow name
+name: CD - Manual Deploy to Colima
+
+# Triggers for this workflow
+on:
+  # This enables the "Run workflow" button in the GitHub Actions UI
+  workflow_dispatch:
+
+jobs:
+  # --- JOB: Deploy ---
+  deploy-to-colima:
+    # CRITICAL: Run this on your local machine
+    runs-on: self-hosted
+
+    steps:
+      - name: 1. Checkout Code
+        # We need the k8s/*.yml files
+        uses: actions/checkout@v3
+
+      - name: 2. Apply K8s System Configs
+        # This job assumes k8s files are in a root 'k8s/' folder
+        run: |
+          echo "Applying ConfigMaps, Secrets, DB configs..."
+          kubectl apply -f k8s/configmap.yml
+          # Apply other persistent resources here
+          
+      - name: 3. Apply K8s Application Deployments
+        run: |
+          echo "Applying application services and deployments..."
+          kubectl apply -f k8s/django-deployment.yml
+          kubectl apply -f k8s/django-service.yml
+          kubectl apply -f k8s/frontend-deployment.yml
+          kubectl apply -f k8s/frontend-service.yml
+
+      - name: 4. Force Rollout Restart (To pull new images)
+        # This is VITAL. It forces K8s to pull the new :latest images
+        # that the CI workflow pushed to Docker Hub.
+        run: |
+          echo "Restarting deployments to pull new images..."
+          kubectl rollout restart deployment/django-app-deployment
+          kubectl rollout restart deployment/frontend-app-deployment
