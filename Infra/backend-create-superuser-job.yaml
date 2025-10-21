@@ -1,0 +1,40 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-django-superuser
+  namespace: story-fill
+spec:
+  template:
+    spec:
+      containers:
+      - name: superuser-creator
+
+        image: jasko/maori-story-backend:v0.2
+
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          export DATABASE_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
+          python manage.py shell <<EOF
+          import os
+          from django.contrib.auth import get_user_model
+          
+          User = get_user_model()
+          username = os.environ.get('ADMIN_USER')
+          password = os.environ.get('ADMIN_PASS')
+          email = os.environ.get('ADMIN_EMAIL')
+          
+          if not User.objects.filter(username=username).exists():
+              User.objects.create_superuser(username, email, password)
+              print(f'Superuser {username} created.')
+          else:
+              print(f'Superuser {username} already exists.')
+          EOF
+
+        envFrom:
+        - secretRef:
+            name: maori-story-backend-secrets
+        - secretRef:
+            name: django-superuser-creds
+      restartPolicy: OnFailure
+  backoffLimit: 3
