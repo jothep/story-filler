@@ -28,6 +28,8 @@ RUN pip install --no-cache /wheels/*
 
 COPY . .
 
+RUN python manage.py collectstatic --noinput
+
 RUN chown -R app:app /app
 
 USER app
