@@ -1,5 +1,7 @@
 # --- stage 1 ---
-FROM node:24-alpine AS builder
+FROM node:24.11.0-alpine3.22 AS builder
+
+RUN apk update && apk upgrade
 
 WORKDIR /app
 
@@ -15,7 +17,9 @@ COPY . .
 RUN npm run build
 
 # --- stage 2 ---
-FROM nginx:1.27-alpine
+FROM nginx:1.27.0-alpine3.22
+
+RUN apk update && apk upgrade
 
 COPY --from=builder /app/dist /usr/share/nginx/html
 
