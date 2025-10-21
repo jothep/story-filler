@@ -1,9 +1,9 @@
 # ===== Stage 1: Build Stage =====
-FROM python:3.13-slim as builder
+FROM python:3.13-slim AS builder
 
 # Set environment variables to prevent Python from writing .pyc files and to buffer output
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
@@ -34,4 +34,4 @@ USER app
 
 EXPOSE 8000
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "maori-story-fill.wsgi:application"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "maori_story_project.wsgi:application"]

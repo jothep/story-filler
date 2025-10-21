@@ -63,7 +63,8 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/maori-story-backend:${{ steps.vars.outputs.sha_short }}
+          # tags: ${{ secrets.DOCKERHUB_USERNAME }}/maori-story-backend:${{ steps.vars.outputs.sha_short }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/maori-story-backend:v0.1
 
       - name: 9. Scan Pushed Image (Vulnerability Scan)
         uses: aquasecurity/trivy-action@master

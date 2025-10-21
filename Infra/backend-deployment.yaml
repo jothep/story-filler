@@ -1,0 +1,50 @@
+# backend-deployment.yaml
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: maori-story-backend-svc
+  namespace: story-fill
+spec:
+  type: ClusterIP
+  selector:
+    app: maori-story-backend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: maori-story-backend-deployment
+  namespace: story-fill
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: maori-story-backend
+  template:
+    metadata:
+      labels:
+        app: maori-story-backend
+    spec:
+      containers:
+      - name: backend-container
+        # image: jasko/maori-story-backend:6c5fef5
+        image: jasko/maori-story-backend:v0.1
+        
+        imagePullPolicy: Always
+        
+        ports:
+        - containerPort: 8000
+          
+        envFrom:
+        - secretRef:
+            name: maori-story-backend-secrets
+            
+        env:
+        - name: DATABASE_URL
+          value: "postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)"
