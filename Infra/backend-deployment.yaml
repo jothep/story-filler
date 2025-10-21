@@ -34,7 +34,7 @@ spec:
       containers:
       - name: backend-container
         # image: jasko/maori-story-backend:6c5fef5
-        image: jasko/maori-story-backend:v0.1
+        image: jasko/maori-story-backend:v0.2
         
         imagePullPolicy: Always
         

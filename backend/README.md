@@ -67,4 +67,4 @@ Run the Development Server
 
 python manage.py runserver
 
-#Can trigger pipeline by modify files in folder backend/ 
+#Can trigger pipeline by modify files in folder backend/ .

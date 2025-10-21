@@ -10,8 +10,8 @@ spec:
     spec:
       containers:
       - name: backend-migrator
-        image: jasko/maori-story-backend:v0.1
-
+        image: jasko/maori-story-backend:v0.2
+        imagePullPolicy: Always
         command: ["python", "manage.py", "migrate"]
         
         envFrom:
