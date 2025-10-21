@@ -1,0 +1,17 @@
+# psql-test-pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: psql-client-test
+  namespace: story-fill
+spec:
+  containers:
+  - name: psql-client
+    image: postgres:16
+    command: ["sleep", "3600"]
+    env:
+    - name: PGPASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: maori-story-backend-secrets
+          key: POSTGRES_PASSWORD

@@ -38,4 +38,4 @@ USER app
 
 EXPOSE 8000
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "maori_story_project.wsgi:application"]
+CMD ["gunicorn", "--workers", "3", "--worker-class", "gevent", "--bind", "0.0.0.0:8000", "maori_story_project.wsgi:application"]
