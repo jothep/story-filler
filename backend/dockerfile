@@ -29,6 +29,7 @@ RUN pip install --no-cache /wheels/*
 COPY . .
 
 RUN SECRET_KEY="REMOVED_CREDENTIAL" \
+    DATABASE_URL="sqlite:///:memory:" \
     python manage.py collectstatic --noinput
 
 RUN chown -R app:app /app
