@@ -28,7 +28,8 @@ RUN pip install --no-cache /wheels/*
 
 COPY . .
 
-RUN python manage.py collectstatic --noinput
+RUN SECRET_KEY="REMOVED_CREDENTIAL" \
+    python manage.py collectstatic --noinput
 
 RUN chown -R app:app /app
 
