@@ -1,0 +1,32 @@
+# pyproject.toml
+
+[tool.black]
+target-version = ['py313']
+line-length = 88
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | migrations
+)/
+'''
+
+[tool.flake8]
+max-line-length = 88
+ignore = ['W503']
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    ".venv",
+    "migrations" 
+]
