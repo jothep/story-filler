@@ -1,0 +1,26 @@
+# backend-migrate-job.yaml
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: maori-story-backend-migrate-job
+  namespace: story-fill
+spec:
+  template:
+    spec:
+      containers:
+      - name: backend-migrator
+        image: jasko/maori-story-backend:v0.1
+
+        command: ["python", "manage.py", "migrate"]
+        
+        envFrom:
+        - secretRef:
+            name: maori-story-backend-secrets
+            
+        env:
+        - name: DATABASE_URL
+          value: "postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)"
+
+      restartPolicy: Never
+  backoffLimit: 2
