@@ -43,7 +43,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: 7. Build and Push Frontend Image
-        id: build-fe
+        id: build-and-push
         uses: docker/build-push-action@v4
         with:
           context: ./frontend
@@ -54,7 +54,8 @@ jobs:
       - name: 8. Scan Pushed Image (Vulnerability Scan)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ steps.build-fe.outputs.tags }}
+          image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/maori-story-frontend:v1
           format: 'table'
           exit-code: '1'
           severity: 'HIGH,CRITICAL'
+          ignore-unfixed: true

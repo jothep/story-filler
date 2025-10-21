@@ -1,16 +1,41 @@
-# React + Vite
+# Frontend Application (React/MUI)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This is the Single Page Application (SPA) built with React, Vite, and Material-UI (MUI).
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### Getting Started (Local Development)
 
-## React Compiler
+This project uses Node.js **v24** for development and CI.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1.  **Install Dependencies:**
+    ```bash
+    npm ci
+    ```
+2.  **Run Locally (Development Mode):**
+    ```bash
+    npm run dev
+    ```
+    The application should be available at `http://localhost:5173`.
+    *Note: Remember to run your Django backend for API calls to work.*
 
-## Expanding the ESLint configuration
+### Continuous Integration (CI) Checks
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+To ensure your local environment matches the pipeline before pushing code, use these commands:
+
+| CI Step | Local Command | Purpose |
+| :--- | :--- | :--- |
+| **Install** | `npm ci` | Strict install using `package-lock.json`. |
+| **Lint** | `npm run lint` | Static code analysis. |
+| **Test** | `npm test -- run` | Execute unit tests (Vitest). |
+| **Build** | `npm run build` | Generate production files for Docker. |
+
+### Docker & Deployment
+
+The CI pipeline automatically builds and pushes the image:
+
+1.  **Dockerfile Context:** `./frontend`
+2.  **Base Image:** `nginx:1.27-alpine` (Multistage build)
+3.  **Key Configuration:** A custom `nginx.conf` is used to ensure Single Page Application (SPA) routing works correctly (e.g., refreshing a nested URL does not result in a 404).
+
+---
