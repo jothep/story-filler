@@ -49,6 +49,10 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Set Short SHA
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
       - name: 8. Build and Push Backend Image
         id: build-and-push
         uses: docker/build-push-action@v4
@@ -56,12 +60,12 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/maori-story-backend:${{ substr(github.sha, 0, 7) }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/maori-story-backend:${{ steps.vars.outputs.sha_short }}
 
       - name: 9. Scan Pushed Image (Vulnerability Scan)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ steps.build-and-push.outputs.tags }}
+          image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/maori-story-backend:${{ steps.vars.outputs.sha_short }}
           format: 'table'
           exit-code: '1'
           severity: 'HIGH,CRITICAL'
