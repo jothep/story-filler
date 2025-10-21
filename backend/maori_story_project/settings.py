@@ -9,7 +9,8 @@ import environ
 # Initialize environment variables
 env = environ.Env(
     # set casting, default value
-    DEBUG=(bool, False)
+    DEBUG=(bool, False),
+    SECRET_KEY=(str, '')
 )
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -35,7 +36,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "corsheaders",
-    "whitenoise.runserver_nostatic" "core.apps.CoreConfig",
+    "whitenoise.runserver_nostatic",
+    "core.apps.CoreConfig",
 ]
 
 MIDDLEWARE = [

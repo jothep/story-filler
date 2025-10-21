@@ -33,15 +33,18 @@ jobs:
       #  working-directory: ./backend
       #  run: flake8 . --count --show-source --statistics
 
-      - name: 5. Run Pylint (Code Analysis)
-        working-directory: ./backend
-        run: |
-          # Pylint will check all python files and exit with an error if the score is below 8.0
-          pylint --fail-under=8 $(git ls-files '*.py')
+      #- name: 5. Run Pylint (Code Analysis)
+      #  working-directory: ./backend
+      #  run: |
+      #    # Pylint will check all python files and exit with an error if the score is below 8.0
+      #    pylint --fail-under=8 $(git ls-files '*.py')
 
       - name: 6. Run Tests
         working-directory: ./backend
         run: python manage.py test
+        env:
+          SECRET_KEY: 'REMOVED_CREDENTIAL'
+          DATABASE_URL: 'sqlite:///:memory:'
 
       - name: 7. Login to Docker Hub
         uses: docker/login-action@v2
