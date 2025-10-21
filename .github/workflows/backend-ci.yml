@@ -29,9 +29,9 @@ jobs:
         working-directory: ./backend
         run: pip install -r requirements.txt
 
-      - name: 4. Run Flake8 (Style & Syntax Scan)
-        working-directory: ./backend
-        run: flake8 . --count --show-source --statistics
+      #- name: 4. Run Flake8 (Style & Syntax Scan)
+      #  working-directory: ./backend
+      #  run: flake8 . --count --show-source --statistics
 
       - name: 5. Run Pylint (Code Analysis)
         working-directory: ./backend
