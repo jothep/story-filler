@@ -27,6 +27,14 @@ spec:
             name: maori-story-backend-svc
             port:
               number: 80
+      
+      - path: /static/
+        pathType: Prefix
+        backend:
+          service:
+            name: maori-story-backend-svc
+            port:
+              number: 80
               
       - path: /
         pathType: Prefix
