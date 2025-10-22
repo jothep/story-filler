@@ -8,6 +8,7 @@ metadata:
     # This rewrite rule REQUIRES the regex paths below
     nginx.ingress.kubernetes.io/rewrite-target: /$2
 spec:
+  ingressClassName: nginx
   rules:
   - http:
       paths:
