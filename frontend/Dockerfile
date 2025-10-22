@@ -1,8 +1,6 @@
 # --- stage 1 ---
 FROM node:24-bookworm-slim AS builder
 
-RUN apk update && apk upgrade
-
 WORKDIR /app
 
 COPY package.json package-lock.json ./
