@@ -5,6 +5,7 @@ metadata:
   name: maori-story-ingress
   namespace: story-fill
   annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "150m"
     
 spec:
   ingressClassName: nginx
@@ -35,7 +36,7 @@ spec:
             name: maori-story-backend-svc
             port:
               number: 80
-              
+
       - path: /
         pathType: Prefix
         backend:

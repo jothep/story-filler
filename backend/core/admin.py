@@ -1,13 +1,13 @@
 # core/admin.py
 from django.contrib import admin
-from .models import Story, Paragraph, Word, BackgroundMusic
+from .models import Story, Paragraph, Word, BackgroundMusic, BlankLink
 
-class WordInline(admin.TabularInline):
+class BlankLinkInline(admin.TabularInline):
     """
-    Allows to add and edit Word documents in batches, within the Paragraph edit page.
+    Allows to manage placeholder links to words in the Word Bank within the Paragraph editing page.
     """
-    model = Word 
-    extra = 1 
+    model = BlankLink
+    extra = 1
 
 class ParagraphInline(admin.StackedInline):
     """
@@ -15,7 +15,7 @@ class ParagraphInline(admin.StackedInline):
     """
     model = Paragraph
     extra = 1 
-    inlines = [WordInline] 
+    inlines = [BlankLinkInline]
 
 @admin.register(Story) 
 class StoryAdmin(admin.ModelAdmin):
@@ -32,3 +32,11 @@ class BackgroundMusicAdmin(admin.ModelAdmin):
     """
     list_display = ('title', 'audio_file')
     search_fields = ('title',)
+
+@admin.register(Word)
+class WordAdmin(admin.ModelAdmin):
+    """
+    Manage words (Word Bank)
+    """
+    list_display = ('maori_word', 'english_translation', 'image', 'maori_audio', 'english_audio')
+    search_fields = ('maori_word', 'english_translation')
