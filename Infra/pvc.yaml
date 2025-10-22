@@ -1,0 +1,12 @@
+# Infra/pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim 
+metadata:
+  name: maori-story-media-pvc 
+  namespace: story-fill 
+spec:
+  accessModes:
+    - ReadWriteOnce 
+  resources:
+    requests:
+      storage: 5Gi 
