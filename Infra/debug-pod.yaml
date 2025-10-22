@@ -1,0 +1,15 @@
+# debug-pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: network-debug-pod
+  namespace: story-fill  # 关键：必须在同一个命名空间
+spec:
+  containers:
+  - name: debug-container
+    image: nicolaka/netshoot  # 包含所有网络工具的镜像
+    imagePullPolicy: IfNotPresent
+    # 让 Pod 保持运行，以便我们可以 exec 进去
+    command: ["/bin/sleep"]
+    args: ["3600"] # 运行1小时 (3600秒)
+  restartPolicy: Never

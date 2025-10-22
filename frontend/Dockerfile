@@ -1,5 +1,5 @@
 # --- stage 1 ---
-FROM node:24.10.0-alpine3.21 AS builder
+FROM node:24-bookworm-slim AS builder
 
 RUN apk update && apk upgrade
 
@@ -17,7 +17,7 @@ COPY . .
 RUN npm run build
 
 # --- stage 2 ---
-FROM node:24.10.0-alpine3.21
+FROM node:24-bookworm-slim
 
 WORKDIR /app
 

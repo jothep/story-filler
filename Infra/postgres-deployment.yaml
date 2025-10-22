@@ -78,7 +78,7 @@ spec:
               command:
                 - "/bin/sh"
                 - "-c"
-                - "pg_isready -d $(POSTGRES_DB) -U story_fill_user"
+                - "pg_isready -d $(POSTGRES_DB) -U postgres"
             initialDelaySeconds: 20
             timeoutSeconds: 5
             periodSeconds: 10
@@ -89,7 +89,7 @@ spec:
               command:
                 - "/bin/sh"
                 - "-c"
-                - "pg_isready -d $(POSTGRES_DB) -U story_fill_user"
+                - "pg_isready -d $(POSTGRES_DB) -U postgres"
             initialDelaySeconds: 60
             timeoutSeconds: 5
             periodSeconds: 10
