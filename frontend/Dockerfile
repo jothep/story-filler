@@ -17,14 +17,14 @@ COPY . .
 RUN npm run build
 
 # --- stage 2 ---
-FROM nginx:1.24.0-alpine
+FROM node:24.10.0-alpine3.21
 
-RUN apk update && apk upgrade
+WORKDIR /app
 
-COPY --from=builder /app/dist /usr/share/nginx/html
+RUN npm install -g serve
 
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/dist .
 
-EXPOSE 80
+EXPOSE 3000
 
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["serve", "-s", ".", "-l", "3000"]
