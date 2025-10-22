@@ -1,0 +1,36 @@
+# frontend.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: maori-story-frontend-svc
+  namespace: story-fill 
+spec:
+  type: ClusterIP
+  selector:
+    app: maori-story-frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80 
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: maori-story-frontend-deployment
+  namespace: story-fill 
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: maori-story-frontend
+  template:
+    metadata:
+      labels:
+        app: maori-story-frontend 
+    spec:
+      containers:
+      - name: frontend-container
+        image: jasko/maori-story-frontend:v1 
+        imagePullPolicy: Always 
+        ports:
+        - containerPort: 80 
