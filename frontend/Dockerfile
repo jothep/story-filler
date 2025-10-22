@@ -1,5 +1,5 @@
 # --- stage 1 ---
-FROM node:24.11.0-alpine3.22 AS builder
+FROM node:24.10.0-alpine3.21 AS builder
 
 RUN apk update && apk upgrade
 
