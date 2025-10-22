@@ -17,7 +17,7 @@ COPY . .
 RUN npm run build
 
 # --- stage 2 ---
-FROM nginx:1.27.0-alpine3.22
+FROM nginx:1.28.0-alpine
 
 RUN apk update && apk upgrade
 
