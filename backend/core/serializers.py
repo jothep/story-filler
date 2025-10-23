@@ -1,6 +1,6 @@
 # core/serializers.py
 from rest_framework import serializers
-from .models import Story, Paragraph, Word, BackgroundMusic, BlankLi
+from .models import Story, Paragraph, Word, BackgroundMusic, BlankLink
 
 class WordSerializer(serializers.ModelSerializer):
     class Meta:
