@@ -2,6 +2,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from .models import Story, Paragraph, Word, BackgroundMusic, BlankLink
+from .forms import BlankLinkForm
 
 class ParagraphInline(admin.StackedInline):
     """
@@ -37,26 +38,17 @@ class WordAdmin(admin.ModelAdmin):
     list_display = ('english_translation', 'maori_word', 'image', 'maori_audio', 'english_audio')
     search_fields = ('english_translation', 'maori_word')
 
-@admin.register(Paragraph)
-class ParagraphAdmin(admin.ModelAdmin):
-    """
-    Paragraph modle register Admin
-    """
-    list_display = ('__str__', 'story', 'order') 
-
-    search_fields = ('story__title', 'text') 
-    list_filter = ('story__title',) 
-
 @admin.register(BlankLink)
 class BlankLinkAdmin(admin.ModelAdmin):
     """
     Mannage links between Placeholder and Word Bank 
     """
+    form = BlankLinkForm
     list_display = ('paragraph', 'placeholder', 'word')
     list_filter = ('paragraph__story__title',) 
     
     
-    autocomplete_fields = ('paragraph', 'word') 
+    autocomplete_fields = ('word',) 
     
    
     readonly_fields = ('display_paragraph_text',) 
