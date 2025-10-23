@@ -40,3 +40,5 @@ class WordAdmin(admin.ModelAdmin):
     """
     list_display = ('maori_word', 'english_translation', 'image', 'maori_audio', 'english_audio')
     search_fields = ('maori_word', 'english_translation')
+
+admin.site.register(BlankLink)

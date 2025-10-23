@@ -1,5 +1,6 @@
+# core/serializers.py
 from rest_framework import serializers
-from .models import Story, Paragraph, Word, BlankLink
+from .models import Story, Paragraph, Word, BackgroundMusic, BlankLi
 
 class WordSerializer(serializers.ModelSerializer):
     class Meta:
@@ -8,9 +9,9 @@ class WordSerializer(serializers.ModelSerializer):
             "id",
             "maori_word",
             "english_translation",
-            "image",
-            "maori_audio",
-            "english_audio"
+            "image",        
+            "maori_audio",  
+            "english_audio" 
         ]
 
 class BlankLinkSerializer(serializers.ModelSerializer):
