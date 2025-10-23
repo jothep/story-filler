@@ -10,7 +10,16 @@ class BackgroundMusic(models.Model):
 class Story(models.Model):
     title = models.CharField(max_length=200, verbose_name="Title")
     background_music = models.ForeignKey(BackgroundMusic, on_delete=models.SET_NULL, blank=True, null=True, verbose_name="Background Music")
-    def __str__(self): return self.title
+
+    word_bank = models.ManyToManyField(
+        'Word', 
+        blank=True, 
+        related_name="stories", 
+        verbose_name="Select Words for this Story's Bank"
+    )
+
+    def __str__(self):
+        return self.title
 
 class Paragraph(models.Model):
     story = models.ForeignKey(Story, related_name="paragraphs", on_delete=models.CASCADE, verbose_name="Belonging Story")

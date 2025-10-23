@@ -1,13 +1,7 @@
 # core/admin.py
 from django.contrib import admin
+from django.utils.html import format_html
 from .models import Story, Paragraph, Word, BackgroundMusic, BlankLink
-
-class BlankLinkInline(admin.TabularInline):
-    """
-    Allows to manage placeholder links to words in the Word Bank within the Paragraph editing page.
-    """
-    model = BlankLink
-    extra = 1
 
 class ParagraphInline(admin.StackedInline):
     """
@@ -15,7 +9,7 @@ class ParagraphInline(admin.StackedInline):
     """
     model = Paragraph
     extra = 1 
-    inlines = [BlankLinkInline]
+    fields = ('order', 'text', 'audio')
 
 @admin.register(Story) 
 class StoryAdmin(admin.ModelAdmin):
@@ -23,7 +17,9 @@ class StoryAdmin(admin.ModelAdmin):
     Main menu of "Story"
     """
     list_display = ('title',)
-    inlines = [ParagraphInline] 
+    inlines = [ParagraphInline]
+    filter_horizontal = ('word_bank',)
+    search_fields = ('title',) 
 
 @admin.register(BackgroundMusic)
 class BackgroundMusicAdmin(admin.ModelAdmin):
@@ -38,7 +34,42 @@ class WordAdmin(admin.ModelAdmin):
     """
     Manage words (Word Bank)
     """
-    list_display = ('maori_word', 'english_translation', 'image', 'maori_audio', 'english_audio')
-    search_fields = ('maori_word', 'english_translation')
+    list_display = ('english_translation', 'maori_word', 'image', 'maori_audio', 'english_audio')
+    search_fields = ('english_translation', 'maori_word')
 
-admin.site.register(BlankLink)
+@admin.register(Paragraph)
+class ParagraphAdmin(admin.ModelAdmin):
+    """
+    Paragraph modle register Admin
+    """
+    list_display = ('__str__', 'story', 'order') 
+
+    search_fields = ('story__title', 'text') 
+    list_filter = ('story__title',) 
+
+@admin.register(BlankLink)
+class BlankLinkAdmin(admin.ModelAdmin):
+    """
+    Mannage links between Placeholder and Word Bank 
+    """
+    list_display = ('paragraph', 'placeholder', 'word')
+    list_filter = ('paragraph__story__title',) 
+    
+    
+    autocomplete_fields = ('paragraph', 'word') 
+    
+   
+    readonly_fields = ('display_paragraph_text',) 
+    
+    fieldsets = (
+        (None, {
+            'fields': ('paragraph', 'display_paragraph_text', 'placeholder', 'word')
+        }),
+    )
+
+    def display_paragraph_text(self, obj):
+        if obj.paragraph:
+
+            return format_html("<pre>{}</pre>", obj.paragraph.text)
+        return "N/A (Please select a paragraph first)"
+    display_paragraph_text.short_description = "Paragraph Text Preview"
