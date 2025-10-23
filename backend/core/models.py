@@ -45,7 +45,7 @@ class Word(models.Model):
         verbose_name_plural = "Word Bank"
 
     def __str__(self):
-        return self.maori_word
+        return f"{self.maori_word} ({self.english_translation})"
 class BlankLink(models.Model):
     """
     Link Paragraph blanks and words in Word Bank
