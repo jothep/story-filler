@@ -3,6 +3,9 @@ from rest_framework import serializers
 from .models import Story, Paragraph, Word, BackgroundMusic, BlankLink
 
 class WordSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+    maori_audio = serializers.SerializerMethodField()
+    english_audio = serializers.SerializerMethodField()
     class Meta:
         model = Word
         fields = [
@@ -14,8 +17,23 @@ class WordSerializer(serializers.ModelSerializer):
             "english_audio" 
         ]
 
+    def get_image(self, obj):
+        if obj.image:
+            return obj.image.url
+        return None
+
+    def get_maori_audio(self, obj):
+        if obj.maori_audio:
+            return obj.maori_audio.url
+        return None
+
+    def get_english_audio(self, obj):
+        if obj.english_audio:
+            return obj.english_audio.url
+        return None
+
 class BlankLinkSerializer(serializers.ModelSerializer):
-    word = WordSerializer(read_only=True)
+    word = serializers.SerializerMethodField()
 
     class Meta:
         model = BlankLink
@@ -24,9 +42,14 @@ class BlankLinkSerializer(serializers.ModelSerializer):
             "placeholder", 
             "word"         
         ]
+    def get_word(self, obj):
+        if obj.word:
+            return WordSerializer(obj.word).data
+        return None
 
 class ParagraphSerializer(serializers.ModelSerializer):
-    blank_links = BlankLinkSerializer(many=True, read_only=True)
+    blank_links = serializers.SerializerMethodField()
+    audio = serializers.SerializerMethodField()
     class Meta:
         model = Paragraph
         fields = [
@@ -36,6 +59,15 @@ class ParagraphSerializer(serializers.ModelSerializer):
             "audio",
             "blank_links"
         ]
+
+    def get_blank_links(self, obj):
+        links = obj.blank_links.all()
+        return BlankLinkSerializer(links, many=True).data
+
+    def get_audio(self, obj):
+        if obj.audio:
+            return obj.audio.url
+        return None
 
 class StoryDetailSerializer(serializers.ModelSerializer):
 
@@ -64,6 +96,7 @@ class StoryDetailSerializer(serializers.ModelSerializer):
         linked_word_ids = BlankLink.objects.filter(paragraph__story=obj, word__isnull=False).values_list('word_id', flat=True)
 
         words = Word.objects.filter(id__in=linked_word_ids).distinct()
+
         serializer = WordSerializer(words, many=True)
         return serializer.data
     
