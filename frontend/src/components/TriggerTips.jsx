@@ -1,5 +1,5 @@
 // src/components/TriggerTips.jsx
-import React from 'react';
+import PropTypes from 'prop-types';
 // 1. 导入 useDroppable
 import { useDroppable } from '@dnd-kit/core';
 
@@ -40,5 +40,11 @@ function TriggerTips({ selectedWord }) {
     </div>
   );
 }
+
+TriggerTips.propTypes = {
+  selectedWord: PropTypes.shape({
+    maori_word: PropTypes.string.isRequired
+  }) // 'selectedWord' 可以是 null
+};
 
 export default TriggerTips;

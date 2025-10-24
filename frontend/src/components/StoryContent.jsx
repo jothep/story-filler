@@ -1,5 +1,5 @@
 // src/components/StoryContent.jsx
-import React from 'react';
+import PropTypes from 'prop-types';
 import DroppableBlank from './DroppableBlank'; // 导入新组件
 
 // 辅助函数 (不变)
@@ -63,5 +63,15 @@ function StoryContent({ paragraphs, filledBlanks, wrongAttempt }) {
     </div>
   );
 }
+
+StoryContent.propTypes = {
+  paragraphs: PropTypes.arrayOf(PropTypes.shape({
+    id: PropTypes.number.isRequired,
+    text: PropTypes.string.isRequired,
+    blank_links: PropTypes.arrayOf(PropTypes.object).isRequired
+  })).isRequired,
+  filledBlanks: PropTypes.object.isRequired,
+  wrongAttempt: PropTypes.string // 'wrongAttempt' 可以是 null
+};
 
 export default StoryContent;

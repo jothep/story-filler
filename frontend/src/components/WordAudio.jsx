@@ -1,5 +1,5 @@
 // src/components/WordAudio.jsx
-import React from 'react';
+import PropTypes from 'prop-types';
 
 // 1. 接收 'word' prop
 function WordAudio({ word }) {
@@ -62,5 +62,14 @@ function WordAudio({ word }) {
     </div>
   );
 }
+
+WordAudio.propTypes = {
+  word: PropTypes.shape({
+    maori_word: PropTypes.string.isRequired,
+    english_translation: PropTypes.string.isRequired,
+    maori_audio: PropTypes.string,
+    english_audio: PropTypes.string
+  }) // 'word' 可以是 null
+};
 
 export default WordAudio;

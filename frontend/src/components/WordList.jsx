@@ -1,5 +1,5 @@
-// src/components/WordList.jsx (正确版本)
-import React from 'react';
+// src/components/WordList.jsx
+import PropTypes from 'prop-types';
 import { useDraggable } from '@dnd-kit/core';
 
 //
@@ -21,10 +21,8 @@ function DraggableWordButton({ word, onWordSelect }) {
       type="button"
       className="nes-btn"
       key={word.id}
-      //
-      // --- 👇 修复点 2：现在 onWordSelect 是已定义的 ---
-      //
-      onClick={() => onWordSelect(word)} // <-- 这是你的报错行
+      
+      onClick={() => onWordSelect(word)} 
       
       ref={setNodeRef} 
       style={{...style, flexGrow: 1}}
@@ -36,9 +34,14 @@ function DraggableWordButton({ word, onWordSelect }) {
   );
 }
 
-//
-// --- 👇 修复点 3：在这里也必须接收 onWordSelect ---
-//
+DraggableWordButton.propTypes = {
+  word: PropTypes.shape({
+    id: PropTypes.number.isRequired,
+    maori_word: PropTypes.string.isRequired
+  }).isRequired,
+  onWordSelect: PropTypes.func.isRequired
+};
+
 function WordList({ words, onWordSelect }) { 
 
   if (!words) {
@@ -58,9 +61,7 @@ function WordList({ words, onWordSelect }) {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
         
         {words.map(word => (
-          //
-          // --- 👇 修复点 4：把 onWordSelect 传递给子组件 ---
-          //
+
           <DraggableWordButton 
             key={word.id} 
             word={word} 
@@ -72,5 +73,13 @@ function WordList({ words, onWordSelect }) {
     </div>
   );
 }
+
+WordList.propTypes = {
+  words: PropTypes.arrayOf(PropTypes.shape({
+     id: PropTypes.number.isRequired,
+     maori_word: PropTypes.string.isRequired
+  })).isRequired,
+  onWordSelect: PropTypes.func.isRequired
+};
 
 export default WordList;

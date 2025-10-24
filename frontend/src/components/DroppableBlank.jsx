@@ -1,5 +1,5 @@
 // src/components/DroppableBlank.jsx
-import React from 'react';
+import PropTypes from 'prop-types';
 import { useDroppable } from '@dnd-kit/core';
 
 // 1. 接收所有需要的 props
@@ -83,5 +83,18 @@ function DroppableBlank({ blank, uniqueId, filledWord, isWrong }) {
     </span>
   );
 }
+
+DroppableBlank.propTypes = {
+  blank: PropTypes.shape({
+    word: PropTypes.shape({
+      id: PropTypes.number.isRequired
+    }).isRequired
+  }).isRequired,
+  uniqueId: PropTypes.string.isRequired,
+  filledWord: PropTypes.shape({
+    maori_word: PropTypes.string.isRequired
+  }), // 'filledWord' 可以是 null，所以不加 .isRequired
+  isWrong: PropTypes.bool.isRequired
+};
 
 export default DroppableBlank;

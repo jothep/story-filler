@@ -1,6 +1,6 @@
 // src/App.jsx
 import { DndContext } from '@dnd-kit/core';
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import './App.css';
 
 import TopNav from './components/TopNav';
@@ -78,7 +78,7 @@ function App() {
         setWrongAttempt(null); 
       } else {
         // 答案错误
-        console.log("答案错误！");
+        console.log("Wrong answer.");
         setWrongAttempt(uniqueBlankId);
       }
     }
@@ -104,7 +104,7 @@ function App() {
         <div className="layout-pic">
           <StoryPicture />
         </div>
-        
+
         <div className="layout-list">
           <WordList 
             words={story.words_in_bank} 

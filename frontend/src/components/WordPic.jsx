@@ -1,5 +1,5 @@
 // src/components/WordPic.jsx
-import React from 'react';
+import PropTypes from 'prop-types';
 
 // 1. 接收 'word' prop
 function WordPic({ word }) {
@@ -37,5 +37,12 @@ function WordPic({ word }) {
     </div>
   );
 }
+
+WordPic.propTypes = {
+  word: PropTypes.shape({
+    image: PropTypes.string, // 'image' 可以是 null
+    english_translation: PropTypes.string.isRequired
+  }) // 'word' 可以是 null
+};
 
 export default WordPic;

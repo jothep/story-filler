@@ -1,5 +1,4 @@
 // src/components/StoryPicture.jsx
-import React from 'react';
 
 function StoryPicture() {
   return (

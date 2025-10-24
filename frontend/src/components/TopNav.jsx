@@ -1,5 +1,4 @@
 // src/components/TopNav.jsx
-import React from 'react';
 
 function TopNav() {
   return (
