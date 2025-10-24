@@ -3,13 +3,12 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import App from './App';
 
-// 1. 创建一个最小化的模拟数据
-//    (我们不需要 'title'，因为它没有被渲染)
+// (模拟数据保持不变)
 const MOCK_SUCCESS_DATA = {
   paragraphs: [
     { 
       id: 1, 
-      text: 'On a bright moonlit night', // <-- 我们将测试这个
+      text: 'On a bright moonlit night', 
       audio: 'audio.m4a',
       blank_links: [] 
     }
@@ -17,19 +16,17 @@ const MOCK_SUCCESS_DATA = {
   words_in_bank: [
     { 
       id: 1, 
-      maori_word: 'kātao', // <-- 我们也将测试这个
+      maori_word: 'kātao', 
       english_translation: 'water'
     }
   ]
 };
 
-// --- 开始测试套件 ---
 describe('App Component', () => {
 
-  // 测试 1: 成功路径 (已修复)
+  // 测试 1: 成功路径 (这个已经通过了, 但我们保持一致)
   it('should load and display story content', async () => {
     
-    // 模拟一个成功的 fetch
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
       json: async () => MOCK_SUCCESS_DATA,
@@ -37,47 +34,38 @@ describe('App Component', () => {
 
     render(<App />);
 
-    // 断言："Loading..." 消息首先出现
-    expect(screen.getByText(/Loading story.../i)).toBeInTheDocument();
-
-    // 关键修复：
-    // 我们不再等待 "Kupe and the Octopus" (不存在的)
-    // 而是等待 "kātao" (来自 words_in_bank) 按钮出现
+    // 等待 "kātao" 按钮出现
     const wordButton = await screen.findByText('kātao');
-
-    // 断言：
-    // 1. 单词按钮现在在 DOM 中
+    
+    // 断言
     expect(wordButton).toBeInTheDocument();
-    // 2. 段落文本也在 DOM 中 (来自 paragraphs)
     expect(screen.getByText(/On a bright moonlit night/i)).toBeInTheDocument();
-    // 3. "Loading..." 消息现在 *消失* 了
+    
+    // 关键：在所有 'await' 完成后，再检查“不应该”存在的东西
     expect(screen.queryByText(/Loading story.../i)).not.toBeInTheDocument();
   });
 
   // 测试 2: 失败路径 (已修复)
   it('should display an error message if fetch fails', async () => {
     
-    // 模拟一个失败的 fetch
     vi.mocked(fetch).mockResolvedValue({
       ok: false,
     });
     
-    // 压制测试日志中预期的 'Network response...' 错误
     vi.spyOn(console, 'error').mockImplementation(() => {});
 
     render(<App />);
 
-    // 断言： "Loading..." 消息首先出现
-    expect(screen.getByText(/Loading story.../i)).toBeInTheDocument();
-
     // 关键修复：
-    // 我们使用 waitFor 来等待 *两个* 条件都满足
-    // 这可以防止在状态转换期间出现竞争条件
-    await waitFor(() => {
-      // 1. 错误消息 *出现*
-      expect(screen.getByText(/Error loading story:/i)).toBeInTheDocument();
-      // 2. "Loading..." 消息 *消失*
-      expect(screen.queryByText(/Loading story.../i)).not.toBeInTheDocument();
-    });
+    // 1. 我们 *只* await 错误消息的 *出现*
+    const errorMessage = await screen.findByText(/Error loading story:/i);
+    
+    // 2. 断言它确实出现了
+    expect(errorMessage).toBeInTheDocument();
+
+    // 3. (这是最重要的) 在所有 await *之后*，我们才
+    //    同步地检查 "Loading..." 消息是否 *消失* 了。
+    //    这能确保 React 有足够的时间完成它的 'setLoading(false)' 批处理。
+    expect(screen.queryByText(/Loading story.../i)).not.toBeInTheDocument();
   });
 });
