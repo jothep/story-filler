@@ -1,142 +1,98 @@
+// src/App.jsx
+
 import React, { useState, useEffect } from 'react';
+import './App.css';
 
-// import MUI
-import {
-    CssBaseline,
-    AppBar,
-    Toolbar,
-    Typography,
-    Container,
-    CircularProgress,
-    Box,
-    Grid,
-    Card,
-    CardContent,
-    Alert,
-    Button
-} from '@mui/material';
-
-// Django API
-// const API_URL = 'http://127.0.0.1:8000/api/stories/';
-const API_URL = '/api/stories/';
+import TopNav from './components/TopNav';
+import StoryPicture from './components/StoryPicture';
+import WordList from './components/WordList';
+import StoryContent from './components/StoryContent';
+import WordPic from './components/WordPic';
+import WordAudio from './components/WordAudio';
+import TriggerTips from './components/TriggerTips';
 
 function App() {
-    const [stories, setStories] = useState([]);
+    const [story, setStory] = useState(null); // 2. 创建 state
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    const [selectedStory, setSelectedStory] = useState(null);
-
     useEffect(() => {
-        const fetchStories = async () => {
-            try {
-                const response = await fetch(API_URL);
-                if (!response.ok) {
-                    throw new Error(`HTTP Error! Status: ${response.status}`);
-                }
-                const data = await response.json();
-                setStories(data);
-            } catch (e) {
-                console.error("Get data failed:", e);
-                setError("无法从后端加载故事数据。请确认您的Django服务器正在运行,并且CORS设置正确。");
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchStories();
-    }, []);
+    //
+    // 关键点 1: 这是你的开发 API 地址
+    //
+    //const API_URL = 'http://127.0.0.1:8080/api/stories/2/';
+    const API_URL = '/api/stories/2/';
 
-    // Story details
-    const renderStoryDetail = () => {
-        
-        return (
-            <Box>
-                <Button 
-                    variant="outlined" 
-                    onClick={() => setSelectedStory(null)} 
-                    sx={{ mb: 2 }}
-                >
-                    &larr; Return to list
-                </Button>
-                <Typography variant="h3" component="h1" gutterBottom>
-                    {selectedStory.title}
-                </Typography>
-                <Typography variant="body1" sx={{ whiteSpace: 'pre-line', lineHeight: 1.8 }}>
-                    {selectedStory.full_text || "This story has no contents"}
-                </Typography>
-            </Box>
-        );
-    };
-
-    const renderContent = () => {
-        if (loading) {
-            return (
-                <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-                    <CircularProgress />
-                    <Typography variant="h6" sx={{ ml: 2 }}>Loading story...</Typography>
-                </Box>
-            );
+    fetch(API_URL)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
         }
+        return response.json();
+      })
+      .then(data => {
+        setStory(data); // 4. 存入 state
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Fetch Error:", err);
+        setError(err.message);
+        setLoading(false);
+      });
 
-        if (error) {
-            return <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>;
-        }
+  }, []);
+    if (loading) {
+        return <div style={{ color: 'white', padding: '2rem' }}>Loading story...</div>;
+    }
+    if (error) {
+    //
+    // 关键点 2: 99% 的可能是 CORS 错误
+    // 你必须在 Django 中配置 django-cors-headers
+    // 允许 http://localhost:5173
+    //
+        return <div style={{ color: 'red', padding: '2rem' }}>Error loading story: {error}</div>;
+    }
 
-        if (selectedStory) {
-            return renderStoryDetail();
-        }
-        
-        if (stories.length === 0) {
-           return <Alert severity="info" sx={{ mt: 2 }}>Didn&apos;t find story. Please add some story in Django firstly.</Alert>;
-        }
-
-        return (
-            <Grid container spacing={3} sx={{ mt: 2 }}>
-                {stories.map(story => (
-                    <Grid size={{ xs: 12, sm: 6, md: 4 }} key={story.id}>
-                        <Card 
-                            sx={{ 
-                                height: '100%', 
-                                display: 'flex', 
-                                flexDirection: 'column',
-                                cursor: 'pointer', 
-                                '&:hover': {
-                                    boxShadow: 6, 
-                                }
-                            }}
-                            onClick={() => setSelectedStory(story)} 
-                        >
-                            <CardContent>
-                                <Typography gutterBottom variant="h5" component="div">
-                                    {story.title}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                    Click to learn this story.
-                                </Typography>
-                            </CardContent>
-                        </Card>
-                    </Grid>
-                ))}
-            </Grid>
-        );
-    };
-    
     return (
-        <React.Fragment>
-            <CssBaseline />
-            <AppBar position="static">
-                <Toolbar>
-                    <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-                        Māori Story-Fill
-                    </Typography>
-                </Toolbar>
-            </AppBar>
-            <Container maxWidth="lg" component="main" sx={{ py: 4 }}>
-                {/* renderContent now to take all logics */}
-                {renderContent()}
-            </Container>
-        </React.Fragment>
-    );
+    // 这是我们的全屏“游戏窗口”
+        <div className="game-screen">
+      
+      {/* 下面是你的7个布局区域。
+        className 对应我们在 CSS 中定义的 "grid-area" 
+      */}
+      
+      <div className="layout-nav">
+        <TopNav />
+      </div>
+
+      <div className="layout-pic">
+        <StoryPicture />
+      </div>
+
+      <div className="layout-list">
+        {/* 7. 把 "word bank" 数据传递给 WordList */}
+        <WordList words={story.words_in_bank} />
+      </div>
+
+      <div className="layout-text">
+        {/* 8. 把 "paragraphs" 数据传递给 StoryContent */}
+        <StoryContent paragraphs={story.paragraphs} />
+      </div>
+
+      <div className="layout-w-pic">
+        <WordPic />
+      </div>
+
+      <div className="layout-w-audio">
+        <WordAudio />
+      </div>
+
+      <div className="layout-tips">
+        <TriggerTips />
+      </div>
+
+    </div>
+  );
 }
 
 export default App;

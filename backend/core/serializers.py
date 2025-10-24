@@ -39,11 +39,11 @@ class ParagraphSerializer(serializers.ModelSerializer):
 
 class StoryDetailSerializer(serializers.ModelSerializer):
 
-    paragraphs = ParagraphSerializer(many=True, read_only=True)
+    paragraphs = ParagraphSerializer(many=True, read_only=True, context={})
 
     words_in_bank = serializers.SerializerMethodField(method_name='get_linked_words')
 
-    background_music_url = serializers.ReadOnlyField(source='background_music.audio_file.url')
+    background_music_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Story
@@ -54,6 +54,12 @@ class StoryDetailSerializer(serializers.ModelSerializer):
             "paragraphs",
             "words_in_bank"
         ]
+
+    def get_background_music_url(self, obj):
+        if obj.background_music and obj.background_music.audio_file:
+            return obj.background_music.audio_file.url
+        return None
+    
     def get_linked_words(self, obj):
         linked_word_ids = BlankLink.objects.filter(paragraph__story=obj, word__isnull=False).values_list('word_id', flat=True)
 

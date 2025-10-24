@@ -109,10 +109,13 @@ USE_TZ = True
 
 # --- Static files (CSS, JavaScript, Images) ---
 STATIC_URL = "static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"  # <<< ADDED: Required for production
+STATIC_ROOT = BASE_DIR / "staticfiles" 
 STATICFILES_STORAGE = (
-    "whitenoise.storage.CompressedManifestStaticFilesStorage"  # <<< ADDED
+    "whitenoise.storage.CompressedManifestStaticFilesStorage"  
 )
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = "/app/media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

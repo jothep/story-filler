@@ -37,6 +37,14 @@ spec:
             port:
               number: 80
 
+      - path: /media/
+        pathType: Prefix
+        backend:
+          service:
+            name: maori-story-backend-svc
+            port:
+              number: 80
+              
       - path: /
         pathType: Prefix
         backend:
