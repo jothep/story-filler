@@ -1,5 +1,5 @@
 // src/Menu.jsx
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 // 为 Menu 添加一些简单的样式
