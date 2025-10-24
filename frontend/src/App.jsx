@@ -1,5 +1,5 @@
 // src/App.jsx
-
+import { DndContext } from '@dnd-kit/core';
 import React, { useState, useEffect } from 'react';
 import './App.css';
 
@@ -12,16 +12,17 @@ import WordAudio from './components/WordAudio';
 import TriggerTips from './components/TriggerTips';
 
 function App() {
-    const [story, setStory] = useState(null); // 2. 创建 state
+    const [story, setStory] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [selectedWord, setSelectedWord] = useState(null);
+    const [filledBlanks, setFilledBlanks] = useState({});
+
+    const [wrongAttempt, setWrongAttempt] = useState(null);
 
     useEffect(() => {
-    //
-    // 关键点 1: 这是你的开发 API 地址
-    //
-    //const API_URL = 'http://127.0.0.1:8080/api/stories/2/';
-    const API_URL = '/api/stories/2/';
+    // 注意：你这里写的是 '3'。请确保这是你想要的故事 ID
+    const API_URL = '/api/stories/3/';
 
     fetch(API_URL)
       .then(response => {
@@ -31,68 +32,106 @@ function App() {
         return response.json();
       })
       .then(data => {
-        setStory(data); // 4. 存入 state
+        setStory(data);
         setLoading(false);
       })
       .catch(err => {
         console.error("Fetch Error:", err);
         setError(err.message);
         setLoading(false);
-      });
+      });  }, []);
 
-  }, []);
+    function handleDragStart() {
+        setWrongAttempt(null);
+        }
+    
+    // 这是 handleDragEnd 函数的唯一、正确版本
+    function handleDragEnd(event) {
+        const { active, over } = event;
+
+        if (!over || !active) return;
+
+        const draggedWord = story.words_in_bank.find(
+        (word) => word.id === active.id
+    );
+
+        if (!draggedWord) return;
+
+        // 逻辑 A：拖到了提示区
+        if (over.id === 'trigger-tips-droppable') {
+        setSelectedWord(draggedWord);
+        return; 
+        }
+
+    // 逻辑 B：拖到了一个空白处
+    const dropZoneType = over.data.current?.type;
+    if (dropZoneType === 'blank') {
+      const uniqueBlankId = over.id; 
+      const correctWordId = over.data.current.correctWordId;
+
+      if (draggedWord.id === correctWordId) {
+        // 答案正确
+        setFilledBlanks(prevBlanks => ({
+          ...prevBlanks,
+          [uniqueBlankId]: draggedWord
+        }));
+        setWrongAttempt(null); 
+      } else {
+        // 答案错误
+        console.log("答案错误！");
+        setWrongAttempt(uniqueBlankId);
+      }
+    }
+  }
+    // --- 这里是重复逻辑的开始，已被删除 ---
+
     if (loading) {
         return <div style={{ color: 'white', padding: '2rem' }}>Loading story...</div>;
     }
     if (error) {
-    //
-    // 关键点 2: 99% 的可能是 CORS 错误
-    // 你必须在 Django 中配置 django-cors-headers
-    // 允许 http://localhost:5173
-    //
         return <div style={{ color: 'red', padding: '2rem' }}>Error loading story: {error}</div>;
     }
+    if (!story) { return <div>No story found.</div>; }
 
     return (
-    // 这是我们的全屏“游戏窗口”
-        <div className="game-screen">
-      
-      {/* 下面是你的7个布局区域。
-        className 对应我们在 CSS 中定义的 "grid-area" 
-      */}
-      
-      <div className="layout-nav">
-        <TopNav />
-      </div>
+    <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <div className="game-screen">
+        
+        <div className="layout-nav">
+          <TopNav />
+        </div>
 
-      <div className="layout-pic">
-        <StoryPicture />
-      </div>
+        <div className="layout-pic">
+          <StoryPicture />
+        </div>
+        
+        <div className="layout-list">
+          <WordList 
+            words={story.words_in_bank} 
+            onWordSelect={setSelectedWord}
+          />
+        </div>
 
-      <div className="layout-list">
-        {/* 7. 把 "word bank" 数据传递给 WordList */}
-        <WordList words={story.words_in_bank} />
-      </div>
+        <div className="layout-text">
+          <StoryContent 
+            paragraphs={story.paragraphs} 
+            filledBlanks={filledBlanks}
+            wrongAttempt={wrongAttempt} 
+          />
+        </div>
+        
+        <div className="layout-w-pic">
+          <WordPic word={selectedWord} />
+        </div>
+        <div className="layout-w-audio">
+          <WordAudio word={selectedWord} />
+        </div>
+        <div className="layout-tips">
+          <TriggerTips selectedWord={selectedWord} />
+        </div>
 
-      <div className="layout-text">
-        {/* 8. 把 "paragraphs" 数据传递给 StoryContent */}
-        <StoryContent paragraphs={story.paragraphs} />
       </div>
-
-      <div className="layout-w-pic">
-        <WordPic />
-      </div>
-
-      <div className="layout-w-audio">
-        <WordAudio />
-      </div>
-
-      <div className="layout-tips">
-        <TriggerTips />
-      </div>
-
-    </div>
-  );
+    </DndContext> );
 }
 
 export default App;

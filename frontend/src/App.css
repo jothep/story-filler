@@ -10,6 +10,13 @@ body, html {
   font-family: "Press Start 2P", cursive;
 }
 
+@keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-5px); }
+  100% { transform: translateX(0); }
+}
 /* 2. 定义 "游戏窗口" 容器 */
 .game-screen {
   /* 关键：锁定全屏 */

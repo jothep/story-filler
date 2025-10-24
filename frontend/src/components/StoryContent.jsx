@@ -1,7 +1,48 @@
 // src/components/StoryContent.jsx
 import React from 'react';
+import DroppableBlank from './DroppableBlank'; // 导入新组件
 
-function StoryContent({ paragraphs }) {
+// 辅助函数 (不变)
+function parseText(text) {
+  const regex = /(__BLANK_[a-zA-Z0-9_]+__)/g;
+  return text.split(regex).filter(part => part.length > 0);
+}
+
+function StoryContent({ paragraphs, filledBlanks, wrongAttempt }) {
+  
+  const renderParagraph = (para) => {
+    const parts = parseText(para.text);
+
+    return parts.map((part, index) => {
+      if (part.startsWith('__BLANK_')) {
+        const blankData = para.blank_links.find(
+          (b) => b.placeholder === part
+        );
+
+        if (blankData) {
+          const uniqueId = `blank-${blankData.id}-${index}`;
+          const filledWord = filledBlanks[uniqueId];
+          
+          // --- 👇 2. 检查这个 blank 是否是刚发生错误的那个 ---
+          const isWrong = (wrongAttempt === uniqueId);
+
+          return (
+            <DroppableBlank 
+              key={uniqueId}
+              uniqueId={uniqueId}
+              blank={blankData}
+              filledWord={filledWord}
+              // --- 👇 3. 传递 'isWrong' prop ---
+              isWrong={isWrong}
+            />
+          );
+        }
+        return <span key={`missing-span-${index}`}>{part}</span>;
+      }
+      return <span key={`span-${index}`}>{part}</span>;
+    });
+  };
+
   return (
     <div 
       className="nes-container is-dark" 
@@ -11,12 +52,11 @@ function StoryContent({ paragraphs }) {
         play (all)
       </button>
       
-      {/* 2. 遍历 'paragraphs' 数组 */}
       {paragraphs.map(para => (
-        <div key={para.id} style={{ marginTop: '1rem' }}>
+        // (这个 key={para.id} 是正确的，不需要改)
+        <div key={para.id} style={{ marginTop: '1rem', lineHeight: '2.5rem' }}>
           <p>
-            {/* 3. 显示每个段落的文本 */}
-            {para.text}
+            {renderParagraph(para)}
           </p>
         </div>
       ))}
