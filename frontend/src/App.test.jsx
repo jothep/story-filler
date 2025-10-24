@@ -3,82 +3,79 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import App from './App';
 
-// (MOCK_STORY_DATA 保持不变)
-const MOCK_STORY_DATA = {
-  id: 3,
-  title: 'Kupe and the Octopus', 
+// 1. 创建一个最小化的模拟数据
+//    这只需要包含你的组件渲染所需的 *最小* 字段
+const MOCK_SUCCESS_DATA = {
+  // 'paragraphs' 字段是必须的，以防止 'paragraphs.map' 错误
   paragraphs: [
-    {
-      id: 1,
-      order: 1,
-      text: 'This is the first paragraph with a __BLANK_test__.',
-      audio: '/media/audio/1.m4a',
-      blank_links: [
-        {
-          id: 1,
-          placeholder: '__BLANK_test__',
-          word: { id: 1, maori_word: 'test' }
-        }
-      ]
+    { 
+      id: 1, 
+      text: 'On a bright moonlit night', // 文本，用于断言
+      blank_links: [] 
     }
   ],
+  // 'words_in_bank' 字段是必须的
   words_in_bank: [
     { 
       id: 1, 
-      maori_word: 'test', 
-      english_translation: 'Test' 
+      maori_word: 'kātao' // 文本，用于断言
     }
   ]
 };
 
+// --- 开始测试套件 ---
 describe('App Component', () => {
 
-  // --- 移除了 beforeEach ---
-
-  // --- 测试 1：成功路径 ---
-  it('should load and display the story elements', async () => {
+  // 测试 1: 成功路径
+  it('should load and display story content', async () => {
     
-    // 1. 在测试 *内部* 定义模拟
+    // 模拟一个成功的 fetch
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
-      json: async () => MOCK_STORY_DATA,
+      json: async () => MOCK_SUCCESS_DATA,
     });
 
     render(<App />);
 
-    // 2. 等待 "Kupe and the Octopus" 出现
-    //    (findByText 会自动等待 "Loading..." 消失)
-    const storyTitle = await screen.findByText(MOCK_STORY_DATA.title);
-    
-    // 3. 断言
-    expect(storyTitle).toBeInTheDocument();
-    
-    // 4. 验证 "back to menu" 也已渲染
-    expect(await screen.findByText(/<-- back to menu/i)).toBeInTheDocument();
-    
-    // 5. 验证 "Loading..." 消息已经消失
+    // 断言："Loading..." 消息首先出现
+    expect(screen.getByText(/Loading story.../i)).toBeInTheDocument();
+
+    // 关键：等待异步操作完成。
+    // 我们等待 "kātao" (来自 words_in_bank) 的按钮出现
+    const wordButton = await screen.findByText('kātao');
+
+    // 断言：
+    // 1. 单词按钮现在在 DOM 中
+    expect(wordButton).toBeInTheDocument();
+    // 2. 段落文本也在 DOM 中
+    expect(screen.getByText(/On a bright moonlit night/i)).toBeInTheDocument();
+    // 3. "Loading..." 消息现在 *消失* 了
     expect(screen.queryByText(/Loading story.../i)).not.toBeInTheDocument();
   });
 
-  // --- 测试 2：失败路径 ---
+  // 测试 2: 失败路径
   it('should display an error message if fetch fails', async () => {
     
-    // 1. 在测试 *内部* 定义模拟
+    // 模拟一个失败的 fetch
     vi.mocked(fetch).mockResolvedValue({
       ok: false,
     });
+    
+    // 压制测试日志中预期的 'Network response...' 错误
+    vi.spyOn(console, 'error').mockImplementation(() => {});
 
     render(<App />);
 
-    // 2. 等待 "Error loading story:" 出现
-    //    (findByText 会自动等待 "Loading..." 消失)
+    // 断言： "Loading..." 消息首先出现
+    expect(screen.getByText(/Loading story.../i)).toBeInTheDocument();
+
+    // 关键：等待 "Error..." 消息出现
     const errorMessage = await screen.findByText(/Error loading story:/i);
-
-    // 3. 断言
+    
+    // 断言：
+    // 1. 错误消息现在在 DOM 中
     expect(errorMessage).toBeInTheDocument();
-
-    // 4. 验证 "Loading..." 消息已经消失
+    // 2. "Loading..." 消息现在 *消失* 了
     expect(screen.queryByText(/Loading story.../i)).not.toBeInTheDocument();
   });
-
 });
