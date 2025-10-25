@@ -1,5 +1,4 @@
 // src/components/StoryContent.jsx
-import React from 'react'; // React 必须在作用域内
 import PropTypes from 'prop-types';
 import DroppableBlank from './DroppableBlank'; // 1. 保留了你对 DroppableBlank 的导入
 

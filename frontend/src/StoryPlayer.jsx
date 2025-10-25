@@ -50,7 +50,7 @@ function StoryPlayer() {
       .then((response) =>
         response.ok
           ? response.json()
-          : Promise.reject('Network response was not ok')
+          : Promise.reject(new Error('Network response was not ok'))
       )
       .then((data) => {
         setStory(data);
