@@ -4,8 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import './StoryPlayer.css';
 
-import { useStory } from './hooks/useStory';
-
 //import TopNav from './components/TopNav';
 import StoryPicture from './components/StoryPicture';
 import WordList from './components/WordList';
@@ -16,10 +14,10 @@ import TriggerTips from './components/TriggerTips';
 
 function StoryPlayer() {
   const { storyId } = useParams();
-  const { story, loading, error } = useStory(storyId);
-  //const [story, setStory] = useState(null);
-  //const [loading, setLoading] = useState(true);
-  //const [error, setError] = useState(null);
+
+  const [story, setStory] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedWord, setSelectedWord] = useState(null);
   const [filledBlanks, setFilledBlanks] = useState({});
   const [wrongAttempt, setWrongAttempt] = useState(null);
@@ -46,7 +44,7 @@ function StoryPlayer() {
     };
   }, [story]); // 依赖 story 对象
 
-  /* useEffect(() => {
+  useEffect(() => {
     const API_URL = `/api/stories/${storyId}/`;
     fetch(API_URL)
       .then((response) =>
@@ -63,7 +61,7 @@ function StoryPlayer() {
         setError(err.message);
         setLoading(false);
       });
-  }, [storyId]); */
+  }, [storyId]);
 
   const handleToggleMusic = () => {
     const audio = bgmAudioRef.current;
