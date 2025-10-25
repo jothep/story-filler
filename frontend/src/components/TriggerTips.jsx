@@ -5,7 +5,6 @@ import { useDroppable } from '@dnd-kit/core';
 
 // 2. 接收从 App.jsx 传来的 selectedWord (可选)
 function TriggerTips({ selectedWord }) {
-  
   // 3. 设置 useDroppable，使用一个唯一的 ID
   const { isOver, setNodeRef } = useDroppable({
     id: 'trigger-tips-droppable',
@@ -21,11 +20,7 @@ function TriggerTips({ selectedWord }) {
 
   return (
     // 5. 应用 ref={setNodeRef} 和 style
-    <div 
-      ref={setNodeRef}
-      className="nes-container is-dark" 
-      style={style}
-    >
+    <div ref={setNodeRef} className="nes-container is-dark" style={style}>
       <p>Trigger tips</p>
 
       {/* 6. (可选) 显示拖拽到这里的结果 
@@ -43,8 +38,8 @@ function TriggerTips({ selectedWord }) {
 
 TriggerTips.propTypes = {
   selectedWord: PropTypes.shape({
-    maori_word: PropTypes.string.isRequired
-  }) // 'selectedWord' 可以是 null
+    maori_word: PropTypes.string.isRequired,
+  }), // 'selectedWord' 可以是 null
 };
 
 export default TriggerTips;

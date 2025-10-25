@@ -1,32 +1,43 @@
 /* src/App.css */
 
 /* 1. 基础重置，确保没有奇怪的边距 */
-body, html {
+body,
+html {
   margin: 0;
   padding: 0;
   background-color: #212529; /* NES.css 的默认暗色背景 */
-  
+
   /* NES.css 推荐的字体 */
-  font-family: "Press Start 2P", cursive;
+  font-family: 'Press Start 2P', cursive;
 }
 
 @keyframes shake {
-  0% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  50% { transform: translateX(5px); }
-  75% { transform: translateX(-5px); }
-  100% { transform: translateX(0); }
+  0% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  50% {
+    transform: translateX(5px);
+  }
+  75% {
+    transform: translateX(-5px);
+  }
+  100% {
+    transform: translateX(0);
+  }
 }
 /* 2. 定义 "游戏窗口" 容器 */
 .game-screen {
   /* 关键：锁定全屏 */
   height: 100vh; /* 100% 视口高度 */
-  width: 100vw;  /* 100% 视口宽度 */
+  width: 100vw; /* 100% 视口宽度 */
   overflow: hidden; /* 关键：禁止任何滚动条出现 */
 
   /* 启用 Grid 布局 */
   display: grid;
-  
+
   /* 3. ASCII "画出" 你的布局！
     这和你草图的布局完全一致。
     - "nav" 占满了顶部一行 (3列)
@@ -35,10 +46,10 @@ body, html {
     - 底部行被 "w-pic", "w-aud", "tips" 瓜分
   */
   grid-template-areas:
-    "nav   nav   nav"
-    "pic   pic   list"
-    "text  text  list"
-    "w-pic w-aud tips";
+    'nav   nav   nav'
+    'pic   pic   list'
+    'text  text  list'
+    'w-pic w-aud tips';
 
   grid-template-rows: 60px 1fr 3fr 1.5fr;
 
@@ -50,16 +61,28 @@ body, html {
   box-sizing: border-box; /* 确保 padding 不会撑破布局 */
 }
 
-
 /* 7. 将 App.jsx 中的 className "分配" 到格子里 */
-.layout-nav    { grid-area: nav; }
-.layout-pic    { grid-area: pic; }
-.layout-list   { grid-area: list; }
-.layout-text   { grid-area: text; }
-.layout-w-pic  { grid-area: w-pic; }
-.layout-w-audio{ grid-area: w-aud; }
-.layout-tips   { grid-area: tips; }
-
+.layout-nav {
+  grid-area: nav;
+}
+.layout-pic {
+  grid-area: pic;
+}
+.layout-list {
+  grid-area: list;
+}
+.layout-text {
+  grid-area: text;
+}
+.layout-w-pic {
+  grid-area: w-pic;
+}
+.layout-w-audio {
+  grid-area: w-aud;
+}
+.layout-tips {
+  grid-area: tips;
+}
 
 /* 8. (重要) 确保组件能填满分配给它的格子 
    你需要让组件内部的 nes-container 占满 100% 高度

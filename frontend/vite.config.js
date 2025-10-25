@@ -1,19 +1,19 @@
 // vite.config.js
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
   test: {
-    globals: true, 
+    globals: true,
     environment: 'jsdom',
     setupFiles: './src/setupTests.js',
   },
   server: {
-    host: '0.0.0.0', 
-    port: 5173,      
-    
+    host: '0.0.0.0',
+    port: 5173,
+
     // --- 👇 在这里添加你的 proxy 配置 ---
     proxy: {
       // 代理 /api/... 的请求
@@ -37,8 +37,8 @@ export default defineConfig({
       '/media': {
         target: 'http://127.0.0.1:8080',
         changeOrigin: true,
-      }
-    }
+      },
+    },
     // --- 👆 proxy 配置结束 ---
-  }
-})
+  },
+});

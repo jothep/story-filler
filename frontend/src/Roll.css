@@ -1,0 +1,59 @@
+@keyframes slideLeft {
+  from {
+    background-position-x: 0;
+  }
+  to {
+    background-position-x: -100%;
+  }
+}
+
+.parallax-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+
+  overflow: hidden;
+
+  background: linear-gradient(to bottom, #0077be, #87ceeb);
+}
+
+.parallax-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 200%;
+  height: 100%;
+
+  background-repeat: repeat-x;
+  background-size: 50% auto;
+
+  animation-name: slideLeft;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.layer-1 {
+  background-image: url('./assets/cloud.png');
+  background-position-y: 10px;
+  animation-duration: 100s;
+}
+
+.layer-2 {
+  background-image: url('./assets/mountain.png');
+  background-position-y: bottom;
+  animation-duration: 80s;
+}
+
+.layer-3 {
+  background-image: url('./assets/grass.png');
+  background-position-y: bottom;
+  animation-duration: 45s;
+}
+
+.layer-4 {
+  background-image: url('./assets/flower.png');
+  background-position-y: bottom;
+  animation-duration: 25s;
+}

@@ -2,8 +2,8 @@
 
 function TopNav() {
   return (
-    <div 
-      className="nes-container is-dark" 
+    <div
+      className="nes-container is-dark"
       style={{ height: '100%', boxSizing: 'border-box' }}
     >
       <p>&lt;-- back to menu</p>

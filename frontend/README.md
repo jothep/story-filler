@@ -17,18 +17,18 @@ This project uses Node.js **v24** for development and CI.
     npm run dev
     ```
     The application should be available at `http://localhost:5173`.
-    *Note: Remember to run your Django backend for API calls to work.*
+    _Note: Remember to run your Django backend for API calls to work._
 
 ### Continuous Integration (CI) Checks
 
 To ensure your local environment matches the pipeline before pushing code, use these commands:
 
-| CI Step | Local Command | Purpose |
-| :--- | :--- | :--- |
-| **Install** | `npm ci` | Strict install using `package-lock.json`. |
-| **Lint** | `npm run lint` | Static code analysis. |
-| **Test** | `npm test -- run` | Execute unit tests (Vitest). |
-| **Build** | `npm run build` | Generate production files for Docker. |
+| CI Step     | Local Command     | Purpose                                   |
+| :---------- | :---------------- | :---------------------------------------- |
+| **Install** | `npm ci`          | Strict install using `package-lock.json`. |
+| **Lint**    | `npm run lint`    | Static code analysis.                     |
+| **Test**    | `npm test -- run` | Execute unit tests (Vitest).              |
+| **Build**   | `npm run build`   | Generate production files for Docker.     |
 
 ### Docker & Deployment
 
