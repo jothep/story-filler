@@ -1,8 +1,9 @@
 // src/Menu.jsx
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import Roll from './Roll'; // 更改 1: 导入 Roll
-import './Roll.css'; // 更改 2: 导入 Roll.css
+import Roll from './Roll'; 
+import './Roll.css'; 
+import { useStories } from './hooks/useStories';
 
 // 为 Menu 添加一些简单的样式
 const menuStyles = {
@@ -45,9 +46,10 @@ const menuListStyles = {
 };
 
 function Menu() {
-  const [stories, setStories] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { stories, loading, error } = useStories();
+  //const [stories, setStories] = useState([]);
+  //const [loading, setLoading] = useState(true);
+  //const [error, setError] = useState(null);
 
   const [isMusicPlaying, setIsMusicPlaying] = useState(true);
   const audioRef = useRef(null);
@@ -88,8 +90,9 @@ function Menu() {
     }
   };
 
+    /** 
   useEffect(() => {
-    // 使用你提供的 API 端点
+  
     fetch('/api/stories/')
       .then((response) => {
         if (!response.ok) {
@@ -106,7 +109,7 @@ function Menu() {
         setError(err.message);
         setLoading(false);
       });
-  }, []);
+  }, []); */
 
   if (loading) {
     return <div style={{ padding: '2rem' }}>Loading stories...</div>;
