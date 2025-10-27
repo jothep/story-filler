@@ -2,7 +2,7 @@ import { render, screen, cleanup, waitFor } from '@testing-library/react'; // 1.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { DndContext } from '@dnd-kit/core';
-import StoryPlayer from './StoryPlayer';
+import StoryPlayer from './pages/StoryPlayer';
 
 const MOCK_SUCCESS_DATA = {
   paragraphs: [

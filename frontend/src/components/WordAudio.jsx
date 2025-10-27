@@ -1,5 +1,4 @@
 // src/components/WordAudio.jsx
-import PropTypes from 'prop-types';
 import { useWordInteraction } from '../context/WordInteractionContext';
 
 function WordAudio() {
@@ -26,11 +25,10 @@ function WordAudio() {
       
       {selectedWord ? (
         <>
-          {/* --- 这是修改后的 maori 部分 --- */}
           <div>
             <button
               type="button"
-              className="nes-btn is-warning" /* 'is-warning' 是橙色 */
+              className="nes-btn is-warning" 
               style={{ marginRight: '1rem' }}
               onClick={() => playAudio(selectedWord.maori_audio)}
             >
@@ -39,11 +37,10 @@ function WordAudio() {
             <span>{selectedWord.maori_word}</span>
           </div>
 
-          {/* --- 这是修改后的 english 部分 --- */}
           <div>
             <button
               type="button"
-              className="nes-btn is-warning" /* 'is-warning' 是橙色 */
+              className="nes-btn is-warning" 
               style={{ marginRight: '1rem' }}
               onClick={() => playAudio(selectedWord.english_audio)}
             >
@@ -54,7 +51,6 @@ function WordAudio() {
         </>
       ) : (
         <>
-          {/* --- 这部分(占位符)保持不变 --- */}
           <div>
             <button
               type="button"
@@ -80,9 +76,5 @@ function WordAudio() {
     </div>
   );
 }
-
-WordAudio.propTypes = {
-
-};
 
 export default WordAudio;

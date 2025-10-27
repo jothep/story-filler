@@ -1,6 +1,7 @@
 // src/context/WordInteractionContext.jsx
 /* This file will be responsible for managing the state related to dragging and word selection. */
 import { createContext, useState, useContext } from 'react';
+import PropTypes from 'prop-types';
 
 const WordInteractionContext = createContext();
 
@@ -25,7 +26,7 @@ export function WordInteractionProvider({ children, wordsInBank }) {
     const { active, over } = event; 
     if (!over || !active) return; 
 
-    const draggedWord = wordsInBank.find(
+    const draggedWord = wordsInBank && wordsInBank.find(
       (word) => word.id === active.id
     ); 
     if (!draggedWord) return; 
@@ -67,3 +68,12 @@ export function WordInteractionProvider({ children, wordsInBank }) {
     </WordInteractionContext.Provider>
   );
 }
+
+WordInteractionProvider.propTypes = {
+  wordsInBank: PropTypes.array,
+  children: PropTypes.node.isRequired,
+};
+
+WordInteractionProvider.defaultProps = {
+  wordsInBank: [],
+};

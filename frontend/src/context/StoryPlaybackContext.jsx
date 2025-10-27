@@ -1,10 +1,10 @@
 // src/context/StoryPlaybackContext.jsx
 import { createContext, useState, useContext, useRef, useEffect } from 'react';
+import PropTypes from 'prop-types';
 
-// 1. 创建 Context
+
 const StoryPlaybackContext = createContext();
 
-// 2. 创建一个自定义 Hook
 export const useStoryPlayback = () => {
   const context = useContext(StoryPlaybackContext);
   if (context === undefined) {
@@ -13,8 +13,6 @@ export const useStoryPlayback = () => {
   return context;
 };
 
-// 3. 创建 Provider
-// 这个 Provider 需要 'story' 数据才能工作
 export function StoryPlaybackProvider({ story, children }) {
   // 从 StoryPlayer.jsx 移动所有这些状态和 refs
   const [isMusicPlaying, setIsMusicPlaying] = useState(true);
@@ -52,9 +50,11 @@ export function StoryPlaybackProvider({ story, children }) {
 
   const handleNextParagraph = () => {
     if (paragraphAudioRef.current) paragraphAudioRef.current.pause();
-    setCurrentParagraphIndex((prev) =>
-      Math.min(prev + 1, story.paragraphs.length - 1)
-    );
+    if (story && story.paragraphs) {
+      setCurrentParagraphIndex((prev) =>
+        Math.min(prev + 1, story.paragraphs.length - 1)
+      );
+    }
   }; //
 
   const handlePrevParagraph = () => {
@@ -73,13 +73,12 @@ export function StoryPlaybackProvider({ story, children }) {
     audio.play().catch((e) => console.warn('段落音频播放失败:', e));
   }; //
 
-  // 派生状态 (从 StoryPlayer.jsx 移动)
-  const currentParagraph = (story.paragraphs && story.paragraphs.length > 0)
+  const currentParagraph = (story && story.paragraphs && story.paragraphs.length > 0)
     ? story.paragraphs[currentParagraphIndex]
-    : null; //
+    : null;
 
   const value = {
-    story, // 子组件可能需要 story.title 等
+    story, 
     isMusicPlaying,
     currentParagraph,
     currentParagraphIndex,
@@ -95,3 +94,18 @@ export function StoryPlaybackProvider({ story, children }) {
     </StoryPlaybackContext.Provider>
   );
 }
+
+StoryPlaybackProvider.propTypes = {
+  // 'story' 是一个对象，但根据你的要求，它不是必需的
+  story: PropTypes.shape({
+    background_music_url: PropTypes.string,
+    paragraphs: PropTypes.array,
+  }),
+  // 'children' 是 React 节点，并且是必需的
+  children: PropTypes.node.isRequired,
+};
+
+// (可选) 为 story 设置默认值
+StoryPlaybackProvider.defaultProps = {
+  story: null,
+};

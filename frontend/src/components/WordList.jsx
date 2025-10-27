@@ -1,31 +1,23 @@
 // src/components/WordList.jsx
 import PropTypes from 'prop-types';
-// 1. (移除) createPortal 
-// 2. (新) 导入 useDndContext 来检查拖拽状态
 import { useDraggable, useDndContext } from '@dnd-kit/core'; 
 import { useWordInteraction } from '../context/WordInteractionContext';
 
 function DraggableWordButton({ word }) {
   const { setSelectedWord } = useWordInteraction();
   
-  // 3. (移除) isDragging 不再需要
-  const { attributes, listeners, setNodeRef, transform } =
+  const { attributes, listeners, setNodeRef } =
     useDraggable({
       id: word.id,
     });
 
-  // 4. (新) 检查这个按钮是否是当前被拖拽的那个
   const { active } = useDndContext();
   const isDragging = active && active.id === word.id;
 
-  // 5. (修改) 
-  //    - 宽度改为 'auto' (解决尺寸和偏移问题)
-  //    - 移除 transform (DragOverlay 会处理)
-  //    - 使用 'visibility' (解决消失问题)
   const style = {
     width: 'auto', 
     visibility: isDragging ? 'hidden' : 'visible', 
-    zIndex: 'auto', // 移除了 zIndex 999
+    zIndex: 'auto', 
   };
 
   const button = (
@@ -43,7 +35,6 @@ function DraggableWordButton({ word }) {
     </button>
   );
 
-  // 6. (改回) 不再使用 createPortal，总是正常渲染
   return button;
 }
 
@@ -54,7 +45,7 @@ DraggableWordButton.propTypes = {
   }).isRequired,
 };
 
-function WordList({ words, onWordSelect }) {
+function WordList({ words }) {
   if (!words) {
     return <div>Loading words...</div>;
   }
@@ -95,7 +86,11 @@ WordList.propTypes = {
       id: PropTypes.number.isRequired,
       maori_word: PropTypes.string.isRequired,
     })
-  ).isRequired,
+  ), 
+};
+
+WordList.defaultProps = {
+  words: [],
 };
 
 export default WordList;

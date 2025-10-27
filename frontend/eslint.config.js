@@ -20,6 +20,13 @@ export default [
       },
     },
   },
+  {
+    settings: {
+      react: {
+        version: 'detect', // 自动检测 React 版本
+      },
+    },
+  },
 
   {
     ignores: [

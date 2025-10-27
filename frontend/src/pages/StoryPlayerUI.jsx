@@ -1,9 +1,9 @@
 // src/pages/StoryPlayerUI.jsx
-import { useState } from 'react'; // 1. 重新导入 useState
-import { DndContext, DragOverlay } from '@dnd-kit/core'; // 2. 重新导入 DragOverlay
+import { useState } from 'react';
+import { DndContext, DragOverlay } from '@dnd-kit/core'; 
 import { Link } from 'react-router-dom';
+import PropTypes from 'prop-types';
 
-// ... 导入你的所有组件 (StoryPicture, WordList, etc.) ...
 import StoryPicture from '../components/StoryPicture';
 import WordList from '../components/WordList';
 import StoryContent from '../components/StoryContent';
@@ -23,6 +23,12 @@ function WordOverlay({ word }) {
     </button>
   );
 }
+
+WordOverlay.propTypes = {
+  word: PropTypes.shape({
+    maori_word: PropTypes.string.isRequired,
+  }).isRequired,
+};
 
 function StoryPlayerUI() {
   const {
@@ -157,9 +163,6 @@ function StoryPlayerUI() {
 
       </div>
 
-      {/* 9. (新) 在这里添加 DragOverlay
-          当 activeWord 存在时，它会渲染我们的“拖拽副本”
-      */}
       {activeWord && (
         <DragOverlay>
           <WordOverlay word={activeWord} />
