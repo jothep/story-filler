@@ -77,6 +77,8 @@ class StoryDetailSerializer(serializers.ModelSerializer):
 
     background_music_url = serializers.SerializerMethodField()
 
+    picture_url = serializers.SerializerMethodField()
+
     class Meta:
         model = Story
         fields = [
@@ -84,12 +86,18 @@ class StoryDetailSerializer(serializers.ModelSerializer):
             "title",
             "background_music_url",
             "paragraphs",
-            "words_in_bank"
+            "words_in_bank",
+            "picture_url"
         ]
 
     def get_background_music_url(self, obj):
         if obj.background_music and obj.background_music.audio_file:
             return obj.background_music.audio_file.url
+        return None
+    
+    def get_picture_url(self, obj):
+        if obj.picture:
+            return obj.picture.url
         return None
     
     def get_linked_words(self, obj):

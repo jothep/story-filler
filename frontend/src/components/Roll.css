@@ -35,25 +35,25 @@
 }
 
 .layer-1 {
-  background-image: url('./assets/cloud.png');
+  background-image: url('../assets/cloud.png');
   background-position-y: 10px;
   animation-duration: 100s;
 }
 
 .layer-2 {
-  background-image: url('./assets/mountain.png');
+  background-image: url('../assets/mountain.png');
   background-position-y: bottom;
   animation-duration: 80s;
 }
 
 .layer-3 {
-  background-image: url('./assets/grass.png');
+  background-image: url('../assets/grass.png');
   background-position-y: bottom;
   animation-duration: 45s;
 }
 
 .layer-4 {
-  background-image: url('./assets/flower.png');
+  background-image: url('../assets/flower.png');
   background-position-y: bottom;
   animation-duration: 25s;
 }

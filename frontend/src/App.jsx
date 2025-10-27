@@ -1,8 +1,8 @@
 // src/App.jsx
 //import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import Menu from './Menu';
-import StoryPlayer from './StoryPlayer';
+import Menu from './pages/Menu';
+import StoryPlayer from './pages/StoryPlayer';
 
 function App() {
   return (

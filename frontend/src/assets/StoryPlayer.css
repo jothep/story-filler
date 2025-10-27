@@ -1,13 +1,9 @@
-/* src/App.css */
-
-/* 1. 基础重置，确保没有奇怪的边距 */
 body,
 html {
   margin: 0;
   padding: 0;
   background-color: #212529; /* NES.css 的默认暗色背景 */
 
-  /* NES.css 推荐的字体 */
   font-family: 'Press Start 2P', cursive;
 }
 
@@ -28,40 +24,30 @@ html {
     transform: translateX(0);
   }
 }
-/* 2. 定义 "游戏窗口" 容器 */
+
 .game-screen {
   /* 关键：锁定全屏 */
   height: 100vh; /* 100% 视口高度 */
   width: 100vw; /* 100% 视口宽度 */
   overflow: hidden; /* 关键：禁止任何滚动条出现 */
 
-  /* 启用 Grid 布局 */
   display: grid;
 
-  /* 3. ASCII "画出" 你的布局！
-    这和你草图的布局完全一致。
-    - "nav" 占满了顶部一行 (3列)
-    - "pic" 占了 2 列, "list" 占了 1 列
-    - "text" 占了 2 列, "list" 仍然占 1 列 (Grid 自动处理合并)
-    - 底部行被 "w-pic", "w-aud", "tips" 瓜分
-  */
   grid-template-areas:
     'nav   nav   nav'
     'pic   pic   list'
     'text  text  list'
     'w-pic w-aud tips';
 
-  grid-template-rows: 60px 1fr 3fr 1.5fr;
+  grid-template-rows: 60px 0.5fr 3.5fr 1fr;
 
-  grid-template-columns: 1fr 2fr 1fr;
+  grid-template-columns: 1fr 4fr 1fr;
 
-  /* 6. (推荐) 添加复古游戏风格的 "框" 间隙 */
   gap: 1rem; /* 所有格子之间的间距 */
   padding: 1rem; /* 整个屏幕的内边距 */
   box-sizing: border-box; /* 确保 padding 不会撑破布局 */
 }
 
-/* 7. 将 App.jsx 中的 className "分配" 到格子里 */
 .layout-nav {
   grid-area: nav;
 }
@@ -84,16 +70,54 @@ html {
   grid-area: tips;
 }
 
-/* 8. (重要) 确保组件能填满分配给它的格子 
-   你需要让组件内部的 nes-container 占满 100% 高度
-*/
-.layout-nav > *,
-.layout-pic > *,
-.layout-list > *,
-.layout-text > *,
-.layout-w-pic > *,
-.layout-w-audio > *,
-.layout-tips > * {
-  height: 100%;
+.layout-nav,
+.layout-pic,
+.layout-list,
+.layout-text,
+.layout-w-pic,
+.layout-w-audio,
+.layout-tips {
   width: 100%;
+  height: 100%;
+  /* 默认：隐藏所有溢出 */
+  overflow: hidden;
+}
+
+.layout-text {
+  /* 垂直滚动 */
+  overflow-y: auto;
+  /* 水平隐藏 */
+  overflow-x: hidden;
+
+  /* 可选：让滚动条在暗色模式下更好看 */
+  scrollbar-color: #fff #212529;
+  scrollbar-width: thin;
+}
+
+.layout-nav > .nes-container,
+.layout-pic > .nes-container,
+.layout-list > .nes-container,
+.layout-w-pic > .nes-container,
+.layout-w-audio > .nes-container,
+.layout-tips > .nes-container {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box; /* 确保 nes.css 的 padding 不会撑破 100% */
+}
+
+.layout-text > .nes-container {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+
+  /* 关键：使用 Flex 布局来容纳可滚动的内容 */
+  display: flex;
+  flex-direction: column;
+}
+.paragraph-content {
+  /* * NES.css 默认字体大小是 1rem (通常是 16px)。
+   * '2rem' 会将它变为两倍 (通常是 32px)。
+   * 你可以随意调整这个值，比如 '1.5rem'。
+   */
+  font-size: 2rem;
 }

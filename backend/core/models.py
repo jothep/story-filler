@@ -11,6 +11,13 @@ class Story(models.Model):
     title = models.CharField(max_length=200, verbose_name="Title")
     background_music = models.ForeignKey(BackgroundMusic, on_delete=models.SET_NULL, blank=True, null=True, verbose_name="Background Music")
 
+    picture = models.ImageField(
+        upload_to="story_pictures/", 
+        blank=True, 
+        null=True, 
+        verbose_name="Story Picture"
+    )
+    
     word_bank = models.ManyToManyField(
         'Word', 
         blank=True, 

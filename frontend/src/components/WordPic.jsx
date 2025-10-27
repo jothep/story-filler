@@ -1,49 +1,53 @@
 // src/components/WordPic.jsx
 import PropTypes from 'prop-types';
+// (已修复) 1. 导入 Hook
+import { useWordInteraction } from '../context/WordInteractionContext';
 
-function WordPic({ word }) {
-  // 1. (已修改) 容器的样式
+// (已修复) 2. 移除 'word' prop
+function WordPic() {
+  // (已修复) 3. 从 Hook 中获取 'selectedWord'
+  const { selectedWord } = useWordInteraction();
+
+  // 您的样式 (保持不变)
   const containerStyle = {
     height: '100%',
-    width: '100%', // (新增) 明确设置宽度为 100%
+    width: '100%',
     boxSizing: 'border-box',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     padding: '0.5rem',
-    overflow: 'hidden', // (新增) 关键！防止子元素撑开容器
-  };
+    overflow: 'hidden',
+  }; //
 
-  // 2. (已修改) 图片的样式
   const imageStyle = {
-    width: '100%', // (修改) 从 maxWidth 改为 width
-    height: '100%', // (修改) 从 maxHeight 改为 height
-    objectFit: 'contain', // (保留) 确保图片完整显示
-  };
+    width: '100%',
+    height: '100%',
+    objectFit: 'contain',
+  }; //
 
   return (
     <div
       className="nes-container is-dark"
-      style={containerStyle} // 3. 应用容器样式
+      style={containerStyle} //
     >
-      {word ? (
+      {/* (已修复) 4. 将所有 'word' 替换为 'selectedWord' */}
+      {selectedWord ? (
         <img
-          src={word.image}
-          alt={word.english_translation}
-          style={imageStyle} // 4. 应用图片样式
+          src={selectedWord.image} //
+          alt={selectedWord.english_translation} //
+          style={imageStyle} //
         />
       ) : (
-        <p>word pic</p>
+        <p>word pic</p> //
       )}
     </div>
   );
 }
 
+// (已修复) 5. 移除 PropTypes，因为不再接收 props
 WordPic.propTypes = {
-  word: PropTypes.shape({
-    image: PropTypes.string,
-    english_translation: PropTypes.string.isRequired,
-  }),
-};
+  // word: PropTypes.shape({ ... }),
+}; //
 
 export default WordPic;

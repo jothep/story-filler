@@ -1,6 +1,7 @@
 // src/components/DroppableBlank.jsx
 import PropTypes from 'prop-types';
-import { useDroppable } from '@dnd-kit/core';
+// (已修复) 这里是正确的包名
+import { useDroppable } from '@dnd-kit/core'; 
 
 // 1. 接收所有需要的 props
 function DroppableBlank({ blank, uniqueId, filledWord, isWrong }) {
@@ -39,8 +40,11 @@ function DroppableBlank({ blank, uniqueId, filledWord, isWrong }) {
   const style = {
     display: 'inline-block',
     margin: '0 0.25rem',
-    minWidth: '100px',
-    height: '2.5rem', // 固定高度
+    minWidth: '150px', // (可选) 稍微加宽以容纳大字体
+    
+    // (已修改) 增加高度以容纳 2rem 字体
+    height: '3.5rem', 
+    
     verticalAlign: 'middle',
 
     // 按你的要求：透明背景
@@ -62,10 +66,13 @@ function DroppableBlank({ blank, uniqueId, filledWord, isWrong }) {
     padding: 0, // 移除左右 padding
     textAlign: 'center',
     fontWeight: 'bold',
-    fontSize: '0.9rem',
-    // 关键修复: lineHeight 应该等于 框的内部高度
-    // height (2.5rem) - 2 * border (2px)
-    lineHeight: 'calc(2.5rem - 4px)',
+    
+    // (已修改) 继承父组件的字体大小 (即 2rem)
+    fontSize: 'inherit',
+    
+    // (已修改) 关键修复: lineHeight 应该等于 框的内部高度
+    // height (3.5rem) - 2 * border (2px)
+    lineHeight: 'calc(3.5rem - 4px)',
   };
   // --- 👆 样式计算完毕 ---
 

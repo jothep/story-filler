@@ -1,9 +1,9 @@
 // src/components/WordAudio.jsx
 import PropTypes from 'prop-types';
+import { useWordInteraction } from '../context/WordInteractionContext';
 
-// 1. 接收 'word' prop
-function WordAudio({ word }) {
-  // (可选) 播放音频的函数
+function WordAudio() {
+  const { selectedWord } = useWordInteraction();
   const playAudio = (audioSrc) => {
     if (audioSrc) {
       const audio = new Audio(audioSrc);
@@ -23,37 +23,38 @@ function WordAudio({ word }) {
         padding: '0.5rem 1rem',
       }}
     >
-      {/* 2. 条件渲染 */}
-      {word ? (
+      
+      {selectedWord ? (
         <>
-          {/* 毛利语 */}
-          <div
-            onClick={() => playAudio(word.maori_audio)}
-            style={{ cursor: 'pointer' }}
-          >
-            {/* 3. 使用 NES.css 的 'play' 图标 */}
-            <i
-              className="nes-icon play is-small"
+          {/* --- 这是修改后的 maori 部分 --- */}
+          <div>
+            <button
+              type="button"
+              className="nes-btn is-warning" /* 'is-warning' 是橙色 */
               style={{ marginRight: '1rem' }}
-            ></i>
-            <span>{word.maori_word}</span>
+              onClick={() => playAudio(selectedWord.maori_audio)}
+            >
+              play
+            </button>
+            <span>{selectedWord.maori_word}</span>
           </div>
 
-          {/* 英语 */}
-          <div
-            onClick={() => playAudio(word.english_audio)}
-            style={{ cursor: 'pointer' }}
-          >
-            <i
-              className="nes-icon play is-small"
+          {/* --- 这是修改后的 english 部分 --- */}
+          <div>
+            <button
+              type="button"
+              className="nes-btn is-warning" /* 'is-warning' 是橙色 */
               style={{ marginRight: '1rem' }}
-            ></i>
-            <span>{word.english_translation}</span>
+              onClick={() => playAudio(selectedWord.english_audio)}
+            >
+              play
+            </button>
+            <span>{selectedWord.english_translation}</span>
           </div>
         </>
       ) : (
         <>
-          {/* 3. 这是 'word' 为 null 时的占位符 */}
+          {/* --- 这部分(占位符)保持不变 --- */}
           <div>
             <button
               type="button"
@@ -81,12 +82,7 @@ function WordAudio({ word }) {
 }
 
 WordAudio.propTypes = {
-  word: PropTypes.shape({
-    maori_word: PropTypes.string.isRequired,
-    english_translation: PropTypes.string.isRequired,
-    maori_audio: PropTypes.string,
-    english_audio: PropTypes.string,
-  }), // 'word' 可以是 null
+
 };
 
 export default WordAudio;

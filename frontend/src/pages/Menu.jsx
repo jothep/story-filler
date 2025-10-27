@@ -1,9 +1,9 @@
-// src/Menu.jsx
+// src/pages/Menu.jsx
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import Roll from './Roll'; 
-import './Roll.css'; 
-import { useStories } from './hooks/useStories';
+import Roll from '../components/Roll'; 
+import '../components/Roll.css'; 
+import { useStories } from '../hooks/useStories';
 
 // 为 Menu 添加一些简单的样式
 const menuStyles = {
@@ -43,6 +43,8 @@ const menuListStyles = {
   width: '100%',
   maxWidth: '400px', // 控制菜单按钮的宽度
   gap: '1.5rem', // 按钮之间的间距
+  marginTop: 'auto',  // 1. 自动推开，使其远离顶部的标题
+  marginBottom: '20vh',
 };
 
 function Menu() {
