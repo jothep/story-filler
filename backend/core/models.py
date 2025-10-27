@@ -7,17 +7,29 @@ class BackgroundMusic(models.Model):
     class Meta: verbose_name = "Background Music"; verbose_name_plural = "Background Music Library"
     def __str__(self): return self.title
 
+class StoryPicture(models.Model):
+    title = models.CharField(max_length=200, verbose_name="Picture Title", help_text="A recognizable name for this picture")
+    image_file = models.ImageField(upload_to="story_pictures/", verbose_name="Picture file")
+
+    class Meta:
+        verbose_name = "Story Picture"
+        verbose_name_plural = "Story Picture Library" # <-- 这会让它在 Admin 中显示为 "Story Picture Library"
+
+    def __str__(self):
+        return self.title
+    
 class Story(models.Model):
     title = models.CharField(max_length=200, verbose_name="Title")
     background_music = models.ForeignKey(BackgroundMusic, on_delete=models.SET_NULL, blank=True, null=True, verbose_name="Background Music")
 
-    picture = models.ImageField(
-        upload_to="story_pictures/", 
+    story_picture = models.ForeignKey(
+        StoryPicture, 
+        on_delete=models.SET_NULL, 
         blank=True, 
         null=True, 
         verbose_name="Story Picture"
     )
-    
+
     word_bank = models.ManyToManyField(
         'Word', 
         blank=True, 

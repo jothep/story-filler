@@ -1,7 +1,7 @@
 # core/admin.py
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Story, Paragraph, Word, BackgroundMusic, BlankLink
+from .models import Story, Paragraph, Word, BackgroundMusic, BlankLink, StoryPicture
 from .forms import BlankLinkForm
 
 class ParagraphInline(admin.StackedInline):
@@ -22,6 +22,11 @@ class StoryAdmin(admin.ModelAdmin):
     filter_horizontal = ('word_bank',)
     search_fields = ('title',) 
 
+@admin.register(StoryPicture)
+class StoryPictureAdmin(admin.ModelAdmin):
+    list_display = ('title',)
+    search_fields = ('title',)
+    
 @admin.register(BackgroundMusic)
 class BackgroundMusicAdmin(admin.ModelAdmin):
     """

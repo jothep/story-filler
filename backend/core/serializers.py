@@ -96,8 +96,8 @@ class StoryDetailSerializer(serializers.ModelSerializer):
         return None
     
     def get_picture_url(self, obj):
-        if obj.picture:
-            return obj.picture.url
+        if obj.story_picture and obj.story_picture.image_file:
+            return obj.story_picture.image_file.url
         return None
     
     def get_linked_words(self, obj):
