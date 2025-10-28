@@ -16,7 +16,7 @@ function StoryContent() {
   const navigate = useNavigate();
   const { storyId } = useParams();
 
-  const { filledBlanks } = useWordInteraction();
+  const { filledBlanks, wrongAttempt } = useWordInteraction();
   const {
     currentParagraph,
     currentParagraphIndex,
@@ -122,14 +122,18 @@ function StoryContent() {
   return (
     <div className="nes-container is-dark with-title" style={containerStyle}>
       <div style={topBarStyle}>
-        <button
-          type="button"
-          className="nes-btn is-primary"
-          onClick={() => onPlayAudio(paragraph.audio)}
-          disabled={!paragraph.audio}
-        >
-          reading
-        </button>
+        {paragraph.audio ? (
+          <button
+            type="button"
+            className="nes-btn is-primary"
+            onClick={() => onPlayAudio(paragraph.audio)}
+          >
+            reading
+          </button>
+        ) : (
+          <div></div>
+        )}
+        
         <span style={{ fontSize: '1rem' }}>
           Paragraph {paragraphNumber} / {totalParagraphs}
         </span>
