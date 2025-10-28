@@ -16,7 +16,7 @@ function StoryContent() {
   const navigate = useNavigate();
   const { storyId } = useParams();
 
-  const { filledBlanks, wrongAttempt } = useWordInteraction();
+  const { filledBlanks } = useWordInteraction();
   const {
     currentParagraph,
     currentParagraphIndex,
@@ -42,7 +42,6 @@ function StoryContent() {
 
   const filledBlanksCount = Object.keys(filledBlanks).length;
   const isStoryComplete = totalBlanksInStory > 0 && filledBlanksCount === totalBlanksInStory;
-  const isLastPage = paragraphNumber >= totalParagraphs;
 
   const handleCompleteClick = () => {
     navigate(`/story/${storyId}/complete`);
