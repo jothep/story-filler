@@ -3,6 +3,9 @@ import DroppableBlank from './DroppableBlank';
 import { useWordInteraction } from '../context/WordInteractionContext';
 import { useStoryPlayback } from '../context/StoryPlaybackContext';
 
+import { useNavigate, useParams } from 'react-router-dom';
+import { useMemo } from 'react';
+
 function parseText(text) {
   const regex = /(__BLANK_[a-zA-Z0-9_]+__)/g;
   return text.split(regex).filter((part) => part.length > 0);
@@ -10,7 +13,10 @@ function parseText(text) {
 
 function StoryContent() {
 
-  const { filledBlanks, wrongAttempt } = useWordInteraction();
+  const navigate = useNavigate();
+  const { storyId } = useParams();
+
+  const { filledBlanks } = useWordInteraction();
   const {
     currentParagraph,
     currentParagraphIndex,
@@ -27,6 +33,21 @@ function StoryContent() {
     const onPrev = handlePrevParagraph;
     const onPlayAudio = handlePlayParagraphAudio;
 
+  const totalBlanksInStory = useMemo(() => {
+    if (!story || !story.paragraphs) return 0;
+    return story.paragraphs.reduce((count, p) => {
+      return count + (p.blank_links ? p.blank_links.length : 0);
+    }, 0);
+  }, [story]);
+
+  const filledBlanksCount = Object.keys(filledBlanks).length;
+  const isStoryComplete = totalBlanksInStory > 0 && filledBlanksCount === totalBlanksInStory;
+  const isLastPage = paragraphNumber >= totalParagraphs;
+
+  const handleCompleteClick = () => {
+    navigate(`/story/${storyId}/complete`);
+  };
+
   const renderParagraph = (para) => {
     if (!para || !para.text) {
       return null;
@@ -40,6 +61,7 @@ function StoryContent() {
         const blankData = para.blank_links.find((b) => b.placeholder === part);
 
         if (blankData) {
+          const { wrongAttempt } = useWordInteraction.getState ? useWordInteraction.getState() : useWordInteraction();
           const uniqueId = `blank-${blankData.id}-${index}`;
           const filledWord = filledBlanks[uniqueId];
           const isWrong = wrongAttempt === uniqueId;
@@ -80,6 +102,7 @@ function StoryContent() {
   const navStyle = {
     display: 'flex',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginTop: 'auto', 
     paddingTop: '0.5rem',
     borderTop: '2px solid #555',
@@ -127,26 +150,33 @@ function StoryContent() {
 
       <div style={navStyle}>
         
-        {paragraphNumber > 1 && (
+        <button
+          type="button"
+          className="nes-btn"
+          onClick={onPrev}
+          style={{ visibility: paragraphNumber > 1 ? 'visible' : 'hidden' }}
+        >
+          &lt; Prev
+        </button>
+        
+        {isStoryComplete && (
           <button
             type="button"
-            className="nes-btn"
-            onClick={onPrev}
+            className="nes-btn is-success"
+            onClick={handleCompleteClick}
           >
-            &lt; Prev
+            Complete Story!
           </button>
         )}
 
-        {paragraphNumber < totalParagraphs && (
-          <button
-            type="button"
-            className="nes-btn"
-            onClick={onNext}
-            style={{ marginLeft: 'auto' }} 
-          >
-            Next &gt;
-          </button>
-        )}
+        <button
+          type="button"
+          className="nes-btn"
+          onClick={onNext}
+          style={{ visibility: paragraphNumber < totalParagraphs ? 'visible' : 'hidden' }}
+        >
+          Next &gt;
+        </button>
       </div>
 
     </div>
