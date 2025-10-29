@@ -11,7 +11,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useMemo } from 'react';
 
 function parseText(text) {
-  const regex = /(__BLANK_[a-zA-Z0-9_]+__)/g;
+  const regex = /(__BLANK_[a-zA-Z0-9_]+__)/g; 
   return text.split(regex).filter((part) => part.length > 0);
 }
 
@@ -37,11 +37,19 @@ function StoryContent() {
     const onPrev = handlePrevParagraph;
     const onPlayAudio = handlePlayParagraphAudio;
 
-  const totalBlanksInStory = useMemo(() => {
-    if (!story || !story.paragraphs) return 0;
-    return story.paragraphs.reduce((count, p) => {
-      return count + (p.blank_links ? p.blank_links.length : 0);
-    }, 0);
+  
+
+    const totalBlanksInStory = useMemo(() => {
+      if (!story || !story.paragraphs) return 0;
+      const regex = /(__BLANK_[a-zA-Z0-9_]+__)/g;
+      return story.paragraphs.reduce((totalCount, p) => {
+        if (!p.text) return totalCount;
+
+        const matches = p.text.match(regex);
+      
+        const countInThisPara = matches ? matches.length : 0;
+        return totalCount + countInThisPara;
+      }, 0);
   }, [story]);
 
   const filledBlanksCount = Object.keys(filledBlanks).length;
