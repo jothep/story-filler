@@ -1,5 +1,6 @@
 //api/storyApi.js
-/* Fetches a single story by its ID from the API. */
+// Defines asynchronous functions for fetching story data from the API.
+// Provides `getAllStories` to fetch the list and `getStoryById` to fetch a single story.
 
 export const getAllStories = async () => {
   const API_URL = '/api/stories/';

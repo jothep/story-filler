@@ -1,3 +1,4 @@
+// Custom hook to fetch and manage the state for a single story by its ID.
 import { useState, useEffect } from 'react';
 import { getStoryById } from '../api/storyApi'; 
 

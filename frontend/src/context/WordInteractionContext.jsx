@@ -1,5 +1,7 @@
 // src/context/WordInteractionContext.jsx
-/* This file will be responsible for managing the state related to dragging and word selection. */
+// Manages all drag-and-drop interaction logic. This context tracks the
+// `selectedWord` (for tips), `filledBlanks` (correctly placed words),
+// and `wrongAttempt` state, providing handlers for dnd-kit events.
 import { createContext, useState, useContext } from 'react';
 import PropTypes from 'prop-types';
 

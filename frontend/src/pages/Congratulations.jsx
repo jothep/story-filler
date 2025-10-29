@@ -1,4 +1,6 @@
 // src/pages/Congratulations.jsx
+// Renders a simple congratulatory page displayed when a user finishes a story.
+// Provides a "Back to Menu" link to navigate back to the root route.
 import { Link } from 'react-router-dom';
 
 function Congratulations() {

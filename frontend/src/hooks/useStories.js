@@ -1,3 +1,4 @@
+// Custom hook to fetch and manage the state for the list of all stories.
 import { useState, useEffect } from 'react';
 import { getAllStories } from '../api/storyApi';
 

@@ -1,4 +1,8 @@
 // src/pages/StoryPlayerUI.jsx
+// Renders the main UI layout for the story player, composing all sub-components
+// (like StoryContent, WordList, etc.). It consumes playback and interaction
+// logic from contexts and specifically manages the `DragOverlay` display
+// for dnd-kit by wrapping the context's drag handlers.
 import { useState } from 'react';
 import { DndContext, DragOverlay } from '@dnd-kit/core'; 
 import { Link } from 'react-router-dom';
@@ -14,8 +18,6 @@ import TriggerTips from '../components/TriggerTips';
 import { useWordInteraction } from '../context/WordInteractionContext';
 import { useStoryPlayback } from '../context/StoryPlaybackContext';
 
-// 3. (新) 拖拽副本的组件
-// 它被渲染在 DragOverlay 内部，样式为 'auto' 宽度
 function WordOverlay({ word }) {
   return (
     <button type="button" className="nes-btn" style={{ width: 'auto' }}>
@@ -42,38 +44,32 @@ function StoryPlayerUI() {
     handlePlayParagraphAudio,
   } = useStoryPlayback();
   
-  // 4. 从 hook 获取原始的 handlers
   const { handleDragStart: originalDragStart, handleDragEnd: originalDragEnd } =
     useWordInteraction();
 
-  // 5. (新) 创建 state 来保存当前被拖拽的单词
   const [activeWord, setActiveWord] = useState(null);
 
-  // 6. (新) 创建我们自己的 drag start handler
   const handleDragStart = (event) => {
-    originalDragStart(event); // 调用 hook 里的原始逻辑
-    // 找到被拖拽的单词对象
+    originalDragStart(event); 
     const word = story.words_in_bank.find((w) => w.id === event.active.id);
     if (word) {
-      setActiveWord(word); // 保存到 state 中
+      setActiveWord(word); 
     }
   };
 
-  // 7. (新) 创建我们自己的 drag end handler
+
   const handleDragEnd = (event) => {
-    originalDragEnd(event); // 调用 hook 里的原始逻辑
-    setActiveWord(null); // 清空 state
+    originalDragEnd(event); 
+    setActiveWord(null); 
   };
 
   const paragraphsExist = story.paragraphs && story.paragraphs.length > 0;
 
   return (
-    // 8. (修改) 把新的 handlers 传递给 DndContext
     <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="game-screen">
-        {/* ... 这里是你所有的 layout-X div，保持不变 ... */}
 
-        <div className="layout-nav"> {/* */}
+        <div className="layout-nav"> 
           <div
             className="nes-container is-dark"
             style={{

@@ -1,8 +1,9 @@
+/* Defines the primary CSS Grid layout for the main "game screen" (StoryPlayer). */
 body,
 html {
   margin: 0;
   padding: 0;
-  background-color: #212529; /* NES.css 的默认暗色背景 */
+  background-color: #212529; 
 
   font-family: 'Press Start 2P', cursive;
 }
@@ -26,10 +27,10 @@ html {
 }
 
 .game-screen {
-  /* 关键：锁定全屏 */
-  height: 100vh; /* 100% 视口高度 */
-  width: 100vw; /* 100% 视口宽度 */
-  overflow: hidden; /* 关键：禁止任何滚动条出现 */
+
+  height: 100vh; 
+  width: 100vw; 
+  overflow: hidden; 
 
   display: grid;
 
@@ -43,9 +44,9 @@ html {
 
   grid-template-columns: 1fr 4fr 1fr;
 
-  gap: 1rem; /* 所有格子之间的间距 */
-  padding: 1rem; /* 整个屏幕的内边距 */
-  box-sizing: border-box; /* 确保 padding 不会撑破布局 */
+  gap: 1rem; 
+  padding: 1rem; 
+  box-sizing: border-box; 
 }
 
 .layout-nav {
@@ -79,17 +80,13 @@ html {
 .layout-tips {
   width: 100%;
   height: 100%;
-  /* 默认：隐藏所有溢出 */
   overflow: hidden;
 }
 
 .layout-text {
-  /* 垂直滚动 */
   overflow-y: auto;
-  /* 水平隐藏 */
   overflow-x: hidden;
 
-  /* 可选：让滚动条在暗色模式下更好看 */
   scrollbar-color: #fff #212529;
   scrollbar-width: thin;
 }
@@ -102,7 +99,7 @@ html {
 .layout-tips > .nes-container {
   width: 100%;
   height: 100%;
-  box-sizing: border-box; /* 确保 nes.css 的 padding 不会撑破 100% */
+  box-sizing: border-box; 
 }
 
 .layout-text > .nes-container {
@@ -110,14 +107,9 @@ html {
   height: 100%;
   box-sizing: border-box;
 
-  /* 关键：使用 Flex 布局来容纳可滚动的内容 */
   display: flex;
   flex-direction: column;
 }
 .paragraph-content {
-  /* * NES.css 默认字体大小是 1rem (通常是 16px)。
-   * '2rem' 会将它变为两倍 (通常是 32px)。
-   * 你可以随意调整这个值，比如 '1.5rem'。
-   */
   font-size: 2rem;
 }
