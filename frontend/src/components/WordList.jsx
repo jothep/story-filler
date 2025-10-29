@@ -1,4 +1,7 @@
 // src/components/WordList.jsx
+// Renders the scrollable list of draggable words. Each word can be
+// dragged (using `useDraggable`) or clicked to set it as the `selectedWord`.
+
 import PropTypes from 'prop-types';
 import { useDraggable, useDndContext } from '@dnd-kit/core'; 
 import { useWordInteraction } from '../context/WordInteractionContext';

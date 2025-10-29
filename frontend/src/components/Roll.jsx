@@ -1,4 +1,6 @@
-
+// src/components/Roll.jsx
+// A purely presentational component that renders the div structure
+// required for the parallax scrolling background effect defined in `Roll.css`.
 
 function Roll() {
   return (

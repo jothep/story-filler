@@ -1,4 +1,6 @@
 // src/components/StoryPicture.jsx
+// Displays the story's main picture within a dark container, pulling
+// the image URL from the `useStoryPlayback` context.
 import { useStoryPlayback } from '../context/StoryPlaybackContext';
 
 const imageStyle = {

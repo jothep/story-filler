@@ -1,4 +1,8 @@
 // src/components/TriggerTips.jsx
+// Implements the "Drag word here" drop zone using `dnd-kit`.
+// When a word is dropped, it updates the `selectedWord` in the
+// `WordInteractionContext`.
+
 import { useDroppable } from '@dnd-kit/core';
 import { useWordInteraction } from '../context/WordInteractionContext';
 import questionMarkIcon from '../assets/question_mark.png';

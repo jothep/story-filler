@@ -1,4 +1,8 @@
 // src/components/StoryContent.jsx
+// Renders the main story text, parsing it to replace placeholders with
+// `DroppableBlank` components. It manages paragraph navigation (Prev/Next),
+// handles paragraph audio, and calculates when the story is complete
+// to display the "Complete Story!" button.
 import DroppableBlank from './DroppableBlank';
 import { useWordInteraction } from '../context/WordInteractionContext';
 import { useStoryPlayback } from '../context/StoryPlaybackContext';
@@ -12,11 +16,11 @@ function parseText(text) {
 }
 
 function StoryContent() {
-
+  const { filledBlanks, wrongAttempt } = useWordInteraction();
   const navigate = useNavigate();
   const { storyId } = useParams();
 
-  const { filledBlanks } = useWordInteraction();
+  
   const {
     currentParagraph,
     currentParagraphIndex,
@@ -60,7 +64,6 @@ function StoryContent() {
         const blankData = para.blank_links.find((b) => b.placeholder === part);
 
         if (blankData) {
-          const { wrongAttempt } = useWordInteraction.getState ? useWordInteraction.getState() : useWordInteraction();
           const uniqueId = `blank-${blankData.id}-${index}`;
           const filledWord = filledBlanks[uniqueId];
           const isWrong = wrongAttempt === uniqueId;

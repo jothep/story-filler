@@ -1,4 +1,7 @@
 // src/components/WordAudio.jsx
+// Renders playback controls for the selected word, pulling the
+// `selectedWord` from the `WordInteractionContext` to play
+// both its Māori and English audio.
 import { useWordInteraction } from '../context/WordInteractionContext';
 
 function WordAudio() {
