@@ -94,13 +94,17 @@ echo "PostgreSQL is ready!"
 
 ### 7. Run Database Initialization Jobs
 With the database running, we can now initialize the schema and create the admin user.
-A. Run Database Migrations
+* A. Run Database Migrations
 This runs python manage.py migrate inside a K8s Job to create all the tables.
+```bash
 kubectl apply -f Infra/backend-migrate-job.yaml
+```
 
-B. Create Superuser
+* B. Create Superuser
 This runs the backend-create-superuser-job.yaml manifest to create the admin account.
+```bash
 kubectl apply -f Infra/backend-create-superuser-job.yaml
+```
 
 ### 8. Deploy Applications
 Now that the database is migrated, the main application services can be deployed.
@@ -116,14 +120,17 @@ kubectl apply -f Infra/frontend-deployment.yaml
 
 ### 9. Apply Ingress Rules
 Finally, apply the Ingress rules to route external traffic to your services.
+```bash
 kubectl apply -f Infra/ingress.yaml
+```
 
 ## Accessing the Application
 The application is now running, but it's only accessible inside the cluster. To access it from your laptop, you must forward a local port to the Ingress controller.
 Find your Ingress Controller Service:
 (It is usually in the ingress-nginx namespace)
+```bash
 kubectl get svc -n ingress-nginx
-
+```
 Look for a service named ingress-nginx-controller.
 Start Port Forwarding:
 (This command will run continuously. Leave this terminal open.)
