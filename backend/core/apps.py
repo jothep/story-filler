@@ -1,3 +1,4 @@
+# Declare the configuration of the 'core' application.
 from django.apps import AppConfig
 
 

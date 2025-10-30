@@ -1,4 +1,6 @@
 # core/models.py
+# Define all data models for the application, including Story, Paragraph, Word,
+# and all relationships between them (such as BlankLink).
 from django.db import models
 
 class BackgroundMusic(models.Model):

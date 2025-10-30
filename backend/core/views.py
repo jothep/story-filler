@@ -1,3 +1,5 @@
+# core/views.py
+# Includes API views for listing all stories (List) and retrieving individual stories (Detail).
 from rest_framework import generics
 from .models import Story
 from .serializers import StoryListSerializer, StoryDetailSerializer

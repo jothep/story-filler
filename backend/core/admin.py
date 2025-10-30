@@ -1,4 +1,6 @@
 # core/admin.py
+# Configure the Django admin interface for all core models.
+# Improve usability using inlines, filter_horizontal, and custom forms.
 from django.contrib import admin
 from django.utils.html import format_html
 from .models import Story, Paragraph, Word, BackgroundMusic, BlankLink, StoryPicture

@@ -1,4 +1,6 @@
 # core/serializers.py
+# Defines the DRF serializer for converting complex Django models (such as Stories) into JSON.
+# Handles nested relationships and media file URLs.
 from rest_framework import serializers
 from .models import Story, Paragraph, Word, BackgroundMusic, BlankLink
 
