@@ -1,0 +1,102 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 数据库
+  db:
+    image: postgres:16-alpine
+    container_name: maori-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: maori_story
+      POSTGRES_USER: dbuser
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dbuser"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - maori-network
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Django 后端
+  backend:
+    build:
+      context: ./backend
+      dockerfile: dockerfile
+    container_name: maori-backend
+    restart: unless-stopped
+    command: gunicorn maori_story_project.wsgi:application --bind 0.0.0.0:8000 --workers 3 --worker-class gevent
+    environment:
+      - DATABASE_URL=postgresql://dbuser:${DB_PASSWORD}@db:5432/maori_story
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DJANGO_DEBUG=False
+      - ALLOWED_HOSTS=*
+      - MEDIA_ROOT=/app/media
+      - STATIC_ROOT=/app/staticfiles
+    volumes:
+      - media_data:/app/media
+      - static_data:/app/staticfiles
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - maori-network
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # React 前端
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: maori-frontend
+    restart: unless-stopped
+    networks:
+      - maori-network
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Nginx 反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: maori-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - media_data:/usr/share/nginx/media:ro
+      - static_data:/usr/share/nginx/static:ro
+      - ./ssl:/etc/nginx/ssl:ro  # 用于未来的HTTPS证书
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - maori-network
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  postgres_data:
+    driver: local
+  media_data:
+    driver: local
+  static_data:
+    driver: local
+
+networks:
+  maori-network:
+    driver: bridge
