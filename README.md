@@ -73,7 +73,9 @@ kubectl create secret generic django-superuser-creds -n story-fill \
 
 ### 5. Create Persistent Volume Claim (PVC)
 The backend requires a PVC to store user-uploaded media files (images, audio). The database's PVC is created automatically by its StatefulSet.
+```bash
 kubectl apply -f Infra/pvc.yaml
+```
 
 ### 6. Deploy PostgreSQL Database
 This applies the postgres-deployment.yaml manifest, which creates the StatefulSet and Service for the database.
