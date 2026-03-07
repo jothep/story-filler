@@ -19,7 +19,8 @@ FROM node:24-bookworm-slim
 
 WORKDIR /app
 
-RUN npm install -g serve
+# Install latest serve version and clean cache to get updated dependencies
+RUN npm cache clean --force && npm install -g serve@latest
 
 COPY --from=builder /app/dist/ .
 

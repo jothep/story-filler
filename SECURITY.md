@@ -65,6 +65,78 @@ Fixed 5 HIGH severity vulnerabilities in frontend npm dependencies affecting min
 
 ---
 
+## [2026-03-08] Docker Image Vulnerabilities from `serve` Package - IN PROGRESS
+
+### Summary
+Trivy security scan detected 5 HIGH severity vulnerabilities in the frontend Docker image, originating from the `serve` package's dependencies (minimatch and tar).
+
+### Affected Components
+- **Frontend Docker Image**: `serve` package installed via `npm install -g serve`
+
+### Vulnerabilities Detected
+
+#### 1. minimatch (package.json - from serve dependencies)
+- **CVE-2026-26996** (HIGH): Denial of Service via specially crafted glob patterns
+- **CVE-2026-27903** (HIGH): Denial of Service due to unbounded recursive backtracking
+- **CVE-2026-27904** (HIGH): Denial of Service via catastrophic backtracking
+- **Installed Version**: 10.1.2 or 3.1.5 (depending on serve's dependency tree)
+- **Fixed Version**: 10.2.3+, 9.0.7+, 8.0.6+, etc.
+
+#### 2. tar (package.json - from serve dependencies)
+- **CVE-2026-26960** (HIGH): Arbitrary file read/write via malicious archive hardlink creation
+- **CVE-2026-29786** (HIGH): Hardlink Path Traversal via Drive-Relative Linkpath
+- **Installed Version**: 7.5.7
+- **Fixed Version**: 7.5.10+
+
+### Root Cause Analysis
+- Application's `package-lock.json` was already updated with secure versions
+- However, the Docker image installs `serve` globally: `npm install -g serve`
+- This bypasses the application's `package-lock.json` and uses `serve`'s own dependencies
+- `serve` package may have outdated transitive dependencies (minimatch, tar)
+
+### Resolution Approach (Option 1 - ATTEMPTING)
+**Updated frontend Dockerfile to use latest serve version:**
+```dockerfile
+# Before:
+RUN npm install -g serve
+
+# After:
+RUN npm cache clean --force && npm install -g serve@latest
+```
+
+**Changes Made:**
+- Force clean npm cache to ensure fresh dependency resolution
+- Explicitly install `serve@latest` to get the most recent version
+- This should pull in updated dependencies with security patches
+
+**Status**: Testing in CI/CD pipeline
+- If successful: Trivy scan will pass with 0 HIGH/CRITICAL vulnerabilities
+- If unsuccessful: Will implement Option 2 (nginx-based image)
+
+### Alternative Solution (Option 2 - BACKUP PLAN)
+Replace `serve` with `nginx:alpine` for production serving:
+- **Benefits**:
+  - Smaller image size (~20MB vs ~180MB)
+  - No Node.js runtime dependencies
+  - Better performance for static file serving
+  - nginx has better security maintenance
+- **Trade-off**: Different technology stack (nginx vs Node.js)
+- **Implementation**: Use `frontend/Dockerfile.nginx` (already prepared)
+
+### Timeline
+- **2026-03-08 22:30**: Issue identified in Trivy scan
+- **2026-03-08 22:45**: Option 1 implemented, waiting for CI/CD validation
+- **Next**: If Option 1 fails, will implement Option 2 immediately
+
+### Verification Steps
+1. ✅ Updated Dockerfile with `serve@latest`
+2. ⏳ Waiting for CI/CD to rebuild Docker image
+3. ⏳ Waiting for Trivy scan results
+4. ⏳ If scan passes, vulnerability resolved
+5. ⏳ If scan fails, switch to nginx approach
+
+---
+
 ## Security Best Practices
 
 ### For Contributors

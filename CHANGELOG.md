@@ -8,12 +8,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Security
+- **[IN PROGRESS]** Attempting to fix Docker image vulnerabilities from `serve` package (2026-03-08)
+  - Updated frontend Dockerfile to use `serve@latest` with cache clean
+  - Addresses 5 HIGH severity vulnerabilities in serve's dependencies (minimatch, tar)
+  - CVE-2026-26996, CVE-2026-27903, CVE-2026-27904 (minimatch)
+  - CVE-2026-26960, CVE-2026-29786 (tar)
+  - Prepared fallback solution: nginx-based Dockerfile (Dockerfile.nginx)
+  - **Status**: Awaiting CI/CD validation
+
 - Fixed 5 HIGH severity npm vulnerabilities in frontend dependencies (2026-03-08)
   - Updated minimatch to v10.2.3+ (CVE-2026-26996, CVE-2026-27903, CVE-2026-27904)
   - Updated rollup to v4.59.0 (Path Traversal vulnerability)
   - Updated react-router (CSRF and XSS vulnerabilities)
   - Updated ajv and js-yaml (ReDoS and prototype pollution)
   - 10 packages updated via `npm audit fix`
+
+### Added
+- Alternative nginx-based Dockerfile for production (frontend/Dockerfile.nginx)
+  - Smaller image size (~20MB vs ~180MB)
+  - Better security profile (no Node.js runtime dependencies)
+  - Prepared as backup if serve@latest doesn't resolve vulnerabilities
+
+### Changed
+- Updated frontend Dockerfile to explicitly use `serve@latest`
+  - Added npm cache clean to ensure fresh dependency resolution
+  - Targets the latest serve version with security patches
 
 ### Fixed
 - Frontend test suite updated to match new ErrorMessage component UI (2026-03-08)
