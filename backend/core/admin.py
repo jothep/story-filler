@@ -3,7 +3,7 @@
 # Improve usability using inlines, filter_horizontal, and custom forms.
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Story, Paragraph, Word, BackgroundMusic, BlankLink, StoryPicture
+from .models import Story, Paragraph, Word, BackgroundMusic, BlankLink, StoryPicture, AppConfig
 from .forms import BlankLinkForm
 
 class ParagraphInline(admin.StackedInline):
@@ -24,11 +24,20 @@ class StoryAdmin(admin.ModelAdmin):
     filter_horizontal = ('word_bank',)
     search_fields = ('title',) 
 
+@admin.register(AppConfig)
+class AppConfigAdmin(admin.ModelAdmin):
+    """
+    Application Configuration
+    """
+    list_display = ('key', 'value', 'description', 'updated_at')
+    search_fields = ('key', 'description')
+    readonly_fields = ('updated_at',)
+
 @admin.register(StoryPicture)
 class StoryPictureAdmin(admin.ModelAdmin):
     list_display = ('title',)
     search_fields = ('title',)
-    
+
 @admin.register(BackgroundMusic)
 class BackgroundMusicAdmin(admin.ModelAdmin):
     """

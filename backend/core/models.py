@@ -79,6 +79,37 @@ def compress_image(image_file, max_width=1920, max_height=1080, quality=85):
 
 # ===== Models =====
 
+class AppConfig(models.Model):
+    """
+    Global application configuration key-value store.
+    Used for settings like menu BGM path, app title, etc.
+    """
+    key = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name="Configuration Key",
+        help_text="Unique identifier for this configuration setting"
+    )
+    value = models.TextField(
+        verbose_name="Configuration Value",
+        help_text="The value for this configuration setting"
+    )
+    description = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Description",
+        help_text="Human-readable description of this setting"
+    )
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Last Updated")
+
+    class Meta:
+        verbose_name = "Application Configuration"
+        verbose_name_plural = "Application Configurations"
+
+    def __str__(self):
+        return self.key
+
+
 class BackgroundMusic(models.Model):
     title = models.CharField(max_length=200, verbose_name="BGM Title", help_text="Name of a BGM")
     audio_file = models.FileField(

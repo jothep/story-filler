@@ -55,26 +55,52 @@ function Menu() {
   const { stories, loading, error, refetch } = useStories();
 
   const [isMusicPlaying, setIsMusicPlaying] = useState(true);
+  const [bgmPath, setBgmPath] = useState(null);
   const audioRef = useRef(null);
 
+  // Fetch BGM configuration from API
   useEffect(() => {
-    const audio = new Audio('/media/bgm/Schumann_Fantasy.mp3');
+    const fetchConfig = async () => {
+      try {
+        const response = await fetch('/api/config/');
+        if (response.ok) {
+          const config = await response.json();
+          setBgmPath(config.menu_bgm_path);
+        } else {
+          console.warn('Failed to fetch BGM config, BGM will be disabled');
+        }
+      } catch (err) {
+        console.warn('Error fetching BGM config:', err);
+      }
+    };
+
+    fetchConfig();
+  }, []);
+
+  // Initialize audio when BGM path is available
+  useEffect(() => {
+    if (!bgmPath) {
+      return;
+    }
+
+    const audio = new Audio(bgmPath);
 
     audio.loop = true;
     audio.volume = 0.3;
     audioRef.current = audio;
 
-    if (isMusicPlaying) {
-      audio.play().catch((e) => {
-        console.warn('The browser blocks autoplay:', e);
-      });
-    }
+    // Attempt to play on initialization (may be blocked by browser)
+    audio.play().catch((e) => {
+      console.warn('The browser blocks autoplay:', e);
+      // If autoplay is blocked, user can manually start via toggle
+      setIsMusicPlaying(false);
+    });
 
     return () => {
       audio.pause();
       audioRef.current = null;
     };
-  }, []);
+  }, [bgmPath]);
 
   const handleToggleMusic = () => {
     const audio = audioRef.current;

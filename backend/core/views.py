@@ -3,9 +3,10 @@
 import logging
 from rest_framework import generics, status
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from django.http import Http404
 from .models import Story
-from .serializers import StoryListSerializer, StoryDetailSerializer
+from .serializers import StoryListSerializer, StoryDetailSerializer, AppConfigSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -97,5 +98,29 @@ class StoryDetailAPIView(generics.RetrieveAPIView):
                     'error': 'Failed to retrieve story',
                     'detail': 'An unexpected error occurred. Please try again later.'
                 },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class AppConfigAPIView(APIView):
+    """
+    API endpoint for retrieving application configuration.
+    Returns settings like menu BGM path.
+    """
+
+    def get(self, request):
+        """
+        Get application configuration for frontend.
+        """
+        try:
+            logger.info(f"App config requested from {request.META.get('REMOTE_ADDR', 'unknown')}")
+            serializer = AppConfigSerializer(None)
+            data = serializer.to_representation(None)
+            logger.info("App config retrieved successfully")
+            return Response(data, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Error retrieving app config: {str(e)}", exc_info=True)
+            return Response(
+                {'error': 'Failed to retrieve configuration'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

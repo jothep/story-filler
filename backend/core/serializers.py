@@ -3,7 +3,7 @@
 # Handles nested relationships and media file URLs.
 import logging
 from rest_framework import serializers
-from .models import Story, Paragraph, Word, BackgroundMusic, BlankLink
+from .models import Story, Paragraph, Word, BackgroundMusic, BlankLink, AppConfig
 
 logger = logging.getLogger(__name__)
 
@@ -173,3 +173,27 @@ class StoryListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Story
         fields = ["id", "title"]
+
+
+class AppConfigSerializer(serializers.Serializer):
+    """
+    Serializer for application configuration.
+    Returns a dictionary of key-value pairs for frontend use.
+    """
+    menu_bgm_path = serializers.CharField(allow_null=True, required=False)
+
+    def to_representation(self, _):
+        """
+        Convert AppConfig queryset to a dictionary.
+        Note: instance parameter unused as we fetch config directly.
+        """
+        try:
+            menu_bgm = AppConfig.objects.filter(key="menu_bgm_path").first()
+            return {
+                "menu_bgm_path": menu_bgm.value if menu_bgm else None
+            }
+        except Exception as e:
+            logger.error(f"Failed to retrieve app config: {e}")
+            return {
+                "menu_bgm_path": None
+            }
