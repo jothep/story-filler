@@ -1,5 +1,6 @@
-# Dockerfile.nginx - Production-ready alternative using nginx instead of serve
-# This approach eliminates Node.js dependencies in the runtime image
+# Dockerfile.nginx - Production-ready nginx-based frontend image
+# This approach eliminates Node.js runtime dependencies and security vulnerabilities
+# Switched from serve to nginx:alpine on 2026-03-08 to resolve CVE issues
 
 # --- Stage 1: Build ---
 FROM node:24-bookworm-slim AS builder
