@@ -5,31 +5,46 @@
 import { useParams } from 'react-router-dom';
 import '../assets/StoryPlayer.css';
 import StoryPlayerUI from './StoryPlayerUI';
+import LoadingSpinner from '../components/LoadingSpinner';
+import ErrorMessage from '../components/ErrorMessage';
 import { useStory } from '../hooks/useStory';
 
-import { WordInteractionProvider } from '../context/WordInteractionContext'; 
+import { WordInteractionProvider } from '../context/WordInteractionContext';
 import { StoryPlaybackProvider } from '../context/StoryPlaybackContext';
 
 function StoryPlayer() {
   const { storyId } = useParams();
-  const { story, loading, error } = useStory(storyId);
+  const { story, loading, error, refetch } = useStory(storyId);
 
   if (loading) {
-    return <div style={{ color: 'white', padding: '2rem' }}>Loading story...</div>; //
+    return <LoadingSpinner message="Loading story..." />;
   }
+
   if (error) {
-    return <div style={{ color: 'red', padding: '2rem' }}>Error loading story: {error}</div>; //
+    return <ErrorMessage error={error} onRetry={refetch} />;
   }
+
   if (!story) {
-    return <div>No story found.</div>; //
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        padding: '2rem'
+      }}>
+        <div className="nes-container is-rounded" style={{ textAlign: 'center' }}>
+          <h2>Story Not Found</h2>
+          <p>The requested story could not be loaded.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <StoryPlaybackProvider story={story}>
       <WordInteractionProvider wordsInBank={story.words_in_bank}>
-
         <StoryPlayerUI />
-
       </WordInteractionProvider>
     </StoryPlaybackProvider>
   );

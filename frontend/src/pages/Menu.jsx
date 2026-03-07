@@ -4,12 +4,14 @@
 // with a toggle control. Also includes the <Roll> background component.
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import Roll from '../components/Roll'; 
-import '../components/Roll.css'; 
+import Roll from '../components/Roll';
+import LoadingSpinner from '../components/LoadingSpinner';
+import ErrorMessage from '../components/ErrorMessage';
+import '../components/Roll.css';
 import { useStories } from '../hooks/useStories';
 
 const menuStyles = {
-  position: 'relative', 
+  position: 'relative',
   overflow: 'hidden',
 
   display: 'flex',
@@ -17,15 +19,15 @@ const menuStyles = {
   alignItems: 'center',
   padding: '2rem',
   minHeight: '100vh',
-  boxSizing: 'border-box', 
+  boxSizing: 'border-box',
 };
 
 const titleContainerStyles = {
   width: '100%',
   maxWidth: '800px',
-  marginBottom: '4rem', 
+  marginBottom: '4rem',
 
-  backgroundColor: 'rgba(255, 255, 255, 0.8)', 
+  backgroundColor: 'rgba(255, 255, 255, 0.8)',
   padding: '1rem',
   borderRadius: '4px',
 };
@@ -43,14 +45,14 @@ const menuListStyles = {
   display: 'flex',
   flexDirection: 'column',
   width: '100%',
-  maxWidth: '400px', 
-  gap: '1.5rem', 
-  marginTop: 'auto',  
+  maxWidth: '400px',
+  gap: '1.5rem',
+  marginTop: 'auto',
   marginBottom: '20vh',
 };
 
 function Menu() {
-  const { stories, loading, error } = useStories();
+  const { stories, loading, error, refetch } = useStories();
 
   const [isMusicPlaying, setIsMusicPlaying] = useState(true);
   const audioRef = useRef(null);
@@ -72,7 +74,7 @@ function Menu() {
       audio.pause();
       audioRef.current = null;
     };
-  }, []); 
+  }, []);
 
   const handleToggleMusic = () => {
     const audio = audioRef.current;
@@ -89,13 +91,21 @@ function Menu() {
   };
 
   if (loading) {
-    return <div style={{ padding: '2rem' }}>Loading stories...</div>;
+    return <LoadingSpinner message="Loading stories..." />;
   }
 
   if (error) {
+    return <ErrorMessage error={error} onRetry={refetch} />;
+  }
+
+  if (!stories || stories.length === 0) {
     return (
-      <div style={{ color: 'red', padding: '2rem' }}>
-        Error loading stories: {error}
+      <div style={menuStyles}>
+        <Roll />
+        <div className="nes-container is-rounded" style={{ textAlign: 'center', maxWidth: '500px' }}>
+          <h2>No Stories Available</h2>
+          <p>There are currently no stories to display. Please check back later!</p>
+        </div>
       </div>
     );
   }
@@ -127,7 +137,7 @@ function Menu() {
           <Link
             key={story.id}
             to={`/story/${story.id}`}
-            className="nes-btn is-primary" 
+            className="nes-btn is-primary"
           >
             {story.title}
           </Link>
