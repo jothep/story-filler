@@ -70,7 +70,11 @@ describe('StoryPlayer Component', () => {
       expect(screen.queryByText(/^Loading story...$/i)).not.toBeInTheDocument();
     });
 
-    const errorMessage = await screen.findByText(/Error loading story:/i);
-    expect(errorMessage).toBeInTheDocument();
+    // Check for the new error UI components
+    const errorHeading = await screen.findByText(/Oops!/i);
+    expect(errorHeading).toBeInTheDocument();
+
+    const retryButton = await screen.findByText(/Try Again/i);
+    expect(retryButton).toBeInTheDocument();
   });
 });
