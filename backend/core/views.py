@@ -1,8 +1,14 @@
 # core/views.py
 # Includes API views for listing all stories (List) and retrieving individual stories (Detail).
-from rest_framework import generics
+import logging
+from rest_framework import generics, status
+from rest_framework.response import Response
+from rest_framework.exceptions import NotFound
+from django.core.exceptions import ObjectDoesNotExist
 from .models import Story
 from .serializers import StoryListSerializer, StoryDetailSerializer
+
+logger = logging.getLogger(__name__)
 
 
 class StoryListAPIView(generics.ListAPIView):
@@ -12,6 +18,22 @@ class StoryListAPIView(generics.ListAPIView):
     """
     queryset = Story.objects.all().order_by('-id')
     serializer_class = StoryListSerializer
+
+    def list(self, request, *args, **kwargs):
+        """
+        Override list method to add logging and error handling.
+        """
+        try:
+            logger.info(f"Story list requested from {request.META.get('REMOTE_ADDR', 'unknown')}")
+            response = super().list(request, *args, **kwargs)
+            logger.info(f"Story list returned {len(response.data)} stories")
+            return response
+        except Exception as e:
+            logger.error(f"Error listing stories: {str(e)}", exc_info=True)
+            return Response(
+                {'error': 'Failed to retrieve stories', 'detail': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class StoryDetailAPIView(generics.RetrieveAPIView):
@@ -48,3 +70,34 @@ class StoryDetailAPIView(generics.RetrieveAPIView):
             'paragraphs__blank_links',
             'paragraphs__blank_links__word'
         )
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Override retrieve method to add logging and error handling.
+        """
+        story_id = kwargs.get('pk')
+
+        try:
+            logger.info(f"Story detail requested: id={story_id}, ip={request.META.get('REMOTE_ADDR', 'unknown')}")
+
+            instance = self.get_object()
+            serializer = self.get_serializer(instance)
+
+            logger.info(f"Story detail retrieved successfully: id={story_id}, title='{instance.title}'")
+            return Response(serializer.data)
+
+        except ObjectDoesNotExist:
+            logger.warning(f"Story not found: id={story_id}")
+            raise NotFound({
+                'error': 'Story not found',
+                'detail': f'Story with id {story_id} does not exist.'
+            })
+        except Exception as e:
+            logger.error(f"Error retrieving story {story_id}: {str(e)}", exc_info=True)
+            return Response(
+                {
+                    'error': 'Failed to retrieve story',
+                    'detail': 'An unexpected error occurred. Please try again later.'
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

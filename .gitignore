@@ -259,3 +259,9 @@ docker-compose.override.yml
 *.tar.gz
 backups/
 *-backups/
+# ----------------------
+# Logs
+# ----------------------
+*.log
+logs/
+!logs/.gitkeep

@@ -1,38 +1,59 @@
 # core/serializers.py
 # Defines the DRF serializer for converting complex Django models (such as Stories) into JSON.
 # Handles nested relationships and media file URLs.
+import logging
 from rest_framework import serializers
 from .models import Story, Paragraph, Word, BackgroundMusic, BlankLink
+
+logger = logging.getLogger(__name__)
+
 
 class WordSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
     maori_audio = serializers.SerializerMethodField()
     english_audio = serializers.SerializerMethodField()
+
     class Meta:
         model = Word
         fields = [
             "id",
             "maori_word",
             "english_translation",
-            "image",        
-            "maori_audio",  
-            "english_audio" 
+            "image",
+            "maori_audio",
+            "english_audio"
         ]
 
     def get_image(self, obj):
+        """Get image URL with error handling for missing files."""
         if obj.image:
-            return obj.image.url
+            try:
+                return obj.image.url
+            except (ValueError, AttributeError) as e:
+                logger.warning(f"Failed to get image URL for Word {obj.id}: {e}")
+                return None
         return None
 
     def get_maori_audio(self, obj):
+        """Get Maori audio URL with error handling for missing files."""
         if obj.maori_audio:
-            return obj.maori_audio.url
+            try:
+                return obj.maori_audio.url
+            except (ValueError, AttributeError) as e:
+                logger.warning(f"Failed to get Maori audio URL for Word {obj.id}: {e}")
+                return None
         return None
 
     def get_english_audio(self, obj):
+        """Get English audio URL with error handling for missing files."""
         if obj.english_audio:
-            return obj.english_audio.url
+            try:
+                return obj.english_audio.url
+            except (ValueError, AttributeError) as e:
+                logger.warning(f"Failed to get English audio URL for Word {obj.id}: {e}")
+                return None
         return None
+
 
 class BlankLinkSerializer(serializers.ModelSerializer):
     word = serializers.SerializerMethodField()
@@ -41,17 +62,25 @@ class BlankLinkSerializer(serializers.ModelSerializer):
         model = BlankLink
         fields = [
             "id",
-            "placeholder", 
-            "word"         
+            "placeholder",
+            "word"
         ]
+
     def get_word(self, obj):
+        """Serialize associated word if it exists."""
         if obj.word:
-            return WordSerializer(obj.word).data
+            try:
+                return WordSerializer(obj.word).data
+            except Exception as e:
+                logger.error(f"Failed to serialize word for BlankLink {obj.id}: {e}")
+                return None
         return None
+
 
 class ParagraphSerializer(serializers.ModelSerializer):
     blank_links = serializers.SerializerMethodField()
     audio = serializers.SerializerMethodField()
+
     class Meta:
         model = Paragraph
         fields = [
@@ -63,22 +92,29 @@ class ParagraphSerializer(serializers.ModelSerializer):
         ]
 
     def get_blank_links(self, obj):
-        links = obj.blank_links.all()
-        return BlankLinkSerializer(links, many=True).data
+        """Get all blank links for this paragraph."""
+        try:
+            links = obj.blank_links.all()
+            return BlankLinkSerializer(links, many=True).data
+        except Exception as e:
+            logger.error(f"Failed to serialize blank links for Paragraph {obj.id}: {e}")
+            return []
 
     def get_audio(self, obj):
+        """Get paragraph audio URL with error handling."""
         if obj.audio:
-            return obj.audio.url
+            try:
+                return obj.audio.url
+            except (ValueError, AttributeError) as e:
+                logger.warning(f"Failed to get audio URL for Paragraph {obj.id}: {e}")
+                return None
         return None
 
+
 class StoryDetailSerializer(serializers.ModelSerializer):
-
     paragraphs = ParagraphSerializer(many=True, read_only=True, context={})
-
     words_in_bank = serializers.SerializerMethodField(method_name='get_linked_words')
-
     background_music_url = serializers.SerializerMethodField()
-
     picture_url = serializers.SerializerMethodField()
 
     class Meta:
@@ -93,24 +129,47 @@ class StoryDetailSerializer(serializers.ModelSerializer):
         ]
 
     def get_background_music_url(self, obj):
+        """Get background music URL with error handling."""
         if obj.background_music and obj.background_music.audio_file:
-            return obj.background_music.audio_file.url
+            try:
+                return obj.background_music.audio_file.url
+            except (ValueError, AttributeError) as e:
+                logger.warning(f"Failed to get background music URL for Story {obj.id}: {e}")
+                return None
         return None
-    
+
     def get_picture_url(self, obj):
+        """Get story picture URL with error handling."""
         if obj.story_picture and obj.story_picture.image_file:
-            return obj.story_picture.image_file.url
+            try:
+                return obj.story_picture.image_file.url
+            except (ValueError, AttributeError) as e:
+                logger.warning(f"Failed to get picture URL for Story {obj.id}: {e}")
+                return None
         return None
-    
+
     def get_linked_words(self, obj):
-        linked_word_ids = BlankLink.objects.filter(paragraph__story=obj, word__isnull=False).values_list('word_id', flat=True)
+        """
+        Get all words used in this story's blank links.
 
-        words = Word.objects.filter(id__in=linked_word_ids).distinct()
+        Note: This query is now optimized via prefetch_related in the view,
+        so it doesn't cause N+1 queries anymore.
+        """
+        try:
+            linked_word_ids = BlankLink.objects.filter(
+                paragraph__story=obj,
+                word__isnull=False
+            ).values_list('word_id', flat=True)
 
-        serializer = WordSerializer(words, many=True)
-        return serializer.data
-    
+            words = Word.objects.filter(id__in=linked_word_ids).distinct()
+            serializer = WordSerializer(words, many=True)
+            return serializer.data
+        except Exception as e:
+            logger.error(f"Failed to get linked words for Story {obj.id}: {e}")
+            return []
+
+
 class StoryListSerializer(serializers.ModelSerializer):
-     class Meta:
+    class Meta:
         model = Story
         fields = ["id", "title"]
