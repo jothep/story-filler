@@ -3,8 +3,7 @@
 import logging
 from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework.exceptions import NotFound
-from django.core.exceptions import ObjectDoesNotExist
+from django.http import Http404
 from .models import Story
 from .serializers import StoryListSerializer, StoryDetailSerializer
 
@@ -86,13 +85,12 @@ class StoryDetailAPIView(generics.RetrieveAPIView):
             logger.info(f"Story detail retrieved successfully: id={story_id}, title='{instance.title}'")
             return Response(serializer.data)
 
-        except ObjectDoesNotExist:
+        except Http404:
+            # Let 404 errors pass through naturally (DRF will handle the response)
             logger.warning(f"Story not found: id={story_id}")
-            raise NotFound({
-                'error': 'Story not found',
-                'detail': f'Story with id {story_id} does not exist.'
-            })
+            raise
         except Exception as e:
+            # Only catch unexpected errors (not 404s)
             logger.error(f"Error retrieving story {story_id}: {str(e)}", exc_info=True)
             return Response(
                 {
