@@ -11,7 +11,7 @@ spec:
   ports:
     - protocol: TCP
       port: 80
-      targetPort: 3000 
+      targetPort: 80 
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -33,4 +33,4 @@ spec:
         image: jasko/maori-story-frontend:v1 
         imagePullPolicy: Always 
         ports:
-        - containerPort: 3000 
+        - containerPort: 80 

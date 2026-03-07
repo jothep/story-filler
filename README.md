@@ -44,7 +44,7 @@ This project is fully containerized and designed for a Kubernetes-native deploym
 
 ## Architecture Overview
 
-* **Frontend**: A React single-page application (SPA) built with Vite. It uses dnd-kit for drag-and-drop interactions and NES.css for its retro 8-bit aesthetic. Includes comprehensive error handling, loading states, and PropTypes validation.
+* **Frontend**: A React single-page application (SPA) built with Vite. It uses dnd-kit for drag-and-drop interactions and NES.css for its retro 8-bit aesthetic. Includes comprehensive error handling, loading states, and PropTypes validation. Served in production using nginx:alpine for optimal security and performance.
 
 * **Backend**: A Django REST Framework API that serves all story content, paragraphs, and word banks. It uses Gunicorn as the application server, WhiteNoise to serve static files, and psycopg2 to connect to the database. Features optimized queries, structured logging, and automatic media compression.
 

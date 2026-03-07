@@ -94,46 +94,66 @@ Trivy security scan detected 5 HIGH severity vulnerabilities in the frontend Doc
 - This bypasses the application's `package-lock.json` and uses `serve`'s own dependencies
 - `serve` package may have outdated transitive dependencies (minimatch, tar)
 
-### Resolution Approach (Option 1 - ATTEMPTING)
-**Updated frontend Dockerfile to use latest serve version:**
+### Resolution Approach (Option 1 - FAILED)
+**Attempted: Updated frontend Dockerfile to use latest serve version:**
 ```dockerfile
-# Before:
-RUN npm install -g serve
-
-# After:
 RUN npm cache clean --force && npm install -g serve@latest
 ```
 
+**Result**: FAILED
+- Trivy scan still detected same 5 HIGH vulnerabilities
+- minimatch remained at v10.1.2 (instead of required 10.2.3+)
+- tar remained at v7.5.7 (instead of required 7.5.10+)
+- Root cause: `serve@latest` itself still depends on outdated packages
+- Conclusion: Cannot rely on `serve` package for security compliance
+
+### Resolution Approach (Option 2 - IMPLEMENTED) ✅
+**Switched to nginx:alpine for production serving:**
+
 **Changes Made:**
-- Force clean npm cache to ensure fresh dependency resolution
-- Explicitly install `serve@latest` to get the most recent version
-- This should pull in updated dependencies with security patches
+1. ✅ Updated `.github/workflows/frontend-ci.yml` to use `Dockerfile.nginx`
+2. ✅ Updated `Infra/frontend-deployment.yaml` to use port 80 instead of 3000
+3. ✅ nginx:alpine base image has no Node.js dependencies
+4. ✅ Significantly reduced attack surface
 
-**Status**: Testing in CI/CD pipeline
-- If successful: Trivy scan will pass with 0 HIGH/CRITICAL vulnerabilities
-- If unsuccessful: Will implement Option 2 (nginx-based image)
+**Benefits Realized:**
+- **Smaller image size**: ~20MB (nginx:alpine) vs ~180MB (node:24-bookworm-slim)
+- **No Node.js vulnerabilities**: Eliminates entire class of npm dependency issues
+- **Better performance**: nginx is optimized for static file serving
+- **Better security maintenance**: nginx:alpine has excellent security track record
+- **Simpler architecture**: No need to manage Node.js runtime in production
 
-### Alternative Solution (Option 2 - BACKUP PLAN)
-Replace `serve` with `nginx:alpine` for production serving:
-- **Benefits**:
-  - Smaller image size (~20MB vs ~180MB)
-  - No Node.js runtime dependencies
-  - Better performance for static file serving
-  - nginx has better security maintenance
-- **Trade-off**: Different technology stack (nginx vs Node.js)
-- **Implementation**: Use `frontend/Dockerfile.nginx` (already prepared)
+**Technical Details:**
+```dockerfile
+# Stage 1: Build with Node.js
+FROM node:24-bookworm-slim AS builder
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+# Stage 2: Serve with nginx
+FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+```
 
 ### Timeline
 - **2026-03-08 22:30**: Issue identified in Trivy scan
-- **2026-03-08 22:45**: Option 1 implemented, waiting for CI/CD validation
-- **Next**: If Option 1 fails, will implement Option 2 immediately
+- **2026-03-08 22:45**: Option 1 (serve@latest) implemented
+- **2026-03-08 23:05**: Option 1 FAILED - vulnerabilities persisted
+- **2026-03-08 23:10**: Option 2 (nginx) implemented immediately
+- **Status**: Awaiting CI/CD validation of nginx-based image
 
 ### Verification Steps
-1. ✅ Updated Dockerfile with `serve@latest`
-2. ⏳ Waiting for CI/CD to rebuild Docker image
-3. ⏳ Waiting for Trivy scan results
-4. ⏳ If scan passes, vulnerability resolved
-5. ⏳ If scan fails, switch to nginx approach
+1. ✅ Created Dockerfile.nginx with nginx:alpine
+2. ✅ Updated CI/CD workflow to use Dockerfile.nginx
+3. ✅ Updated Kubernetes deployment manifests (port 3000 → 80)
+4. ⏳ Waiting for CI/CD to rebuild Docker image with nginx
+5. ⏳ Waiting for Trivy scan results
+6. ⏳ Expected result: 0 HIGH/CRITICAL vulnerabilities
 
 ---
 

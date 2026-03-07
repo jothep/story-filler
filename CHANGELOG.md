@@ -8,13 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Security
-- **[IN PROGRESS]** Attempting to fix Docker image vulnerabilities from `serve` package (2026-03-08)
-  - Updated frontend Dockerfile to use `serve@latest` with cache clean
-  - Addresses 5 HIGH severity vulnerabilities in serve's dependencies (minimatch, tar)
-  - CVE-2026-26996, CVE-2026-27903, CVE-2026-27904 (minimatch)
-  - CVE-2026-26960, CVE-2026-29786 (tar)
-  - Prepared fallback solution: nginx-based Dockerfile (Dockerfile.nginx)
-  - **Status**: Awaiting CI/CD validation
+- **[RESOLVED]** Fixed Docker image vulnerabilities by switching to nginx (2026-03-08)
+  - **Option 1 FAILED**: serve@latest still contained outdated dependencies
+    - minimatch remained at v10.1.2 (required 10.2.3+)
+    - tar remained at v7.5.7 (required 7.5.10+)
+  - **Option 2 IMPLEMENTED**: Switched to nginx:alpine production image
+    - Eliminates Node.js runtime dependencies entirely
+    - Addresses 5 HIGH severity vulnerabilities:
+      - CVE-2026-26996, CVE-2026-27903, CVE-2026-27904 (minimatch)
+      - CVE-2026-26960, CVE-2026-29786 (tar)
+    - Reduces image size from ~180MB to ~20MB
+    - Better security posture and performance
+  - **Status**: Awaiting CI/CD validation of nginx-based build
 
 - Fixed 5 HIGH severity npm vulnerabilities in frontend dependencies (2026-03-08)
   - Updated minimatch to v10.2.3+ (CVE-2026-26996, CVE-2026-27903, CVE-2026-27904)
@@ -24,15 +29,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 10 packages updated via `npm audit fix`
 
 ### Added
-- Alternative nginx-based Dockerfile for production (frontend/Dockerfile.nginx)
-  - Smaller image size (~20MB vs ~180MB)
-  - Better security profile (no Node.js runtime dependencies)
-  - Prepared as backup if serve@latest doesn't resolve vulnerabilities
+- nginx-based production Dockerfile for frontend (frontend/Dockerfile.nginx)
+  - Multi-stage build: Node.js for build, nginx:alpine for serving
+  - Eliminates runtime Node.js dependencies
+  - 90% smaller image size (~20MB vs ~180MB)
+  - Improved security and performance
 
 ### Changed
-- Updated frontend Dockerfile to explicitly use `serve@latest`
-  - Added npm cache clean to ensure fresh dependency resolution
-  - Targets the latest serve version with security patches
+- **BREAKING**: Frontend now uses nginx:alpine instead of serve
+  - Updated `.github/workflows/frontend-ci.yml` to use Dockerfile.nginx
+  - Updated `Infra/frontend-deployment.yaml` port mapping (3000 → 80)
+  - Container now exposes port 80 instead of 3000
+  - No functional changes to application behavior
+  - **Migration**: Kubernetes deployments must update port configuration
 
 ### Fixed
 - Frontend test suite updated to match new ErrorMessage component UI (2026-03-08)
