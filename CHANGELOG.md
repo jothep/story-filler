@@ -8,18 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Security
-- **[RESOLVED]** Fixed Docker image vulnerabilities by switching to nginx (2026-03-08)
-  - **Option 1 FAILED**: serve@latest still contained outdated dependencies
+- **[IN PROGRESS]** Fixing Docker image vulnerabilities (2026-03-08)
+  - **Option 1 FAILED**: serve@latest still contained outdated npm dependencies
     - minimatch remained at v10.1.2 (required 10.2.3+)
     - tar remained at v7.5.7 (required 7.5.10+)
-  - **Option 2 IMPLEMENTED**: Switched to nginx:alpine production image
-    - Eliminates Node.js runtime dependencies entirely
-    - Addresses 5 HIGH severity vulnerabilities:
-      - CVE-2026-26996, CVE-2026-27903, CVE-2026-27904 (minimatch)
-      - CVE-2026-26960, CVE-2026-29786 (tar)
-    - Reduces image size from ~180MB to ~20MB
-    - Better security posture and performance
-  - **Status**: Awaiting CI/CD validation of nginx-based build
+  - **Option 2 PARTIAL**: Switched to nginx:alpine but base image had vulnerabilities
+    - Eliminated Node.js vulnerabilities (5 HIGH from serve)
+    - Reduced image size from ~180MB to ~20MB
+    - BUT nginx:alpine (Alpine 3.23.3) introduced new vulnerabilities:
+      - CVE-2026-22184 (CRITICAL): zlib buffer overflow
+      - CVE-2026-25646 (HIGH): libpng heap overflow
+  - **Option 3 IMPLEMENTED**: Added Alpine package upgrade to Dockerfile
+    - `apk update && apk upgrade` to get latest security patches
+    - Targets: zlib 1.3.2-r0, libpng 1.6.55-r0
+    - Should resolve all remaining HIGH/CRITICAL vulnerabilities
+  - **Status**: Awaiting CI/CD validation with package upgrades
 
 - Fixed 5 HIGH severity npm vulnerabilities in frontend dependencies (2026-03-08)
   - Updated minimatch to v10.2.3+ (CVE-2026-26996, CVE-2026-27903, CVE-2026-27904)

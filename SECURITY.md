@@ -141,19 +141,24 @@ CMD ["nginx", "-g", "daemon off;"]
 ```
 
 ### Timeline
-- **2026-03-08 22:30**: Issue identified in Trivy scan
+- **2026-03-08 22:30**: Issue identified in Trivy scan - serve package vulnerabilities
 - **2026-03-08 22:45**: Option 1 (serve@latest) implemented
 - **2026-03-08 23:05**: Option 1 FAILED - vulnerabilities persisted
-- **2026-03-08 23:10**: Option 2 (nginx) implemented immediately
-- **Status**: Awaiting CI/CD validation of nginx-based image
+- **2026-03-08 23:10**: Option 2 (nginx:alpine) implemented
+- **2026-03-08 23:20**: New vulnerabilities detected in nginx:alpine base image
+  - zlib CVE-2026-22184 (CRITICAL): Buffer overflow in untgz utility
+  - libpng CVE-2026-25646 (HIGH): Heap buffer overflow in png_set_quantize
+- **2026-03-08 23:25**: Added Alpine package upgrade to fix base image vulnerabilities
+- **Status**: Awaiting CI/CD validation with Alpine package updates
 
 ### Verification Steps
 1. ✅ Created Dockerfile.nginx with nginx:alpine
 2. ✅ Updated CI/CD workflow to use Dockerfile.nginx
 3. ✅ Updated Kubernetes deployment manifests (port 3000 → 80)
-4. ⏳ Waiting for CI/CD to rebuild Docker image with nginx
-5. ⏳ Waiting for Trivy scan results
-6. ⏳ Expected result: 0 HIGH/CRITICAL vulnerabilities
+4. ✅ Added Alpine package upgrade (apk update && apk upgrade)
+5. ⏳ Waiting for CI/CD to rebuild Docker image with updated packages
+6. ⏳ Waiting for Trivy scan results
+7. ⏳ Expected result: 0 HIGH/CRITICAL vulnerabilities (zlib 1.3.2-r0, libpng 1.6.55-r0)
 
 ---
 

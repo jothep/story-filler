@@ -18,6 +18,12 @@ RUN npm run build
 # --- Stage 2: Serve with nginx ---
 FROM nginx:alpine
 
+# Update Alpine packages to fix security vulnerabilities
+# CVE-2026-22184 (zlib) and CVE-2026-25646 (libpng)
+RUN apk update && \
+    apk upgrade --no-cache && \
+    rm -rf /var/cache/apk/*
+
 # Copy custom nginx configuration (optional)
 # COPY nginx.conf /etc/nginx/conf.d/default.conf
 
