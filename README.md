@@ -1,17 +1,63 @@
 # Maori Story Filler
+
 Maori Story Filler is an interactive web application designed to teach Māori vocabulary through a gamified, fill-in-the-blanks story experience. Users progress through stories by dragging and dropping the correct words into blank spaces.
+
 This project is fully containerized and designed for a Kubernetes-native deployment, with a complete CI/CD pipeline for automated testing and image publishing.
+
+## Project Status
+
+- ✅ **CI/CD Pipeline**: All tests passing, automated security scanning enabled
+- ✅ **Security**: Zero known vulnerabilities (see [SECURITY.md](SECURITY.md))
+- ✅ **Code Quality**: Comprehensive error handling, structured logging, optimized queries
+- 📚 **Documentation**: Complete guides for deployment, cost analysis, and refactoring
+
+## Documentation
+
+- [CHANGELOG.md](CHANGELOG.md) - Version history and updates
+- [SECURITY.md](SECURITY.md) - Security policy and vulnerability reports
+- [CODE_ANALYSIS.md](CODE_ANALYSIS.md) - Detailed codebase analysis
+- [COST_COMPARISON.md](COST_COMPARISON.md) - Cloud deployment cost comparison
+- [TERRAFORM_GUIDE.md](TERRAFORM_GUIDE.md) - Terraform infrastructure automation
+- [REFACTORING_PLAN.md](REFACTORING_PLAN.md) - Project refactoring roadmap
+## Key Features (v0.2.0)
+
+### User Experience
+- Interactive drag-and-drop story filling with dnd-kit
+- Retro 8-bit aesthetic using NES.css
+- Audio playback for pronunciation learning
+- Comprehensive error handling with user-friendly messages
+- Loading states and graceful error recovery
+
+### Code Quality & Performance
+- **85% Query Reduction**: Optimized database queries (35+ → 5-6 queries)
+- **Error Boundaries**: JavaScript error catching and graceful degradation
+- **Structured Logging**: Rotating file logs with detailed error tracking
+- **Automatic Media Compression**: Images optimized to save 50-80% storage
+- **File Validation**: Size and extension validation for uploads
+
+### Security
+- Zero known vulnerabilities (regularly scanned with Trivy)
+- Non-root Docker containers
+- Environment-based secret management
+- CORS configured with explicit origins
+- Input validation and sanitization
+
 ## Architecture Overview
-* Frontend: A React single-page application (SPA) built with vite. It uses dnd-kit for drag-and-drop interactions and NES.css for its retro 8-bit aesthetic.
-* Backend: A Django REST Framework API that serves all story content, paragraphs, and word banks. It uses gunicorn as the application server, WhiteNoise to serve static files, and psycopg2 to connect to the database.
-* Database: A PostgreSQL database deployed as a Kubernetes StatefulSet for persistent data storage.
-* CI/CD: Automated via GitHub Actions. Pushes to the main branch trigger two separate workflows (for frontend and backend) which:
-Install dependencies
-Run linters (npm run lint) and tests (python manage.py test)
-Build Docker images
-Scan images for vulnerabilities using Trivy
-Push the tagged images to Docker Hub.
-* Deployment: The entire stack is deployed to Kubernetes using the manifests in the Infra/ directory. An Ingress-Nginx controller routes traffic to the appropriate services.
+
+* **Frontend**: A React single-page application (SPA) built with Vite. It uses dnd-kit for drag-and-drop interactions and NES.css for its retro 8-bit aesthetic. Includes comprehensive error handling, loading states, and PropTypes validation.
+
+* **Backend**: A Django REST Framework API that serves all story content, paragraphs, and word banks. It uses Gunicorn as the application server, WhiteNoise to serve static files, and psycopg2 to connect to the database. Features optimized queries, structured logging, and automatic media compression.
+
+* **Database**: A PostgreSQL database deployed as a Kubernetes StatefulSet for persistent data storage.
+
+* **CI/CD**: Automated via GitHub Actions. Pushes to the main branch trigger two separate workflows (for frontend and backend) which:
+  - Install dependencies
+  - Run linters (ESLint, Flake8) and tests (Vitest, Django TestCase)
+  - Build Docker images with multi-stage builds
+  - Scan images for vulnerabilities using Trivy
+  - Push the tagged images to Docker Hub
+
+* **Deployment**: The entire stack is deployed to Kubernetes using the manifests in the Infra/ directory. An Ingress-Nginx controller routes traffic to the appropriate services. Alternative single-machine deployment available via docker-compose.
 ## Tech Stack
 | **Category** | **Technology** |
 | :--- | :--- |
