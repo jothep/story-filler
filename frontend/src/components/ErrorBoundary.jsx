@@ -10,6 +10,7 @@ class ErrorBoundary extends Component {
     this.state = { hasError: false, error: null, errorInfo: null };
   }
 
+  // eslint-disable-next-line no-unused-vars
   static getDerivedStateFromError(error) {
     // Update state so the next render will show the fallback UI
     return { hasError: true };
@@ -49,7 +50,7 @@ class ErrorBoundary extends Component {
           <div className="nes-container is-rounded is-dark" style={{ textAlign: 'center', maxWidth: '600px' }}>
             <h1 style={{ color: '#f7d51d', marginBottom: '1rem' }}>💥 Something went wrong</h1>
             <p style={{ marginBottom: '1rem', color: 'white' }}>
-              The application encountered an unexpected error. This has been logged and we'll look into it.
+              The application encountered an unexpected error. This has been logged and we&apos;ll look into it.
             </p>
 
             {process.env.NODE_ENV === 'development' && this.state.error && (

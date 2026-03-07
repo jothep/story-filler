@@ -2,6 +2,7 @@
 // Reusable error message component with NES.css styling
 
 import { useNavigate } from 'react-router-dom';
+import PropTypes from 'prop-types';
 
 function ErrorMessage({ error, onRetry }) {
   const navigate = useNavigate();
@@ -44,5 +45,15 @@ function ErrorMessage({ error, onRetry }) {
     </div>
   );
 }
+
+ErrorMessage.propTypes = {
+  error: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.shape({
+      message: PropTypes.string
+    })
+  ]),
+  onRetry: PropTypes.func
+};
 
 export default ErrorMessage;

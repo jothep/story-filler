@@ -1,6 +1,8 @@
 // src/components/LoadingSpinner.jsx
 // Reusable loading spinner component with NES.css styling
 
+import PropTypes from 'prop-types';
+
 function LoadingSpinner({ message = "Loading..." }) {
   return (
     <div style={{
@@ -31,5 +33,9 @@ function LoadingSpinner({ message = "Loading..." }) {
     </div>
   );
 }
+
+LoadingSpinner.propTypes = {
+  message: PropTypes.string
+};
 
 export default LoadingSpinner;
