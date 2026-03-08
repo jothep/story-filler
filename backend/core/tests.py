@@ -121,3 +121,43 @@ class AppConfigAPITest(APITestCase):
         # Should return empty dict or null for missing config
         self.assertIn("menu_bgm_path", response.data)
         self.assertIsNone(response.data["menu_bgm_path"])
+
+
+# --- Storage Configuration Tests ---
+
+class StorageConfigurationTest(TestCase):
+    """Test storage backend configuration (local, MinIO, AWS S3)."""
+
+    def test_default_uses_local_storage(self):
+        """Test that default configuration uses local file storage."""
+        print("Running: test_default_uses_local_storage")
+        from django.conf import settings
+
+        # Without USE_S3 env var, should use local storage
+        # This is tested by checking settings don't have S3 config
+        self.assertFalse(hasattr(settings, 'AWS_STORAGE_BUCKET_NAME') or
+                        getattr(settings, 'AWS_STORAGE_BUCKET_NAME', None))
+
+    def test_media_url_generation_local(self):
+        """Test media URL generation for local storage."""
+        print("Running: test_media_url_generation_local")
+        from .models import StoryPicture
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        # Create a test image
+        test_image = SimpleUploadedFile(
+            "test.jpg",
+            b"fake image content",
+            content_type="image/jpeg"
+        )
+
+        picture = StoryPicture.objects.create(
+            title="Test Picture",
+            image_file=test_image
+        )
+
+        # URL should start with /media/ for local storage
+        self.assertTrue(picture.image_file.url.startswith('/media/'))
+
+        # Cleanup
+        picture.delete()

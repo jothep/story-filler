@@ -114,8 +114,49 @@ STATICFILES_STORAGE = (
     "whitenoise.storage.CompressedManifestStaticFilesStorage"  
 )
 
-MEDIA_URL = "/media/"
-MEDIA_ROOT = "/app/media"
+# --- Media Files Storage Configuration ---
+# Supports three modes:
+# 1. Local storage (default) - files saved to MEDIA_ROOT
+# 2. MinIO - self-hosted S3-compatible storage
+# 3. AWS S3 - cloud object storage
+
+USE_S3 = env.bool("USE_S3", default=False)
+
+if USE_S3:
+    # S3 Storage Configuration (AWS S3 or MinIO)
+    INSTALLED_APPS += ["storages"]
+
+    AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID")
+    AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY")
+    AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME")
+    AWS_S3_REGION_NAME = env("AWS_S3_REGION_NAME", default="us-east-1")
+
+    # MinIO support: custom endpoint URL
+    AWS_S3_ENDPOINT_URL = env("AWS_S3_ENDPOINT_URL", default=None)
+
+    # S3 Configuration
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_DEFAULT_ACL = None
+    AWS_S3_OBJECT_PARAMETERS = {
+        'CacheControl': 'max-age=86400',  # 1 day
+    }
+
+    # Use S3 for media files
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+    # Construct media URL
+    if AWS_S3_ENDPOINT_URL:
+        # MinIO or custom S3 endpoint
+        MEDIA_URL = f"{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/"
+    else:
+        # AWS S3
+        AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com'
+        MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
+else:
+    # Local File Storage (default)
+    MEDIA_URL = "/media/"
+    # Use BASE_DIR/media for tests, /app/media for production
+    MEDIA_ROOT = env("MEDIA_ROOT", default=str(BASE_DIR / "media"))
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
