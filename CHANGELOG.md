@@ -43,6 +43,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 10 packages updated via `npm audit fix`
 
 ### Added
+- **S3 Storage Support** (2026-03-09, commit 016eef3)
+  - Added flexible media storage configuration supporting three modes:
+    1. Local filesystem (default, backward compatible)
+    2. MinIO self-hosted S3-compatible storage
+    3. AWS S3 cloud storage
+  - Dependencies: django-storages==1.14.4, boto3==1.35.36
+  - Environment-based configuration using USE_S3 flag
+  - Created S3_STORAGE_GUIDE.md with comprehensive setup instructions
+  - Added docker-compose.minio.yml for quick MinIO deployment
+  - Added backend/.env.example with configuration examples for all three modes
+  - Storage tests: 2 new tests for storage configuration validation
+  - Full backward compatibility - existing local storage deployments unaffected
+
 - **Application Configuration System** (2026-03-09, commit 1f9967a)
   - Added AppConfig model for centralized settings management
   - Created `/api/config/` endpoint for frontend configuration
@@ -234,10 +247,10 @@ None at this time.
 None at this time.
 
 ### In Progress
-- S3 storage support for media files (optional enhancement)
 - Additional frontend test coverage
 
 ### Recently Resolved
+- ✅ S3 storage support for media files (2026-03-09) - Supports local/MinIO/AWS S3
 - ✅ Frontend: Menu.jsx hardcoded BGM path (2026-03-09) - Now configurable via API
 
 ---
