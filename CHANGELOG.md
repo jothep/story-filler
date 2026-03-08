@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Security
+- **[RESOLVED]** Fixed backend Python package vulnerabilities (2026-03-09, commit 0e3100c) ✅
+  - Upgraded Django: 5.2.7 → 5.2.12
+    - CVE-2025-64459 (CRITICAL): SQL injection
+    - CVE-2025-64458 (HIGH): DoS on Windows
+    - CVE-2026-1207 (HIGH): SQL injection via RasterField
+    - CVE-2026-1287 (HIGH): SQL injection via column aliases
+    - CVE-2026-25673 (HIGH): DoS via URL normalization
+  - Upgraded Pillow: 11.3.0 → 12.1.1
+    - CVE-2026-25990 (HIGH): Out-of-bounds Write via PSD Image
+  - All 9 backend tests passing with upgraded versions
+
 - **[RESOLVED]** Fixed all Docker image vulnerabilities (2026-03-08) ✅
   - **Iterative resolution process:**
     1. **Option 1 (FAILED)**: serve@latest - npm dependencies remained outdated

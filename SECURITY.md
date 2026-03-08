@@ -10,6 +10,58 @@ This document tracks security vulnerabilities and their resolutions in the Maori
 
 ---
 
+## [2026-03-09] Backend Python Package Vulnerabilities - RESOLVED ✅
+
+### Summary
+Fixed 6 security vulnerabilities (1 CRITICAL + 5 HIGH) in backend Python dependencies affecting Django and Pillow.
+
+### Affected Components
+- **Backend Application**: Python packages (Django, Pillow)
+
+### Vulnerabilities Fixed
+
+#### 1. Django (5.2.7 → 5.2.12)
+- **CVE-2025-64459** (CRITICAL): SQL injection vulnerability in Django
+  - **Impact**: Attackers could execute arbitrary SQL queries, potentially accessing or modifying database contents
+  - **Resolution**: Upgraded to Django 5.2.12
+
+- **CVE-2025-64458** (HIGH): Denial-of-service vulnerability in Django on Windows
+  - **Impact**: DoS attacks could make the application unavailable
+  - **Resolution**: Upgraded to Django 5.2.12
+
+- **CVE-2026-1207** (HIGH): SQL injection via RasterField band index parameter
+  - **Impact**: SQL injection through GIS RasterField functionality
+  - **Resolution**: Upgraded to Django 5.2.12
+
+- **CVE-2026-1287** (HIGH): SQL injection via crafted column aliases
+  - **Impact**: Attackers could inject SQL through malicious column names
+  - **Resolution**: Upgraded to Django 5.2.12
+
+- **CVE-2026-25673** (HIGH): Denial of Service via slow URL normalization on Windows
+  - **Impact**: Slow URL processing could cause performance degradation or DoS
+  - **Resolution**: Upgraded to Django 5.2.12
+
+#### 2. Pillow (11.3.0 → 12.1.1)
+- **CVE-2026-25990** (HIGH): Out-of-bounds Write via Specially Crafted PSD Image
+  - **Impact**: Processing malicious PSD images could cause memory corruption
+  - **Resolution**: Upgraded to Pillow 12.1.1
+
+### Resolution Details
+- **Date**: 2026-03-09
+- **Action Taken**: Updated `backend/requirements.txt` with fixed versions
+- **Packages Updated**: 2 packages (Django, Pillow)
+- **Verification**:
+  - ✅ All 9 backend tests passing (`python manage.py test`)
+  - ✅ No breaking changes detected
+  - ✅ Trivy scan expected to report 0 HIGH/CRITICAL vulnerabilities
+
+### References
+- [Django Security Releases](https://docs.djangoproject.com/en/dev/releases/security/)
+- [Pillow Security Documentation](https://pillow.readthedocs.io/en/stable/releasenotes/)
+- [CVE Database](https://cve.mitre.org/)
+
+---
+
 ## [2026-03-08] Frontend NPM Dependency Vulnerabilities - RESOLVED
 
 ### Summary
