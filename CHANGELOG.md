@@ -32,6 +32,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 10 packages updated via `npm audit fix`
 
 ### Added
+- **Application Configuration System** (2026-03-09, commit 1f9967a)
+  - Added AppConfig model for centralized settings management
+  - Created `/api/config/` endpoint for frontend configuration
+  - Django admin interface for managing app settings
+  - Menu BGM path now configurable via API instead of hardcoded
+  - Comprehensive tests: 9 backend tests + 4 frontend tests
+  - Followed TDD: tests written first, then implementation
+
 - nginx-based production Dockerfile for frontend (frontend/Dockerfile.nginx)
   - Multi-stage build: Node.js for build, nginx:alpine for serving
   - Eliminates runtime Node.js dependencies
@@ -47,6 +55,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Migration**: Kubernetes deployments must update port configuration
 
 ### Fixed
+- **Hardcoded BGM path removed** (2026-03-09, commit 1f9967a)
+  - Removed hardcoded BGM path from Menu.jsx line 61
+  - BGM path now fetched from `/api/config/` endpoint
+  - Graceful fallback when BGM config is unavailable
+  - Content managers can now update BGM via Django admin
+
 - Frontend test suite updated to match new ErrorMessage component UI (2026-03-08)
 - ESLint errors in error handling components (2026-03-08)
   - Added PropTypes validation to ErrorMessage and LoadingSpinner
@@ -159,6 +173,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Migration Notes
 
+### Upgrading from Unreleased (Post 2026-03-09)
+
+#### Backend
+1. Run database migrations: `python manage.py migrate`
+   - Migration `0007_appconfig` creates AppConfig table
+2. Configure Menu BGM via Django admin:
+   - Navigate to `/admin/` → Application Configurations
+   - Add new config: key=`menu_bgm_path`, value=`/media/bgm/Schumann_Fantasy.mp3`
+   - Or use any BGM path available in your media storage
+
+#### Frontend
+- No changes required - BGM configuration is backward compatible
+- If no config is set, BGM will be disabled with warning in console
+
+#### Database
+- **New migration required**: `0007_appconfig`
+- Run `python manage.py migrate` before deploying
+
 ### Upgrading to v0.2.0
 
 #### Backend
@@ -188,12 +220,14 @@ None at this time.
 ## Known Issues
 
 ### Open
-- Frontend: Menu.jsx has hardcoded BGM path at line 61 (`/media/bgm/Schumann_Fantasy.mp3`)
-  - Planned fix: Make audio path configurable via API
+None at this time.
 
 ### In Progress
 - S3 storage support for media files (optional enhancement)
 - Additional frontend test coverage
+
+### Recently Resolved
+- ✅ Frontend: Menu.jsx hardcoded BGM path (2026-03-09) - Now configurable via API
 
 ---
 

@@ -19,17 +19,19 @@ This project is fully containerized and designed for a Kubernetes-native deploym
 - [COST_COMPARISON.md](COST_COMPARISON.md) - Cloud deployment cost comparison
 - [TERRAFORM_GUIDE.md](TERRAFORM_GUIDE.md) - Terraform infrastructure automation
 - [REFACTORING_PLAN.md](REFACTORING_PLAN.md) - Project refactoring roadmap
-## Key Features (v0.2.0)
+## Key Features (v0.2.0+)
 
 ### User Experience
 - Interactive drag-and-drop story filling with dnd-kit
 - Retro 8-bit aesthetic using NES.css
 - Audio playback for pronunciation learning
+- Configurable background music via API
 - Comprehensive error handling with user-friendly messages
 - Loading states and graceful error recovery
 
 ### Code Quality & Performance
 - **85% Query Reduction**: Optimized database queries (35+ → 5-6 queries)
+- **Configuration System**: Centralized app settings via AppConfig model and `/api/config/` endpoint
 - **Error Boundaries**: JavaScript error catching and graceful degradation
 - **Structured Logging**: Rotating file logs with detailed error tracking
 - **Automatic Media Compression**: Images optimized to save 50-80% storage
@@ -46,7 +48,7 @@ This project is fully containerized and designed for a Kubernetes-native deploym
 
 * **Frontend**: A React single-page application (SPA) built with Vite. It uses dnd-kit for drag-and-drop interactions and NES.css for its retro 8-bit aesthetic. Includes comprehensive error handling, loading states, and PropTypes validation. Served in production using nginx:alpine for optimal security and performance.
 
-* **Backend**: A Django REST Framework API that serves all story content, paragraphs, and word banks. It uses Gunicorn as the application server, WhiteNoise to serve static files, and psycopg2 to connect to the database. Features optimized queries, structured logging, and automatic media compression.
+* **Backend**: A Django REST Framework API that serves all story content, paragraphs, and word banks. It uses Gunicorn as the application server, WhiteNoise to serve static files, and psycopg2 to connect to the database. Features optimized queries, structured logging, automatic media compression, and centralized configuration management via AppConfig model.
 
 * **Database**: A PostgreSQL database deployed as a Kubernetes StatefulSet for persistent data storage.
 
