@@ -265,3 +265,17 @@ backups/
 *.log
 logs/
 !logs/.gitkeep
+
+# ----------------------
+# Django Media & Static Files
+# ----------------------
+backend/media/
+backend/staticfiles/
+media/
+staticfiles/
+
+# ----------------------
+# Data Export/Import
+# ----------------------
+data-export-*/
+data-import-*/
