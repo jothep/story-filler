@@ -59,10 +59,10 @@ resource "google_cloud_run_v2_service" "backend" {
   location = var.gcp_region
 
   template {
-    # 扩缩容配置
+    # 扩缩容配置（成本控制）
     scaling {
-      min_instance_count = var.min_instances  # 最小实例数（0=完全按需）
-      max_instance_count = var.max_instances  # 最大实例数
+      min_instance_count = 0  # 无流量时缩减到0
+      max_instance_count = 1  # 严格限制为1，防止超额费用
     }
 
     # 容器配置
@@ -70,15 +70,48 @@ resource "google_cloud_run_v2_service" "backend" {
       # 镜像将手动推送到 Artifact Registry
       image = "${var.gcp_region}-docker.pkg.dev/${var.gcp_project_id}/${google_artifact_registry_repository.maori_story.repository_id}/backend:latest"
 
-      # 环境变量
-      env {
-        name  = "DATABASE_URL"
-        value = var.database_url
+      # 环境变量 - 方案1: 直接注入（测试环境，use_secret_manager=false）
+      dynamic "env" {
+        for_each = var.use_secret_manager ? [] : [1]
+        content {
+          name  = "DATABASE_URL"
+          value = var.database_url
+        }
       }
 
-      env {
-        name  = "SECRET_KEY"
-        value = var.django_secret_key
+      dynamic "env" {
+        for_each = var.use_secret_manager ? [] : [1]
+        content {
+          name  = "SECRET_KEY"
+          value = var.django_secret_key
+        }
+      }
+
+      # 环境变量 - 方案2: Secret Manager（生产环境，use_secret_manager=true）
+      dynamic "env" {
+        for_each = var.use_secret_manager ? [1] : []
+        content {
+          name = "DATABASE_URL"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.database_url[0].secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+
+      dynamic "env" {
+        for_each = var.use_secret_manager ? [1] : []
+        content {
+          name = "SECRET_KEY"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.django_secret_key[0].secret_id
+              version = "latest"
+            }
+          }
+        }
       }
 
       env {
@@ -126,12 +159,14 @@ resource "google_cloud_run_v2_service" "backend" {
         }
       }
 
-      # 资源限制
+      # 资源限制（符合免费额度）
       resources {
         limits = {
-          cpu    = var.cpu_limit      # 例如 "1" = 1 vCPU
-          memory = var.memory_limit   # 例如 "512Mi"
+          cpu    = "1"       # 1 vCPU
+          memory = "512Mi"   # 512MB
         }
+        cpu_idle          = true   # CPU仅在处理请求时计费
+        startup_cpu_boost = false  # 不使用启动加速（节省成本）
       }
 
       # 健康检查端点
@@ -167,6 +202,36 @@ resource "google_cloud_run_v2_service" "backend" {
 }
 
 # ============================================
+# Secret Manager（可选：生产环境推荐）
+# ============================================
+
+resource "google_secret_manager_secret" "database_url" {
+  count     = var.use_secret_manager ? 1 : 0
+  secret_id = "maori-story-database-url-${var.environment}"
+
+  replication {
+    auto {}
+  }
+
+  labels = {
+    project = "maori-story-fill"
+  }
+}
+
+resource "google_secret_manager_secret" "django_secret_key" {
+  count     = var.use_secret_manager ? 1 : 0
+  secret_id = "maori-story-django-secret-${var.environment}"
+
+  replication {
+    auto {}
+  }
+
+  labels = {
+    project = "maori-story-fill"
+  }
+}
+
+# ============================================
 # IAM - Service Account for Cloud Run
 # ============================================
 
@@ -174,6 +239,21 @@ resource "google_service_account" "cloud_run_sa" {
   account_id   = "maori-story-backend-${var.environment}"
   display_name = "Maori Story Backend Service Account"
   description  = "Service account for Cloud Run backend service"
+}
+
+# 授权访问 Secret Manager
+resource "google_secret_manager_secret_iam_member" "database_url_access" {
+  count     = var.use_secret_manager ? 1 : 0
+  secret_id = google_secret_manager_secret.database_url[0].id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.cloud_run_sa.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "django_secret_access" {
+  count     = var.use_secret_manager ? 1 : 0
+  secret_id = google_secret_manager_secret.django_secret_key[0].id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.cloud_run_sa.email}"
 }
 
 # 如果需要访问 GCS（用于媒体文件）
@@ -265,4 +345,21 @@ output "media_bucket_url" {
 output "docker_push_command" {
   description = "Docker 镜像推送命令示例"
   value       = "docker push ${var.gcp_region}-docker.pkg.dev/${var.gcp_project_id}/${google_artifact_registry_repository.maori_story.repository_id}/backend:latest"
+}
+
+output "secret_manager_status" {
+  description = "Secret Manager 使用状态"
+  value       = var.use_secret_manager ? "✅ 已启用 Secret Manager（生产环境）" : "⚠️  使用普通环境变量（测试环境）"
+}
+
+output "cost_optimization_info" {
+  description = "成本优化配置信息"
+  value = {
+    region         = var.gcp_region
+    min_instances  = 0
+    max_instances  = 1
+    cpu            = "1"
+    memory         = "512Mi"
+    estimated_cost = "$0/月（免费额度内）"
+  }
 }

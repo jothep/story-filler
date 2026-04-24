@@ -29,6 +29,16 @@ variable "environment" {
 }
 
 # ============================================
+# Secret Manager 配置
+# ============================================
+
+variable "use_secret_manager" {
+  description = "是否使用 Secret Manager 管理敏感信息（false=直接环境变量, true=Secret Manager）"
+  type        = bool
+  default     = false
+}
+
+# ============================================
 # 数据库配置
 # ============================================
 
@@ -69,50 +79,12 @@ variable "cors_allowed_origins_list" {
 # ============================================
 # Cloud Run 配置
 # ============================================
-
-variable "min_instances" {
-  description = "Cloud Run 最小实例数（0 = 按需启动，推荐）"
-  type        = number
-  default     = 0
-
-  validation {
-    condition     = var.min_instances >= 0 && var.min_instances <= 10
-    error_message = "min_instances must be between 0 and 10."
-  }
-}
-
-variable "max_instances" {
-  description = "Cloud Run 最大实例数"
-  type        = number
-  default     = 10
-
-  validation {
-    condition     = var.max_instances >= 1 && var.max_instances <= 100
-    error_message = "max_instances must be between 1 and 100."
-  }
-}
-
-variable "cpu_limit" {
-  description = "每个实例的 CPU 限制（'1' = 1 vCPU，推荐）"
-  type        = string
-  default     = "1"
-
-  validation {
-    condition     = contains(["1", "2", "4"], var.cpu_limit)
-    error_message = "cpu_limit must be '1', '2', or '4'."
-  }
-}
-
-variable "memory_limit" {
-  description = "每个实例的内存限制（例如 '512Mi', '1Gi'）"
-  type        = string
-  default     = "512Mi"
-
-  validation {
-    condition     = can(regex("^[0-9]+(Mi|Gi)$", var.memory_limit))
-    error_message = "memory_limit must be in format like '512Mi' or '1Gi'."
-  }
-}
+# 注意：为了严格控制成本，扩缩容和资源配置已在 main.tf 中硬编码：
+# - min_instance_count = 0
+# - max_instance_count = 1
+# - cpu = "1"
+# - memory = "512Mi"
+# 如需修改，请直接编辑 main.tf 中的配置
 
 # ============================================
 # 存储配置
