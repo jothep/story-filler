@@ -1,52 +1,42 @@
-# Terraform 配置文件
+# Terraform 配置
 
-## 📁 文件说明
+部署 Maori Story Fill 后端到 Google Cloud Run。
 
-| 文件 | 说明 |
-|------|------|
-| `main.tf` | 主配置文件，定义所有 AWS 资源 |
-| `variables.tf` | 变量定义 |
-| `outputs.tf` | 输出配置 |
-| `terraform.tfvars` | 变量值（**包含敏感信息，不提交到 Git**） |
-| `terraform.tfvars.example` | 变量值示例模板 |
-| `user-data.sh` | EC2 实例初始化脚本 |
-
-## 🚀 快速开始
+## 快速开始
 
 ```bash
-# 1. 复制配置模板
+# 1. 复制配置
 cp terraform.tfvars.example terraform.tfvars
+vim terraform.tfvars  # 填写配置
 
-# 2. 编辑配置（填写密钥和密码）
-vim terraform.tfvars
+# 2. 认证 GCP
+gcloud auth login
+gcloud config set project YOUR_PROJECT_ID
 
-# 3. 初始化 Terraform
+# 3. 启用 API
+gcloud services enable artifactregistry.googleapis.com run.googleapis.com
+
+# 4. 部署基础设施
 terraform init
-
-# 4. 预览资源
-terraform plan
-
-# 5. 创建资源
 terraform apply
+
+# 5. 构建并推送镜像
+cd ../backend
+docker build -t $(terraform -chdir=../terraform output -raw registry_url)/backend:latest .
+docker push $(terraform -chdir=../terraform output -raw registry_url)/backend:latest
 ```
 
-## 📚 详细文档
+## 配置说明
 
-请参阅项目根目录的 [TERRAFORM_GUIDE.md](../TERRAFORM_GUIDE.md)
+- **必填变量**: gcp_project_id, database_url, django_secret_key
+- **免费数据库**: 推荐 Neon (https://neon.tech)
+- **成本**: $0/月（免费额度内）
 
-## ⚠️ 注意事项
+## 资源
 
-- **不要提交 `terraform.tfvars` 到 Git**（已在 .gitignore 中排除）
-- **不要提交 `.terraform/` 目录**
-- **使用 GCS Backend 存储状态**（已配置 Google Cloud Storage）
-  - 存储桶：`jaskojothep-terraform-state`
-  - 状态路径：`terraform/state/maori-story-fill`
-  - 自动版本控制和备份
+- Artifact Registry (500MB 免费)
+- Cloud Run (200万请求/月 免费)
+  - Max instances: 1 (成本控制)
+  - CPU: 1 core, Memory: 512Mi
 
-## 💰 成本估算
-
-- **EC2 t3.small**: $0.0208/小时
-- **EBS 30GB gp3**: $2.40/月
-- **Elastic IP**: $0（绑定时免费）
-
-**每月使用 160 小时**：约 **$7-10/月**
+详细文档: [CLOUD_RUN_DEPLOY_GUIDE.md](./CLOUD_RUN_DEPLOY_GUIDE.md)
