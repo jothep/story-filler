@@ -38,8 +38,10 @@ terraform apply
 
 - **不要提交 `terraform.tfvars` 到 Git**（已在 .gitignore 中排除）
 - **不要提交 `.terraform/` 目录**
-- **不要提交 `*.tfstate` 文件**（包含敏感信息）
-- 生产环境建议使用 S3 后端存储状态
+- **使用 GCS Backend 存储状态**（已配置 Google Cloud Storage）
+  - 存储桶：`jaskojothep-terraform-state`
+  - 状态路径：`terraform/state/maori-story-fill`
+  - 自动版本控制和备份
 
 ## 💰 成本估算
 

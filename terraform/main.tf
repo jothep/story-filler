@@ -1,317 +1,268 @@
 # ============================================
-# Maori Story Fill - AWS Infrastructure
+# Maori Story Fill - GCP Infrastructure
 # ============================================
-# Terraform 配置：创建 EC2 实例用于部署应用
+# Terraform 配置：使用 Cloud Run + Artifact Registry 部署后端
 
 terraform {
   required_version = ">= 1.0"
 
   required_providers {
-    aws = {
-      source  = "hashicorp/aws"
+    google = {
+      source  = "hashicorp/google"
       version = "~> 5.0"
     }
   }
 
-  # 可选：使用 S3 存储 Terraform 状态（生产环境推荐）
-  # backend "s3" {
-  #   bucket = "your-terraform-state-bucket"
-  #   key    = "maori-story/terraform.tfstate"
-  #   region = "us-east-1"
-  # }
+  # GCS Backend - 使用 Google Cloud Storage 存储 Terraform 状态
+  backend "gcs" {
+    bucket = "jaskojothep-terraform-state"
+    prefix = "terraform/state/maori-story-fill"
+  }
 }
 
 # Provider 配置
-provider "aws" {
-  region = var.aws_region
-
-  default_tags {
-    tags = {
-      Project     = "MaoriStoryFill"
-      Environment = var.environment
-      ManagedBy   = "Terraform"
-    }
-  }
+provider "google" {
+  project = var.gcp_project_id
+  region  = var.gcp_region
 }
 
 # ============================================
 # Data Sources
 # ============================================
 
-# 获取最新的 Ubuntu 22.04 AMI
-data "aws_ami" "ubuntu" {
-  most_recent = true
-  owners      = ["099720109477"] # Canonical (Ubuntu官方)
-
-  filter {
-    name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
-  }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
-  }
-}
-
-# 获取当前 AWS 账户信息
-data "aws_caller_identity" "current" {}
+# 获取当前 GCP 项目信息
+data "google_project" "project" {}
 
 # ============================================
-# Security Group
+# Artifact Registry - Docker镜像仓库
 # ============================================
 
-resource "aws_security_group" "maori_story_sg" {
-  name        = "maori-story-sg-${var.environment}"
-  description = "Security group for Maori Story Fill application"
-  vpc_id      = var.vpc_id
+resource "google_artifact_registry_repository" "maori_story" {
+  location      = var.gcp_region
+  repository_id = "maori-story-${var.environment}"
+  description   = "Docker repository for Maori Story Fill backend"
+  format        = "DOCKER"
 
-  # SSH 访问
-  ingress {
-    description = "SSH from anywhere"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = var.allowed_ssh_cidrs
-  }
-
-  # HTTP 访问
-  ingress {
-    description = "HTTP from anywhere"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # HTTPS 访问
-  ingress {
-    description = "HTTPS from anywhere"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # 允许所有出站流量
-  egress {
-    description = "Allow all outbound traffic"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "maori-story-sg-${var.environment}"
+  labels = {
+    project     = "maori-story-fill"
+    environment = var.environment
+    managed-by  = "terraform"
   }
 }
 
 # ============================================
-# EC2 Instance
+# Cloud Run Service - 后端服务
 # ============================================
 
-resource "aws_instance" "maori_story" {
-  ami           = data.aws_ami.ubuntu.id
-  instance_type = var.instance_type
-  key_name      = var.key_pair_name
-  subnet_id     = var.subnet_id
+resource "google_cloud_run_v2_service" "backend" {
+  name     = "maori-story-backend-${var.environment}"
+  location = var.gcp_region
 
-  vpc_security_group_ids = [aws_security_group.maori_story_sg.id]
-
-  # EBS 根卷配置
-  root_block_device {
-    volume_type           = "gp3"
-    volume_size           = var.root_volume_size
-    delete_on_termination = false  # 停止实例时保留数据
-    encrypted             = true
-
-    tags = {
-      Name = "maori-story-root-${var.environment}"
+  template {
+    # 扩缩容配置
+    scaling {
+      min_instance_count = var.min_instances  # 最小实例数（0=完全按需）
+      max_instance_count = var.max_instances  # 最大实例数
     }
+
+    # 容器配置
+    containers {
+      # 镜像将手动推送到 Artifact Registry
+      image = "${var.gcp_region}-docker.pkg.dev/${var.gcp_project_id}/${google_artifact_registry_repository.maori_story.repository_id}/backend:latest"
+
+      # 环境变量
+      env {
+        name  = "DATABASE_URL"
+        value = var.database_url
+      }
+
+      env {
+        name  = "SECRET_KEY"
+        value = var.django_secret_key
+      }
+
+      env {
+        name  = "DEBUG"
+        value = "False"
+      }
+
+      env {
+        name  = "ALLOWED_HOSTS"
+        value = var.allowed_hosts
+      }
+
+      env {
+        name  = "CORS_ALLOWED_ORIGINS"
+        value = var.cors_allowed_origins
+      }
+
+      env {
+        name  = "USE_S3"
+        value = var.use_s3
+      }
+
+      # 如果使用 S3/GCS
+      dynamic "env" {
+        for_each = var.use_s3 ? [1] : []
+        content {
+          name  = "AWS_ACCESS_KEY_ID"
+          value = var.aws_access_key_id
+        }
+      }
+
+      dynamic "env" {
+        for_each = var.use_s3 ? [1] : []
+        content {
+          name  = "AWS_SECRET_ACCESS_KEY"
+          value = var.aws_secret_access_key
+        }
+      }
+
+      dynamic "env" {
+        for_each = var.use_s3 ? [1] : []
+        content {
+          name  = "AWS_STORAGE_BUCKET_NAME"
+          value = var.aws_storage_bucket_name
+        }
+      }
+
+      # 资源限制
+      resources {
+        limits = {
+          cpu    = var.cpu_limit      # 例如 "1" = 1 vCPU
+          memory = var.memory_limit   # 例如 "512Mi"
+        }
+      }
+
+      # 健康检查端点
+      ports {
+        container_port = 8000
+      }
+    }
+
+    # 超时设置
+    timeout = "300s"
+
+    # Service Account（用于访问其他GCP服务）
+    service_account = google_service_account.cloud_run_sa.email
   }
 
-  # User Data - 初始化脚本
-  user_data = base64encode(templatefile("${path.module}/user-data.sh", {
-    db_password        = var.db_password
-    django_secret_key  = var.django_secret_key
-    git_repo_url       = var.git_repo_url
-    git_branch         = var.git_branch
-  }))
-
-  # 启用详细监控（可选，额外费用约$2/月）
-  monitoring = var.enable_detailed_monitoring
-
-  # 实例元数据配置（安全最佳实践）
-  metadata_options {
-    http_endpoint               = "enabled"
-    http_tokens                 = "required"  # 强制使用 IMDSv2
-    http_put_response_hop_limit = 1
+  # 流量配置
+  traffic {
+    type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
+    percent = 100
   }
 
-  tags = {
-    Name = "maori-story-${var.environment}"
+  labels = {
+    project     = "maori-story-fill"
+    environment = var.environment
+    managed-by  = "terraform"
   }
 
   lifecycle {
     ignore_changes = [
-      ami,  # 避免因 AMI 更新导致实例重建
+      template[0].containers[0].image,  # 允许手动更新镜像
     ]
   }
 }
 
 # ============================================
-# Elastic IP
+# IAM - Service Account for Cloud Run
 # ============================================
 
-resource "aws_eip" "maori_story_eip" {
-  domain = "vpc"
+resource "google_service_account" "cloud_run_sa" {
+  account_id   = "maori-story-backend-${var.environment}"
+  display_name = "Maori Story Backend Service Account"
+  description  = "Service account for Cloud Run backend service"
+}
 
-  tags = {
-    Name = "maori-story-eip-${var.environment}"
+# 如果需要访问 GCS（用于媒体文件）
+resource "google_project_iam_member" "cloud_run_storage" {
+  count   = var.use_gcs_for_media ? 1 : 0
+  project = var.gcp_project_id
+  role    = "roles/storage.objectAdmin"
+  member  = "serviceAccount:${google_service_account.cloud_run_sa.email}"
+}
+
+# 允许日志写入
+resource "google_project_iam_member" "cloud_run_logging" {
+  project = var.gcp_project_id
+  role    = "roles/logging.logWriter"
+  member  = "serviceAccount:${google_service_account.cloud_run_sa.email}"
+}
+
+# ============================================
+# Cloud Run IAM - 公开访问配置
+# ============================================
+
+# 允许未认证用户访问（公开API）
+resource "google_cloud_run_v2_service_iam_member" "public_access" {
+  name     = google_cloud_run_v2_service.backend.name
+  location = google_cloud_run_v2_service.backend.location
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
+# ============================================
+# 可选：GCS Bucket for Media Files
+# ============================================
+
+resource "google_storage_bucket" "media" {
+  count    = var.use_gcs_for_media ? 1 : 0
+  name     = "${var.gcp_project_id}-maori-story-media-${var.environment}"
+  location = var.gcs_location
+
+  # 公开读取（用于提供媒体文件）
+  uniform_bucket_level_access = true
+
+  # CORS 配置
+  cors {
+    origin          = var.cors_allowed_origins_list
+    method          = ["GET", "HEAD"]
+    response_header = ["*"]
+    max_age_seconds = 3600
+  }
+
+  labels = {
+    project     = "maori-story-fill"
+    environment = var.environment
+    managed-by  = "terraform"
   }
 }
 
-# 将 Elastic IP 绑定到 EC2 实例
-resource "aws_eip_association" "maori_story_eip_assoc" {
-  instance_id   = aws_instance.maori_story.id
-  allocation_id = aws_eip.maori_story_eip.id
-}
-
-# ============================================
-# IAM Role (可选 - 用于访问其他AWS服务)
-# ============================================
-
-# IAM 角色
-resource "aws_iam_role" "maori_story_role" {
-  name = "maori-story-ec2-role-${var.environment}"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "ec2.amazonaws.com"
-        }
-      }
-    ]
-  })
-
-  tags = {
-    Name = "maori-story-ec2-role-${var.environment}"
-  }
-}
-
-# IAM 策略 - CloudWatch Logs（日志上传）
-resource "aws_iam_role_policy" "cloudwatch_logs_policy" {
-  name = "cloudwatch-logs-policy"
-  role = aws_iam_role.maori_story_role.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents",
-          "logs:DescribeLogStreams"
-        ]
-        Resource = "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/ec2/maori-story-*"
-      }
-    ]
-  })
-}
-
-# IAM 实例配置文件
-resource "aws_iam_instance_profile" "maori_story_profile" {
-  name = "maori-story-ec2-profile-${var.environment}"
-  role = aws_iam_role.maori_story_role.name
-}
-
-# 可选：将 IAM 角色附加到实例（取消注释以启用）
-# resource "aws_iam_instance_profile_association" "maori_story" {
-#   instance_id       = aws_instance.maori_story.id
-#   iam_instance_profile = aws_iam_instance_profile.maori_story_profile.name
-# }
-
-# ============================================
-# CloudWatch Alarms（可选 - 监控告警）
-# ============================================
-
-# CPU 使用率告警
-resource "aws_cloudwatch_metric_alarm" "high_cpu" {
-  count               = var.enable_cloudwatch_alarms ? 1 : 0
-  alarm_name          = "maori-story-high-cpu-${var.environment}"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = "2"
-  metric_name         = "CPUUtilization"
-  namespace           = "AWS/EC2"
-  period              = "300"
-  statistic           = "Average"
-  threshold           = "80"
-  alarm_description   = "This metric monitors ec2 cpu utilization"
-
-  dimensions = {
-    InstanceId = aws_instance.maori_story.id
-  }
-
-  alarm_actions = var.alarm_sns_topic_arn != "" ? [var.alarm_sns_topic_arn] : []
-}
-
-# 状态检查失败告警
-resource "aws_cloudwatch_metric_alarm" "instance_status_check" {
-  count               = var.enable_cloudwatch_alarms ? 1 : 0
-  alarm_name          = "maori-story-status-check-failed-${var.environment}"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = "2"
-  metric_name         = "StatusCheckFailed"
-  namespace           = "AWS/EC2"
-  period              = "60"
-  statistic           = "Average"
-  threshold           = "0"
-  alarm_description   = "This metric monitors instance status check failures"
-
-  dimensions = {
-    InstanceId = aws_instance.maori_story.id
-  }
-
-  alarm_actions = var.alarm_sns_topic_arn != "" ? [var.alarm_sns_topic_arn] : []
+# 设置 bucket 为公开可读
+resource "google_storage_bucket_iam_member" "media_public" {
+  count  = var.use_gcs_for_media ? 1 : 0
+  bucket = google_storage_bucket.media[0].name
+  role   = "roles/storage.objectViewer"
+  member = "allUsers"
 }
 
 # ============================================
 # Outputs
 # ============================================
 
-output "instance_id" {
-  description = "EC2 实例 ID"
-  value       = aws_instance.maori_story.id
+output "artifact_registry_url" {
+  description = "Artifact Registry Docker 仓库地址"
+  value       = "${var.gcp_region}-docker.pkg.dev/${var.gcp_project_id}/${google_artifact_registry_repository.maori_story.repository_id}"
 }
 
-output "instance_public_ip" {
-  description = "实例的 Elastic IP 地址"
-  value       = aws_eip.maori_story_eip.public_ip
+output "cloud_run_url" {
+  description = "Cloud Run 后端服务 URL"
+  value       = google_cloud_run_v2_service.backend.uri
 }
 
-output "instance_public_dns" {
-  description = "实例的公共 DNS"
-  value       = aws_instance.maori_story.public_dns
+output "service_account_email" {
+  description = "Cloud Run Service Account Email"
+  value       = google_service_account.cloud_run_sa.email
 }
 
-output "security_group_id" {
-  description = "安全组 ID"
-  value       = aws_security_group.maori_story_sg.id
+output "media_bucket_url" {
+  description = "GCS 媒体文件 Bucket URL"
+  value       = var.use_gcs_for_media ? "gs://${google_storage_bucket.media[0].name}" : "Not using GCS for media"
 }
 
-output "ssh_command" {
-  description = "SSH 连接命令"
-  value       = "ssh -i ~/.ssh/${var.key_pair_name}.pem ubuntu@${aws_eip.maori_story_eip.public_ip}"
-}
-
-output "web_url" {
-  description = "应用访问地址"
-  value       = "http://${aws_eip.maori_story_eip.public_ip}"
+output "docker_push_command" {
+  description = "Docker 镜像推送命令示例"
+  value       = "docker push ${var.gcp_region}-docker.pkg.dev/${var.gcp_project_id}/${google_artifact_registry_repository.maori_story.repository_id}/backend:latest"
 }

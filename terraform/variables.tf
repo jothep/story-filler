@@ -1,132 +1,158 @@
 # ============================================
-# Maori Story Fill - Terraform Variables
+# Maori Story Fill - GCP Variables
 # ============================================
 
-# ----------------------
-# AWS 基础配置
-# ----------------------
+# ============================================
+# 必需变量 (Required)
+# ============================================
 
-variable "aws_region" {
-  description = "AWS 区域"
+variable "gcp_project_id" {
+  description = "GCP 项目 ID"
   type        = string
-  default     = "us-east-1"
+}
+
+variable "gcp_region" {
+  description = "GCP 区域（例如 us-central1）"
+  type        = string
+  default     = "us-central1"
 }
 
 variable "environment" {
-  description = "环境名称 (dev, staging, prod)"
+  description = "环境名称（dev, staging, prod）"
   type        = string
   default     = "prod"
-}
-
-# ----------------------
-# 网络配置
-# ----------------------
-
-variable "vpc_id" {
-  description = "VPC ID（使用默认 VPC 或指定现有 VPC）"
-  type        = string
-  default     = ""  # 留空将使用默认 VPC
-}
-
-variable "subnet_id" {
-  description = "子网 ID（留空将使用默认子网）"
-  type        = string
-  default     = ""
-}
-
-variable "allowed_ssh_cidrs" {
-  description = "允许 SSH 访问的 CIDR 列表"
-  type        = list(string)
-  default     = ["0.0.0.0/0"]  # 生产环境建议改为你的公网 IP
-}
-
-# ----------------------
-# EC2 实例配置
-# ----------------------
-
-variable "instance_type" {
-  description = "EC2 实例类型"
-  type        = string
-  default     = "t3.small"
 
   validation {
-    condition     = contains(["t3.micro", "t3.small", "t3.medium"], var.instance_type)
-    error_message = "实例类型必须是 t3.micro, t3.small 或 t3.medium"
+    condition     = contains(["dev", "staging", "prod"], var.environment)
+    error_message = "Environment must be dev, staging, or prod."
   }
 }
 
-variable "key_pair_name" {
-  description = "SSH 密钥对名称（必须提前在 AWS 中创建）"
-  type        = string
-}
+# ============================================
+# 数据库配置
+# ============================================
 
-variable "root_volume_size" {
-  description = "根卷大小（GB）"
-  type        = number
-  default     = 30
-
-  validation {
-    condition     = var.root_volume_size >= 20 && var.root_volume_size <= 100
-    error_message = "根卷大小必须在 20-100 GB 之间"
-  }
-}
-
-# ----------------------
-# 应用配置
-# ----------------------
-
-variable "db_password" {
-  description = "PostgreSQL 数据库密码"
+variable "database_url" {
+  description = "PostgreSQL 数据库连接字符串（格式：postgresql://user:${DB_PASSWORD}@host:port/dbname）"
   type        = string
   sensitive   = true
 }
 
 variable "django_secret_key" {
-  description = "Django 密钥"
+  description = "Django SECRET_KEY（用于加密）"
   type        = string
   sensitive   = true
 }
 
-variable "git_repo_url" {
-  description = "Git 仓库 URL"
+# ============================================
+# 应用配置
+# ============================================
+
+variable "allowed_hosts" {
+  description = "Django ALLOWED_HOSTS（逗号分隔）"
   type        = string
-  default     = "https://github.com/your-username/maori-story-fill.git"
+  default     = "*"
 }
 
-variable "git_branch" {
-  description = "Git 分支"
+variable "cors_allowed_origins" {
+  description = "CORS 允许的源（逗号分隔）"
   type        = string
-  default     = "main"
+  default     = "https://your-username.github.io"
 }
 
-# ----------------------
-# 监控配置
-# ----------------------
+variable "cors_allowed_origins_list" {
+  description = "CORS 允许的源（列表格式，用于 GCS CORS 配置）"
+  type        = list(string)
+  default     = ["https://your-username.github.io"]
+}
 
-variable "enable_detailed_monitoring" {
-  description = "启用详细监控（额外费用 ~$2/月）"
+# ============================================
+# Cloud Run 配置
+# ============================================
+
+variable "min_instances" {
+  description = "Cloud Run 最小实例数（0 = 按需启动，推荐）"
+  type        = number
+  default     = 0
+
+  validation {
+    condition     = var.min_instances >= 0 && var.min_instances <= 10
+    error_message = "min_instances must be between 0 and 10."
+  }
+}
+
+variable "max_instances" {
+  description = "Cloud Run 最大实例数"
+  type        = number
+  default     = 10
+
+  validation {
+    condition     = var.max_instances >= 1 && var.max_instances <= 100
+    error_message = "max_instances must be between 1 and 100."
+  }
+}
+
+variable "cpu_limit" {
+  description = "每个实例的 CPU 限制（'1' = 1 vCPU，推荐）"
+  type        = string
+  default     = "1"
+
+  validation {
+    condition     = contains(["1", "2", "4"], var.cpu_limit)
+    error_message = "cpu_limit must be '1', '2', or '4'."
+  }
+}
+
+variable "memory_limit" {
+  description = "每个实例的内存限制（例如 '512Mi', '1Gi'）"
+  type        = string
+  default     = "512Mi"
+
+  validation {
+    condition     = can(regex("^[0-9]+(Mi|Gi)$", var.memory_limit))
+    error_message = "memory_limit must be in format like '512Mi' or '1Gi'."
+  }
+}
+
+# ============================================
+# 存储配置
+# ============================================
+
+variable "use_s3" {
+  description = "是否使用 S3/GCS 存储媒体文件（字符串 'true' 或 'false'）"
+  type        = string
+  default     = "false"
+}
+
+variable "use_gcs_for_media" {
+  description = "是否创建 GCS bucket 用于媒体文件（推荐用 S3 兼容模式）"
   type        = bool
   default     = false
 }
 
-variable "enable_cloudwatch_alarms" {
-  description = "启用 CloudWatch 告警"
-  type        = bool
-  default     = false
+variable "gcs_location" {
+  description = "GCS Bucket 位置（例如 US, EU, ASIA）"
+  type        = string
+  default     = "US"
 }
 
-variable "alarm_sns_topic_arn" {
-  description = "告警通知的 SNS Topic ARN"
+# S3 配置（如果使用 AWS S3 而不是 GCS）
+variable "aws_access_key_id" {
+  description = "AWS Access Key ID（如果使用 S3）"
   type        = string
   default     = ""
+  sensitive   = true
 }
 
-# ----------------------
-# 标签
-# ----------------------
+variable "aws_secret_access_key" {
+  description = "AWS Secret Access Key（如果使用 S3）"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
 
-variable "additional_tags" {
-  description = "额外的资源标签"
-  type        = map(string)
-  default     = {}
+variable "aws_storage_bucket_name" {
+  description = "S3 Bucket 名称（如果使用 S3）"
+  type        = string
+  default     = ""
 }

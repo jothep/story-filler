@@ -1,86 +1,108 @@
 # ============================================
-# Maori Story Fill - Terraform 变量示例
+# Maori Story Fill - Terraform变量值示例
 # ============================================
 # 复制此文件为 terraform.tfvars 并填写实际值
-# 注意：terraform.tfvars 包含敏感信息，已在 .gitignore 中排除
+# cp terraform.tfvars.example terraform.tfvars
+#
+# ⚠️ 警告：terraform.tfvars 包含敏感信息，已在 .gitignore 中排除
+# ============================================
 
-# ----------------------
-# AWS 基础配置
-# ----------------------
+# ============================================
+# GCP 项目配置
+# ============================================
 
-# AWS 区域（推荐 us-east-1，成本最低）
-aws_region = "us-east-1"
+gcp_project_id = "your-gcp-project-id"  # 替换为你的 GCP 项目 ID
+gcp_region     = "us-central1"           # 推荐 us-central1（免费层可用）
+environment    = "prod"                  # 环境：dev, staging, 或 prod
 
-# 环境名称
-environment = "prod"
+# ============================================
+# 数据库配置（免费数据库服务）
+# ============================================
 
-# ----------------------
-# 网络配置
-# ----------------------
+# 示例1：使用 Neon (https://neon.tech) - 推荐
+database_url = "postgresql://username:${DB_PASSWORD}@ep-xxx.region.aws.neon.tech/neondb?sslmode=require"
 
-# VPC ID（留空使用默认 VPC）
-# 查看默认 VPC: aws ec2 describe-vpcs --filters "Name=is-default,Values=true"
-vpc_id = ""
+# 示例2：使用 Supabase (https://supabase.com)
+# database_url = "postgresql://postgres:${DB_PASSWORD}@db.xxx.supabase.co:5432/postgres"
 
-# 子网 ID（留空使用默认子网）
-# 查看子网: aws ec2 describe-subnets --filters "Name=vpc-id,Values=<vpc-id>"
-subnet_id = ""
+# 示例3：使用 ElephantSQL (https://www.elephantsql.com)
+# database_url = "postgresql://username:${DB_PASSWORD}@xxx.db.elephantsql.com/xxx"
 
-# 允许 SSH 访问的 IP（建议改为你的公网 IP）
-# 查看你的 IP: curl ifconfig.me
-allowed_ssh_cidrs = ["0.0.0.0/0"]  # 生产环境改为: ["YOUR_IP/32"]
+# ============================================
+# Django 密钥
+# ============================================
 
-# ----------------------
-# EC2 实例配置
-# ----------------------
+# 生成方法：
+# python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
+django_secret_key = "your-django-secret-key-here-replace-with-random-50-chars"
 
-# 实例类型（t3.small 推荐，2GB RAM）
-instance_type = "t3.small"
+# ============================================
+# 应用配置
+# ============================================
 
-# SSH 密钥对名称（必须提前创建）
-# 创建密钥: aws ec2 create-key-pair --key-name maori-story-key --query 'KeyMaterial' --output text > ~/.ssh/maori-story-key.pem
-# 或在 AWS Console: EC2 > Key Pairs > Create key pair
-key_pair_name = "maori-story-key"
+# Django ALLOWED_HOSTS（Cloud Run 会自动添加服务URL）
+allowed_hosts = "*"  # 生产环境可改为具体域名
 
-# 根卷大小（GB）
-root_volume_size = 30
+# CORS配置（前端GitHub Pages URL）
+cors_allowed_origins = "https://your-username.github.io,https://yourusername.github.io"
 
-# ----------------------
-# 应用配置（敏感信息）
-# ----------------------
+# CORS配置（列表格式）
+cors_allowed_origins_list = [
+  "https://your-username.github.io",
+  "https://yourusername.github.io"
+]
 
-# PostgreSQL 数据库密码（请使用强密码）
-db_password = "your_strong_database_password_here"
+# ============================================
+# Cloud Run 配置（免费层优化）
+# ============================================
 
-# Django 密钥（使用下面命令生成）
-# python3 -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
-django_secret_key = "your-django-secret-key-at-least-50-characters-long"
+min_instances = 0         # 0 = 完全按需启动，推荐（免费层友好）
+max_instances = 10        # 最大实例数
+cpu_limit     = "1"       # CPU：1 vCPU（免费层足够）
+memory_limit  = "512Mi"   # 内存：512MB（免费层足够）
 
-# Git 仓库 URL
-git_repo_url = "https://github.com/your-username/maori-story-fill.git"
+# ============================================
+# 媒体文件存储（可选）
+# ============================================
 
-# Git 分支
-git_branch = "main"
+# 选项1：使用 AWS S3（已有S3配置）
+use_s3 = "true"
+aws_access_key_id        = "your-aws-access-key"
+aws_secret_access_key    = "your-aws-secret-key"
+aws_storage_bucket_name  = "your-s3-bucket-name"
 
-# ----------------------
-# 监控配置（可选）
-# ----------------------
+# 选项2：使用 GCS（创建新bucket）
+# use_s3 = "false"
+# use_gcs_for_media = true
+# gcs_location = "US"
 
-# 启用详细监控（额外费用 ~$2/月）
-enable_detailed_monitoring = false
+# 选项3：不使用对象存储（使用Cloud Run临时存储，不推荐）
+# use_s3 = "false"
+# use_gcs_for_media = false
 
-# 启用 CloudWatch 告警
-enable_cloudwatch_alarms = false
+# ============================================
+# 免费资源推荐
+# ============================================
 
-# 告警通知的 SNS Topic ARN（如果启用告警）
-# alarm_sns_topic_arn = "arn:aws:sns:us-east-1:123456789012:maori-story-alerts"
+# 数据库（选一个）：
+# - Neon: 500MB 免费 (https://neon.tech)
+# - Supabase: 500MB 免费 (https://supabase.com)
+# - ElephantSQL: 20MB 免费 (https://www.elephantsql.com)
+# - Render PostgreSQL: 90天免费试用 (https://render.com)
 
-# ----------------------
-# 额外标签（可选）
-# ----------------------
+# 对象存储（选一个）：
+# - AWS S3: 5GB 免费（12个月）
+# - GCS: 5GB 免费（Always Free）
+# - Cloudflare R2: 10GB 免费
+# - Backblaze B2: 10GB 免费
 
-additional_tags = {
-  Owner       = "YourName"
-  CostCenter  = "Engineering"
-  Application = "MaoriStoryFill"
-}
+# 前端托管：
+# - GitHub Pages: 免费（你已选择）
+
+# 总成本估算：
+# - Cloud Run: $0-2/月（轻度使用）
+# - Artifact Registry: $0/月（< 500MB）
+# - 数据库: $0/月（免费层）
+# - 对象存储: $0/月（免费层）
+# ============================
+# 总计: $0-2/月 🎉
