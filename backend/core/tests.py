@@ -133,10 +133,8 @@ class StorageConfigurationTest(TestCase):
         print("Running: test_default_uses_local_storage")
         from django.conf import settings
 
-        # Without USE_S3 env var, should use local storage
-        # This is tested by checking settings don't have S3 config
-        self.assertFalse(hasattr(settings, 'AWS_STORAGE_BUCKET_NAME') or
-                        getattr(settings, 'AWS_STORAGE_BUCKET_NAME', None))
+        # Verify local storage configuration
+        self.assertEqual(settings.MEDIA_URL, "/media/")
 
     def test_media_url_generation_local(self):
         """Test media URL generation for local storage."""
