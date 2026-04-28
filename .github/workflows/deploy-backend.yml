@@ -83,9 +83,9 @@ jobs:
         with:
           image-ref: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY }}/backend:latest
           format: 'table'
-          exit-code: '0'  # Don't fail on vulnerabilities, just report
+          exit-code: '1'  # Fail build if HIGH or CRITICAL vulnerabilities found
           severity: 'HIGH,CRITICAL'
-          ignore-unfixed: true
+          ignore-unfixed: true  # Only fail on vulnerabilities that have fixes available
 
       - name: 12. Push Docker image
         run: |
