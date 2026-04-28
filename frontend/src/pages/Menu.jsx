@@ -55,7 +55,7 @@ const menuListStyles = {
 function Menu() {
   const { stories, loading, error, refetch } = useStories();
 
-  const [isMusicPlaying, setIsMusicPlaying] = useState(true);
+  const [isMusicPlaying, setIsMusicPlaying] = useState(false);
   const [bgmPath, setBgmPath] = useState(null);
   const audioRef = useRef(null);
 
@@ -88,21 +88,15 @@ function Menu() {
     }
 
     const audio = new Audio(bgmPath);
-
     audio.loop = true;
     audio.volume = 0.3;
     audioRef.current = audio;
 
-    // Attempt to play on initialization (may be blocked by browser)
-    audio.play().catch((e) => {
-      console.warn('The browser blocks autoplay:', e);
-      // If autoplay is blocked, user can manually start via toggle
-      setIsMusicPlaying(false);
-    });
-
     return () => {
-      audio.pause();
-      audioRef.current = null;
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
     };
   }, [bgmPath]);
 
@@ -114,7 +108,10 @@ function Menu() {
     setIsMusicPlaying(newMusicState);
 
     if (newMusicState) {
-      audio.play();
+      audio.play().catch((e) => {
+        console.warn('Failed to play audio:', e);
+        setIsMusicPlaying(false);
+      });
     } else {
       audio.pause();
     }
