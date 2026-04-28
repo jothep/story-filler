@@ -66,7 +66,10 @@ function Menu() {
         const response = await fetch(getApiUrl('/api/config/'));
         if (response.ok) {
           const config = await response.json();
-          setBgmPath(config.menu_bgm_path);
+          // Use the audio_url from the menu_bgm object
+          if (config.menu_bgm && config.menu_bgm.audio_url) {
+            setBgmPath(config.menu_bgm.audio_url);
+          }
         } else {
           console.warn('Failed to fetch BGM config, BGM will be disabled');
         }
