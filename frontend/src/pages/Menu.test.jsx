@@ -9,7 +9,11 @@ const MOCK_STORIES = [
 ];
 
 const MOCK_CONFIG = {
-  menu_bgm_path: '/media/bgm/Schumann_Fantasy.mp3',
+  menu_bgm: {
+    id: 1,
+    title: 'Test BGM',
+    audio_url: '/media/bgm/Schumann_Fantasy.mp3',
+  },
 };
 
 afterEach(() => {
@@ -80,7 +84,7 @@ describe('Menu Component - BGM Configuration', () => {
       },
       {
         ok: true,
-        json: async () => ({ menu_bgm_path: null }),
+        json: async () => ({ menu_bgm: null }),
       }
     );
 
