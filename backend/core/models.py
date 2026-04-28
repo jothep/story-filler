@@ -81,33 +81,31 @@ def compress_image(image_file, max_width=1920, max_height=1080, quality=85):
 
 class AppConfig(models.Model):
     """
-    Global application configuration key-value store.
-    Used for settings like menu BGM path, app title, etc.
+    Global application configuration.
+    Currently only stores menu background music.
     """
-    key = models.CharField(
-        max_length=100,
-        unique=True,
-        verbose_name="Configuration Key",
-        help_text="Unique identifier for this configuration setting"
-    )
-    value = models.TextField(
-        verbose_name="Configuration Value",
-        help_text="The value for this configuration setting"
-    )
-    description = models.CharField(
-        max_length=255,
+    menu_bgm = models.ForeignKey(
+        'BackgroundMusic',
+        on_delete=models.SET_NULL,
+        null=True,
         blank=True,
-        verbose_name="Description",
-        help_text="Human-readable description of this setting"
+        verbose_name="Menu Background Music",
+        help_text="Select background music for the main menu"
     )
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Last Updated")
 
     class Meta:
         verbose_name = "Application Configuration"
-        verbose_name_plural = "Application Configurations"
+        verbose_name_plural = "Application Configuration"
 
     def __str__(self):
-        return self.key
+        return f"App Config (Last updated: {self.updated_at.strftime('%Y-%m-%d')})"
+
+    def save(self, *args, **kwargs):
+        # Ensure only one config instance exists
+        if not self.pk and AppConfig.objects.exists():
+            raise ValidationError('Only one Application Configuration can exist.')
+        return super().save(*args, **kwargs)
 
 
 class BackgroundMusic(models.Model):
