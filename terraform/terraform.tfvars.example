@@ -1,20 +1,13 @@
 # GCP 项目配置
 gcp_project_id = "your-gcp-project-id"
 gcp_region     = "us-central1"
-environment    = "prod"
 
-# 数据库连接（使用免费服务：Neon/Supabase/ElephantSQL）
-database_url = "postgresql://username:${DB_PASSWORD}@host:5432/dbname"
+# Neon 数据库连接
+database_url = "postgresql://username:${DB_PASSWORD}@ep-xxx-xxx.us-east-2.aws.neon.tech/neondb?sslmode=require"
 
-# Django 密钥（生成方法：python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'）
-django_secret_key = "your-django-secret-key-50-chars"
+# Django 密钥（生成：python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'）
+django_secret_key = "your-50-character-random-secret-key-here"
 
 # 前端配置
 allowed_hosts        = "*"
 cors_allowed_origins = "https://yourusername.github.io"
-
-# S3/GCS 存储（可选）
-use_s3                  = "false"
-aws_access_key_id       = ""
-aws_secret_access_key   = ""
-aws_storage_bucket_name = ""

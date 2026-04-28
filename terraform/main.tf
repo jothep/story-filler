@@ -19,22 +19,22 @@ provider "google" {
   region  = var.gcp_region
 }
 
-# Artifact Registry
+# Artifact Registry - Docker 镜像仓库
 resource "google_artifact_registry_repository" "maori_story" {
   location      = var.gcp_region
-  repository_id = "maori-story-${var.environment}"
+  repository_id = "maori-story"
   format        = "DOCKER"
 }
 
 # Service Account
 resource "google_service_account" "cloud_run" {
-  account_id   = "maori-story-${var.environment}"
-  display_name = "Maori Story Cloud Run"
+  account_id   = "maori-story-backend"
+  display_name = "Maori Story Backend"
 }
 
-# Cloud Run Service
+# Cloud Run - 后端服务
 resource "google_cloud_run_v2_service" "backend" {
-  name     = "maori-story-backend-${var.environment}"
+  name     = "maori-story-backend"
   location = var.gcp_region
 
   template {
@@ -87,32 +87,23 @@ resource "google_cloud_run_v2_service" "backend" {
       }
 
       env {
-        name  = "USE_S3"
-        value = var.use_s3
+        name  = "USE_GCS"
+        value = "true"
       }
 
-      dynamic "env" {
-        for_each = var.use_s3 == "true" ? [1] : []
-        content {
-          name  = "AWS_ACCESS_KEY_ID"
-          value = var.aws_access_key_id
-        }
+      env {
+        name  = "GS_BUCKET_NAME"
+        value = "maori-story-media"
       }
 
-      dynamic "env" {
-        for_each = var.use_s3 == "true" ? [1] : []
-        content {
-          name  = "AWS_SECRET_ACCESS_KEY"
-          value = var.aws_secret_access_key
-        }
+      env {
+        name  = "CSRF_TRUSTED_ORIGINS"
+        value = "http://localhost:8000,http://localhost"
       }
 
-      dynamic "env" {
-        for_each = var.use_s3 == "true" ? [1] : []
-        content {
-          name  = "AWS_STORAGE_BUCKET_NAME"
-          value = var.aws_storage_bucket_name
-        }
+      env {
+        name  = "CSRF_TRUSTED_ORIGIN_WILDCARDS"
+        value = "https://*.run.app"
       }
     }
 
@@ -131,7 +122,7 @@ resource "google_cloud_run_v2_service" "backend" {
   }
 }
 
-# Public access
+# 公开访问（前端调用API）
 resource "google_cloud_run_v2_service_iam_member" "public" {
   name     = google_cloud_run_v2_service.backend.name
   location = google_cloud_run_v2_service.backend.location
@@ -141,9 +132,16 @@ resource "google_cloud_run_v2_service_iam_member" "public" {
 
 # Outputs
 output "registry_url" {
-  value = "${var.gcp_region}-docker.pkg.dev/${var.gcp_project_id}/${google_artifact_registry_repository.maori_story.repository_id}"
+  description = "Docker镜像仓库地址"
+  value       = "${var.gcp_region}-docker.pkg.dev/${var.gcp_project_id}/${google_artifact_registry_repository.maori_story.repository_id}"
 }
 
 output "service_url" {
-  value = google_cloud_run_v2_service.backend.uri
+  description = "后端API地址（配置到前端）"
+  value       = google_cloud_run_v2_service.backend.uri
+}
+
+output "push_command" {
+  description = "推送镜像命令"
+  value       = "docker push ${var.gcp_region}-docker.pkg.dev/${var.gcp_project_id}/${google_artifact_registry_repository.maori_story.repository_id}/backend:latest"
 }

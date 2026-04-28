@@ -46,7 +46,7 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
+    "maori_story_project.middleware.WildcardCsrfViewMiddleware",  # Custom CSRF with wildcard support
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -115,54 +115,65 @@ STATICFILES_STORAGE = (
 )
 
 # --- Media Files Storage Configuration ---
-# Supports three modes:
+# Supports two modes:
 # 1. Local storage (default) - files saved to MEDIA_ROOT
-# 2. MinIO - self-hosted S3-compatible storage
-# 3. AWS S3 - cloud object storage
+# 2. Google Cloud Storage - files saved to GCS bucket
 
-USE_S3 = env.bool("USE_S3", default=False)
+USE_GCS = env.bool("USE_GCS", default=False)
 
-if USE_S3:
-    # S3 Storage Configuration (AWS S3 or MinIO)
-    INSTALLED_APPS += ["storages"]
+if USE_GCS:
+    # Google Cloud Storage Configuration (Django 4.2+ style)
+    GS_BUCKET_NAME = env("GS_BUCKET_NAME")
+    GS_DEFAULT_ACL = 'publicRead'
+    GS_FILE_OVERWRITE = False
+    # Use Application Default Credentials (from Cloud Run service account)
+    GS_CREDENTIALS = None  # Use ADC instead of explicit credentials
+    GS_AUTO_CREATE_BUCKET = False  # Bucket already exists
+    GS_AUTO_CREATE_ACL = 'publicRead'
+    GS_QUERYSTRING_AUTH = False  # Don't require signed URLs for public files
+    MEDIA_URL = f'https://storage.googleapis.com/{GS_BUCKET_NAME}/'
 
-    AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID")
-    AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY")
-    AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME")
-    AWS_S3_REGION_NAME = env("AWS_S3_REGION_NAME", default="us-east-1")
-
-    # MinIO support: custom endpoint URL
-    AWS_S3_ENDPOINT_URL = env("AWS_S3_ENDPOINT_URL", default=None)
-
-    # S3 Configuration
-    AWS_S3_FILE_OVERWRITE = False
-    AWS_DEFAULT_ACL = None
-    AWS_S3_OBJECT_PARAMETERS = {
-        'CacheControl': 'max-age=86400',  # 1 day
+    # Django 4.2+ STORAGES setting
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.gcloud.GoogleCloudStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
     }
-
-    # Use S3 for media files
-    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-
-    # Construct media URL
-    if AWS_S3_ENDPOINT_URL:
-        # MinIO or custom S3 endpoint
-        MEDIA_URL = f"{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/"
-    else:
-        # AWS S3
-        AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com'
-        MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
 else:
     # Local File Storage (default)
     MEDIA_URL = "/media/"
-    # Use BASE_DIR/media for tests, /app/media for production
     MEDIA_ROOT = env("MEDIA_ROOT", default=str(BASE_DIR / "media"))
+
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # --- CORS Settings ---
 CORS_ALLOWED_ORIGINS = env.list(
     "CORS_ALLOWED_ORIGINS", default=["http://localhost:5173"]
+)
+
+# --- CSRF Settings ---
+CSRF_TRUSTED_ORIGINS = env.list(
+    "CSRF_TRUSTED_ORIGINS",
+    default=["http://localhost:8000", "http://localhost"]
+)
+
+# Support for wildcard domains (e.g., https://*.run.app)
+# Store wildcard patterns separately for custom validation
+CSRF_TRUSTED_ORIGIN_WILDCARDS = env.list(
+    "CSRF_TRUSTED_ORIGIN_WILDCARDS",
+    default=[]
 )
 
 # --- Logging Configuration ---
