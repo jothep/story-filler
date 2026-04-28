@@ -279,3 +279,8 @@ staticfiles/
 # ----------------------
 data-export-*/
 data-import-*/
+
+# ----------------------
+# Cloud Run Environment Variables
+# ----------------------
+env-vars.yaml
