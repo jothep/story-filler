@@ -2,6 +2,7 @@
 URL configuration for maori_story_project project.
 
 This module defines the main URL routing for the application.
+Handles admin interface and API endpoints.
 """
 
 from django.contrib import admin
