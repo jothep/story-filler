@@ -1,5 +1,7 @@
 """
 URL configuration for maori_story_project project.
+
+This module defines the main URL routing for the application.
 """
 
 from django.contrib import admin
