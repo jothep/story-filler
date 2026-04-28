@@ -175,25 +175,47 @@ class StoryListSerializer(serializers.ModelSerializer):
         fields = ["id", "title"]
 
 
+class BackgroundMusicSerializer(serializers.ModelSerializer):
+    """Serializer for BackgroundMusic model."""
+    audio_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = BackgroundMusic
+        fields = ["id", "title", "audio_url"]
+
+    def get_audio_url(self, obj):
+        """Get audio URL with error handling."""
+        if obj.audio_file:
+            try:
+                return obj.audio_file.url
+            except (ValueError, AttributeError) as e:
+                logger.warning(f"Failed to get audio URL for BGM {obj.id}: {e}")
+                return None
+        return None
+
+
 class AppConfigSerializer(serializers.Serializer):
     """
     Serializer for application configuration.
-    Returns a dictionary of key-value pairs for frontend use.
+    Returns menu BGM information for frontend use.
     """
-    menu_bgm_path = serializers.CharField(allow_null=True, required=False)
+    menu_bgm = BackgroundMusicSerializer(allow_null=True, required=False)
 
     def to_representation(self, _):
         """
-        Convert AppConfig queryset to a dictionary.
-        Note: instance parameter unused as we fetch config directly.
+        Convert AppConfig instance to a dictionary.
         """
         try:
-            menu_bgm = AppConfig.objects.filter(key="menu_bgm_path").first()
+            config = AppConfig.objects.first()
+            if config and config.menu_bgm:
+                return {
+                    "menu_bgm": BackgroundMusicSerializer(config.menu_bgm).data
+                }
             return {
-                "menu_bgm_path": menu_bgm.value if menu_bgm else None
+                "menu_bgm": None
             }
         except Exception as e:
             logger.error(f"Failed to retrieve app config: {e}")
             return {
-                "menu_bgm_path": None
+                "menu_bgm": None
             }
