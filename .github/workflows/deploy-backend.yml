@@ -6,9 +6,8 @@ on:
     paths:
       - 'backend/**'
       - '.github/workflows/deploy-backend.yml'
-      # Exclude documentation and non-code files
+      # Exclude documentation files only
       - '!backend/**/*.md'
-      - '!backend/**/*.txt'
       - '!backend/.gitignore'
   workflow_dispatch:  # 允许手动触发
 
