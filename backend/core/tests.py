@@ -23,31 +23,26 @@ class AppConfigModelTest(TestCase):
     def test_app_config_creation(self):
         """Test creating an AppConfig instance."""
         print("Running: test_app_config_creation")
-        config = AppConfig.objects.create(
-            key="menu_bgm_path",
-            value="/media/bgm/Schumann_Fantasy.mp3"
-        )
-        self.assertEqual(config.key, "menu_bgm_path")
-        self.assertEqual(config.value, "/media/bgm/Schumann_Fantasy.mp3")
+        config = AppConfig.objects.create()
+        self.assertIsNotNone(config)
+        self.assertIsNone(config.menu_bgm)
 
     def test_app_config_str_representation(self):
         """Test string representation of AppConfig."""
         print("Running: test_app_config_str_representation")
-        config = AppConfig.objects.create(
-            key="menu_bgm_path",
-            value="/media/bgm/test.mp3"
-        )
-        self.assertEqual(str(config), "menu_bgm_path")
+        config = AppConfig.objects.create()
+        self.assertIn("App Config", str(config))
 
-    def test_app_config_unique_key(self):
-        """Test that keys are unique."""
-        print("Running: test_app_config_unique_key")
-        AppConfig.objects.create(key="test_key", value="value1")
+    def test_app_config_single_instance(self):
+        """Test that only one AppConfig instance can exist."""
+        print("Running: test_app_config_single_instance")
+        AppConfig.objects.create()
 
-        # Attempting to create duplicate key should raise error
-        from django.db import IntegrityError
-        with self.assertRaises(IntegrityError):
-            AppConfig.objects.create(key="test_key", value="value2")
+        # Attempting to create second instance should raise error
+        from django.core.exceptions import ValidationError
+        with self.assertRaises(ValidationError):
+            config2 = AppConfig()
+            config2.save()
 
 # --- API View Tests ---
 
@@ -90,11 +85,8 @@ class AppConfigAPITest(APITestCase):
     @classmethod
     def setUpTestData(cls):
         print("Running: setUpTestData for AppConfig API tests")
-        # Create menu BGM configuration
-        AppConfig.objects.create(
-            key="menu_bgm_path",
-            value="/media/bgm/Schumann_Fantasy.mp3"
-        )
+        # Create app configuration
+        AppConfig.objects.create()
         cls.config_url = reverse('app-config')
 
     def test_get_app_config(self):
@@ -103,24 +95,18 @@ class AppConfigAPITest(APITestCase):
         response = self.client.get(self.config_url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("menu_bgm_path", response.data)
-        self.assertEqual(
-            response.data["menu_bgm_path"],
-            "/media/bgm/Schumann_Fantasy.mp3"
-        )
+        # Config should exist and have menu_bgm field
+        self.assertIn("menu_bgm", response.data)
 
-    def test_get_app_config_empty(self):
-        """Test retrieving config when no menu_bgm_path is set."""
-        print("Running: test_get_app_config_empty")
-        # Delete the config
-        AppConfig.objects.filter(key="menu_bgm_path").delete()
-
+    def test_get_app_config_no_bgm(self):
+        """Test retrieving config when no menu_bgm is set."""
+        print("Running: test_get_app_config_no_bgm")
         response = self.client.get(self.config_url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # Should return empty dict or null for missing config
-        self.assertIn("menu_bgm_path", response.data)
-        self.assertIsNone(response.data["menu_bgm_path"])
+        # menu_bgm should be null when not set
+        self.assertIn("menu_bgm", response.data)
+        self.assertIsNone(response.data["menu_bgm"])
 
 
 # --- Storage Configuration Tests ---
@@ -141,11 +127,18 @@ class StorageConfigurationTest(TestCase):
         print("Running: test_media_url_generation_local")
         from .models import StoryPicture
         from django.core.files.uploadedfile import SimpleUploadedFile
+        from PIL import Image
+        from io import BytesIO
 
-        # Create a test image
+        # Create a real test image to avoid compression errors
+        img = Image.new('RGB', (100, 100), color='red')
+        img_io = BytesIO()
+        img.save(img_io, format='JPEG')
+        img_io.seek(0)
+
         test_image = SimpleUploadedFile(
             "test.jpg",
-            b"fake image content",
+            img_io.read(),
             content_type="image/jpeg"
         )
 
