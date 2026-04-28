@@ -9,6 +9,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 import '../components/Roll.css';
 import { useStories } from '../hooks/useStories';
+import { getApiUrl } from '../config/api';
 
 const menuStyles = {
   position: 'relative',
@@ -62,7 +63,7 @@ function Menu() {
   useEffect(() => {
     const fetchConfig = async () => {
       try {
-        const response = await fetch('/api/config/');
+        const response = await fetch(getApiUrl('/api/config/'));
         if (response.ok) {
           const config = await response.json();
           setBgmPath(config.menu_bgm_path);

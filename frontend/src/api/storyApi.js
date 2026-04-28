@@ -2,6 +2,8 @@
 // Defines asynchronous functions for fetching story data from the API.
 // Provides `getAllStories` to fetch the list and `getStoryById` to fetch a single story.
 
+import { getApiUrl } from '../config/api';
+
 /**
  * Parse error response from API
  * @param {Response} response - Fetch response object
@@ -27,7 +29,7 @@ async function parseErrorResponse(response) {
  * @throws {Error} With user-friendly error message
  */
 export const getAllStories = async () => {
-  const API_URL = '/api/stories/';
+  const API_URL = getApiUrl('/api/stories/');
 
   try {
     const response = await fetch(API_URL);
@@ -59,7 +61,7 @@ export const getAllStories = async () => {
  * @throws {Error} With user-friendly error message
  */
 export const getStoryById = async (storyId) => {
-  const API_URL = `/api/stories/${storyId}/`;
+  const API_URL = getApiUrl(`/api/stories/${storyId}/`);
 
   try {
     const response = await fetch(API_URL);
