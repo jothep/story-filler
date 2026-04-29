@@ -2,21 +2,35 @@
 
 ## 后台管理地址
 
-**当前地址**：
+⚠️ **Cloud Run 提供两个 URL，都可以使用**：
+
+**选项 1（基于项目 ID，推荐）**：
+```
+https://maori-story-backend-454222894238.us-central1.run.app/admin/
+```
+
+**选项 2（内部标识符）**：
 ```
 https://maori-story-backend-tc2dttesfa-uc.a.run.app/admin/
 ```
 
-> 💡 规则：后端 Cloud Run URL + `/admin/`
+> 💡 规则：后端 Cloud Run URL + `/admin/`  
+> 📋 两个 URL 指向同一个服务，功能完全相同
 
 ### 如何找到后端地址
 
-使用 gcloud 命令：
+**方法 1：查看 GCP Console**
+1. 访问: https://console.cloud.google.com/run?project=jaskojothep
+2. 点击 `maori-story-backend` 服务
+3. 复制显示的 URL
+
+**方法 2：使用 gcloud 命令**
 ```bash
 gcloud run services describe maori-story-backend --region=us-central1 --format="value(status.url)"
 ```
 
-或访问 [DEPLOYMENT_URLS.md](DEPLOYMENT_URLS.md) 查看所有部署地址。
+**方法 3：查看文档**
+访问 [DEPLOYMENT_URLS.md](DEPLOYMENT_URLS.md) 查看所有部署地址。
 
 ## 方法一：通过管理后台修改（最简单 ⭐）
 

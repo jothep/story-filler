@@ -10,11 +10,24 @@
 - **部署触发**: 推送到 `main` 分支的 `frontend/**` 文件
 
 ### 后端（Google Cloud Run）
+
+⚠️ **Cloud Run 提供两个 URL，都可以使用**：
+
+**格式 1（基于项目 ID，推荐）**：
+- **API 地址**: https://maori-story-backend-454222894238.us-central1.run.app
+- **管理后台**: https://maori-story-backend-454222894238.us-central1.run.app/admin/
+- **API 文档**: https://maori-story-backend-454222894238.us-central1.run.app/api/
+
+**格式 2（内部标识符）**：
 - **API 地址**: https://maori-story-backend-tc2dttesfa-uc.a.run.app
 - **管理后台**: https://maori-story-backend-tc2dttesfa-uc.a.run.app/admin/
 - **API 文档**: https://maori-story-backend-tc2dttesfa-uc.a.run.app/api/
+
+**部署信息**：
 - **部署平台**: Google Cloud Run
+- **服务名**: maori-story-backend
 - **区域**: us-central1
+- **项目 ID**: jaskojothep (454222894238)
 - **部署触发**: 推送到 `main` 分支的 `backend/**` 文件
 
 ### 数据库（Neon）
