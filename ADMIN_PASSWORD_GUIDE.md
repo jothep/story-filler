@@ -2,12 +2,21 @@
 
 ## 后台管理地址
 
-**固定地址**：
+**当前地址**：
 ```
-https://maori-story-backend-454222894238.us-central1.run.app/admin/
+https://maori-story-backend-tc2dttesfa-uc.a.run.app/admin/
 ```
 
-> 💡 规则：后端地址 + `/admin/`
+> 💡 规则：后端 Cloud Run URL + `/admin/`
+
+### 如何找到后端地址
+
+使用 gcloud 命令：
+```bash
+gcloud run services describe maori-story-backend --region=us-central1 --format="value(status.url)"
+```
+
+或访问 [DEPLOYMENT_URLS.md](DEPLOYMENT_URLS.md) 查看所有部署地址。
 
 ## 方法一：通过管理后台修改（最简单 ⭐）
 
