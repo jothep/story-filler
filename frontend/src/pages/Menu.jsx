@@ -139,14 +139,55 @@ function Menu() {
       <div style={menuStyles}>
         <Roll />
         <div style={titleContainerStyles}>
-          <img
-            src={logoImage}
-            alt="Story Filler"
-            style={{
-              width: '500px',
-              height: '278px',
-            }}
-          />
+          <div style={{
+            backgroundColor: '#F5DEB3',
+            padding: '2rem 3rem',
+            border: '6px solid #8B4513',
+            borderRadius: '12px',
+            boxShadow: '0 8px 16px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.5)',
+            background: 'linear-gradient(135deg, #DEB887 0%, #D2691E 100%)',
+            position: 'relative',
+          }}>
+            <div style={{
+              position: 'absolute',
+              top: '-8px',
+              left: '20px',
+              right: '20px',
+              height: '4px',
+              backgroundColor: '#654321',
+              borderRadius: '2px',
+            }} />
+            <div style={{
+              position: 'absolute',
+              bottom: '-8px',
+              left: '20px',
+              right: '20px',
+              height: '4px',
+              backgroundColor: '#654321',
+              borderRadius: '2px',
+            }} />
+            <h1 style={{
+              fontFamily: '"Press Start 2P", cursive',
+              fontSize: '2.5rem',
+              color: '#FFD700',
+              textShadow: '4px 4px 0 #654321, 6px 6px 0 rgba(0,0,0,0.3)',
+              margin: 0,
+              letterSpacing: '0.1em',
+              textAlign: 'center',
+            }}>
+              STORY FILLER
+            </h1>
+            <div style={{
+              marginTop: '0.5rem',
+              fontSize: '0.875rem',
+              color: '#8B4513',
+              textAlign: 'center',
+              fontFamily: '"Press Start 2P", cursive',
+              letterSpacing: '0.2em',
+            }}>
+              ~ Māori Stories ~
+            </div>
+          </div>
         </div>
         <div className="nes-container is-rounded" style={{ textAlign: 'center', maxWidth: '500px' }}>
           <h2>No Stories Available</h2>
