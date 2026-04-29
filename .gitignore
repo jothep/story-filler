@@ -136,6 +136,7 @@ celerybeat.pid
 
 # Environments
 .env
+.env.production
 .envrc
 .venv
 env/
@@ -284,3 +285,10 @@ data-import-*/
 # Cloud Run Environment Variables
 # ----------------------
 env-vars.yaml
+
+# Temporary/test files
+*_tmp.*
+*-tmp.*
+test_*.py
+VERIFICATION_CHECKLIST.md
+volume-backup-*/
