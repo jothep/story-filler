@@ -10,6 +10,7 @@ import ErrorMessage from '../components/ErrorMessage';
 import '../components/Roll.css';
 import { useStories } from '../hooks/useStories';
 import { getApiUrl } from '../config/api';
+import logoImage from '../assets/story-filler-logo.png';
 
 const menuStyles = {
   position: 'relative',
@@ -26,11 +27,19 @@ const menuStyles = {
 const titleContainerStyles = {
   width: '100%',
   maxWidth: '800px',
-  marginBottom: '4rem',
+  marginBottom: '2rem',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+};
 
-  backgroundColor: 'rgba(255, 255, 255, 0.8)',
-  padding: '1rem',
-  borderRadius: '4px',
+const logoStyles = {
+  width: '600px',
+  height: 'auto',
+  maxWidth: '100%',
+  maxHeight: '200px',
+  objectFit: 'contain',
+  display: 'block',
 };
 
 const toggleContainerStyles = {
@@ -129,6 +138,16 @@ function Menu() {
     return (
       <div style={menuStyles}>
         <Roll />
+        <div style={titleContainerStyles}>
+          <img
+            src={logoImage}
+            alt="Story Filler"
+            style={{
+              width: '500px',
+              height: '278px',
+            }}
+          />
+        </div>
         <div className="nes-container is-rounded" style={{ textAlign: 'center', maxWidth: '500px' }}>
           <h2>No Stories Available</h2>
           <p>There are currently no stories to display. Please check back later!</p>
@@ -152,12 +171,11 @@ function Menu() {
         </label>
       </div>
       <div style={titleContainerStyles}>
-        <div
-          className="nes-container is-centered"
-          style={{ backgroundColor: 'white' }}
-        >
-          <h1>Story Filler</h1>
-        </div>
+        <img
+          src={logoImage}
+          alt="Story Filler"
+          style={logoStyles}
+        />
       </div>
       <div style={menuListStyles}>
         {stories.map((story) => (
