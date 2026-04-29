@@ -185,7 +185,7 @@ function Menu() {
               fontFamily: '"Press Start 2P", cursive',
               letterSpacing: '0.2em',
             }}>
-              ~ Māori Stories ~
+              ~ Fill The Blanks ~
             </div>
           </div>
         </div>
