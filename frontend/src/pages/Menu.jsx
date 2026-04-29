@@ -10,7 +10,6 @@ import ErrorMessage from '../components/ErrorMessage';
 import '../components/Roll.css';
 import { useStories } from '../hooks/useStories';
 import { getApiUrl } from '../config/api';
-import logoImage from '../assets/story-filler-logo.png';
 
 const menuStyles = {
   position: 'relative',
@@ -31,15 +30,6 @@ const titleContainerStyles = {
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
-};
-
-const logoStyles = {
-  width: '600px',
-  height: 'auto',
-  maxWidth: '100%',
-  maxHeight: '200px',
-  objectFit: 'contain',
-  display: 'block',
 };
 
 const toggleContainerStyles = {
