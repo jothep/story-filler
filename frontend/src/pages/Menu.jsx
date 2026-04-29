@@ -10,7 +10,7 @@ import ErrorMessage from '../components/ErrorMessage';
 import '../components/Roll.css';
 import { useStories } from '../hooks/useStories';
 import { getApiUrl } from '../config/api';
-import logoImage from '../assets/story-filler-logo-large.png';
+import logoImage from '../assets/story-filler-logo-single-line.png';
 
 const menuStyles = {
   position: 'relative',
