@@ -10,7 +10,7 @@ import ErrorMessage from '../components/ErrorMessage';
 import '../components/Roll.css';
 import { useStories } from '../hooks/useStories';
 import { getApiUrl } from '../config/api';
-import logoImage from '../assets/story-filler-logo-final.png';
+import logoImage from '../assets/story-filler-logo-large.png';
 
 const menuStyles = {
   position: 'relative',
@@ -27,7 +27,7 @@ const menuStyles = {
 const titleContainerStyles = {
   width: '100%',
   maxWidth: '800px',
-  marginBottom: '2rem',
+  marginBottom: '0.5rem',
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
@@ -138,7 +138,7 @@ function Menu() {
             src={logoImage}
             alt="Story Filler"
             style={{
-              width: '500px',
+              width: '700px',
               height: 'auto',
             }}
           />
@@ -170,7 +170,7 @@ function Menu() {
           src={logoImage}
           alt="Story Filler"
           style={{
-            width: '500px',
+            width: '700px',
             height: 'auto',
           }}
         />
