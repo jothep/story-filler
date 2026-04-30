@@ -13,12 +13,20 @@ This project is fully containerized and designed for a Kubernetes-native deploym
 
 ## Documentation
 
+### General
 - [CHANGELOG.md](CHANGELOG.md) - Version history and updates
 - [SECURITY.md](SECURITY.md) - Security policy and vulnerability reports
+- [REFACTORING_PLAN.md](REFACTORING_PLAN.md) - Project refactoring roadmap
+
+### Architecture & Design
+- [**ARCHITECTURE.md**](docs/ARCHITECTURE.md) - **Complete system architecture documentation**
+- [**Architecture Diagrams**](docs/architecture-diagrams.md) - **Visual diagrams with Mermaid code**
+
+### Deployment & Infrastructure
 - [CODE_ANALYSIS.md](CODE_ANALYSIS.md) - Detailed codebase analysis
 - [COST_COMPARISON.md](COST_COMPARISON.md) - Cloud deployment cost comparison
 - [TERRAFORM_GUIDE.md](TERRAFORM_GUIDE.md) - Terraform infrastructure automation
-- [REFACTORING_PLAN.md](REFACTORING_PLAN.md) - Project refactoring roadmap
+- [S3_STORAGE_GUIDE.md](S3_STORAGE_GUIDE.md) - S3 storage setup (MinIO/AWS)
 ## Key Features (v0.2.0+)
 
 ### User Experience
