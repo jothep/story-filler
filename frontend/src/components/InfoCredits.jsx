@@ -1,7 +1,6 @@
 // src/components/InfoCredits.jsx
 // Info & Credits modal component with pixel art style
 import { useState } from 'react';
-import PropTypes from 'prop-types';
 
 const buttonStyles = {
   position: 'relative',
@@ -137,15 +136,15 @@ function InfoCredits() {
               <div style={{ marginBottom: '1rem' }}>
                 <strong>Background Music:</strong>
                 <br />
-                <span>[Artist/Link]</span>
+                <span>Dvořák - Humoresque Op.101 No.7</span>
               </div>
 
               <div>
                 <strong>Graphics &amp; UI Assets:</strong>
                 <br />
-                <span>• Background animations: [Artist/Link]</span>
+                <span>• Background animations: itch.io</span>
                 <br />
-                <span>• Logo design: [Artist/Link]</span>
+                <span>• Logo design: Gemini</span>
                 <br />
                 <span>• UI framework: <a href="https://nostalgic-css.github.io/NES.css/" style={linkStyles} target="_blank" rel="noopener noreferrer">NES.css</a></span>
               </div>
@@ -168,7 +167,5 @@ function InfoCredits() {
     </>
   );
 }
-
-InfoCredits.propTypes = {};
 
 export default InfoCredits;
