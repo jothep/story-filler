@@ -72,8 +72,9 @@ describe('Menu Component - BGM Configuration', () => {
       expect(screen.queryByText(/Loading stories.../i)).not.toBeInTheDocument();
     });
 
-    // Verify Audio was created with correct path from API
-    expect(global.Audio).toHaveBeenCalledWith('/media/bgm/Schumann_Fantasy.mp3');
+    // Verify Audio was created with correct full URL
+    // The component constructs full URL from API base + relative path
+    expect(global.Audio).toHaveBeenCalledWith('http://localhost:8000/media/bgm/Schumann_Fantasy.mp3');
   });
 
   it('should handle missing BGM configuration gracefully', async () => {
