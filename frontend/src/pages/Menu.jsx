@@ -110,7 +110,7 @@ function Menu() {
       {/* BGM Hint */}
       {showHint && (
         <div style={bgmHintStyles}>
-          👆 点击开启音乐
+          Click to start music ⇑
         </div>
       )}
 
