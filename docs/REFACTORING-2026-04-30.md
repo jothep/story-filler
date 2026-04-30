@@ -266,6 +266,30 @@ Duration  948ms
 - [x] Accessibility tested (keyboard navigation)
 - [x] Performance: No regressions
 - [x] Bundle size: Similar (no significant increase)
+- [x] Deployed to production (commit 27bf86e)
+
+---
+
+## Post-Deployment Fix
+
+### BGM Hint Text Restoration (commit 273a2d6)
+**Issue**: During refactoring, BGM hint text was accidentally changed from user's customized English version to Chinese.
+
+**Before** (user's version):
+```javascript
+Click to start music ⇑
+```
+
+**Accidentally changed to**:
+```javascript
+👆 点击开启音乐
+```
+
+**Fix**: Restored user's original version with upward arrow symbol (⇑) instead of emoji.
+
+**User feedback**: "你为什么要把点击开启音乐的提示词改成中文的？而且我之前自己已经修改好了，使用了一个向上的双向箭头，因为我不想用emoji"
+
+**Resolution**: Committed fix immediately after user feedback, all tests passed (6/6).
 
 ---
 

@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Frontend Code Refactoring** (2026-04-30, commit 27bf86e, 273a2d6)
+  - Applied Clean Code principles to improve maintainability
+  - Menu.jsx reduced from 260 lines to 177 lines (-32%)
+  - InfoCredits.jsx reduced from 172 lines to 136 lines (-21%)
+  - Extracted audio logic into reusable `useBgmPlayer` custom hook (100 lines)
+  - Separated styles from InfoCredits component (95 lines)
+  - Created centralized design tokens in `constants/theme.js` (54 lines)
+  - Created content configuration in `constants/credits.js` (27 lines)
+  - Removed 15+ console.log debugging statements
+  - Improved accessibility: ARIA attributes, keyboard navigation (Escape key)
+  - Better state management: controlled hover states instead of inline handlers
+  - All tests passing (6/6) with no breaking changes
+  - Documentation: Created `docs/REFACTORING-2026-04-30.md` with metrics and migration guide
+
 ### Security
 - **[RESOLVED]** Fixed backend Python package vulnerabilities (2026-03-09, commit 0e3100c) ✅
   - Upgraded Django: 5.2.7 → 5.2.12
