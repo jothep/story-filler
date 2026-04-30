@@ -1,6 +1,7 @@
 // src/components/InfoCredits.jsx
 // Info & Credits modal component with pixel art style
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 
 const buttonStyles = {
   position: 'relative',
@@ -108,7 +109,7 @@ function InfoCredits() {
         INFO / CREDITS
       </button>
 
-      {isOpen && (
+      {isOpen && createPortal(
         <div style={modalOverlayStyles} onClick={closeModal}>
           <div style={modalContentStyles} onClick={(e) => e.stopPropagation()}>
             <button
@@ -163,7 +164,8 @@ function InfoCredits() {
               </p>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
