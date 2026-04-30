@@ -9,6 +9,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 import InfoCredits from '../components/InfoCredits';
 import '../components/Roll.css';
+import '../components/BgmHint.css';
 import { useStories } from '../hooks/useStories';
 import { getApiUrl } from '../config/api';
 import logoImage from '../assets/story-filler-logo-single-line.png';
@@ -45,6 +46,20 @@ const toggleContainerStyles = {
   textShadow: '1px 1px #000',
 };
 
+const bgmHintStyles = {
+  position: 'absolute',
+  top: '4.5rem',
+  right: '1.5rem',
+  zIndex: 20,
+  background: 'rgba(0, 0, 0, 0.8)',
+  color: '#FFE4B5',
+  padding: '0.5rem 1rem',
+  borderRadius: '4px',
+  fontSize: '0.75rem',
+  whiteSpace: 'nowrap',
+  animation: 'fadeIn 0.3s ease-in',
+};
+
 const infoButtonContainerStyles = {
   width: '100%',
   display: 'flex',
@@ -71,6 +86,7 @@ function Menu() {
 
   const [isMusicPlaying, setIsMusicPlaying] = useState(true);
   const [bgmPath, setBgmPath] = useState(null);
+  const [showBgmHint, setShowBgmHint] = useState(false);
   const audioRef = useRef(null);
 
   // Fetch BGM configuration from API
@@ -125,9 +141,13 @@ function Menu() {
     // Note: Browsers may block autoplay until user interaction
     audio.play().then(() => {
       console.log('BGM autoplay started successfully');
+      setShowBgmHint(false);
     }).catch((e) => {
       console.warn('Autoplay blocked by browser. Click BGM checkbox to start:', e);
       setIsMusicPlaying(false);
+      setShowBgmHint(true);
+      // Auto-hide hint after 5 seconds
+      setTimeout(() => setShowBgmHint(false), 5000);
     });
 
     return () => {
@@ -154,6 +174,7 @@ function Menu() {
       console.log('Attempting to play audio');
       audio.play().then(() => {
         console.log('Audio playing successfully');
+        setShowBgmHint(false);
       }).catch((e) => {
         console.warn('Failed to play audio:', e);
         setIsMusicPlaying(false);
@@ -161,6 +182,7 @@ function Menu() {
     } else {
       console.log('Pausing audio');
       audio.pause();
+      setShowBgmHint(false);
     }
   };
 
@@ -172,45 +194,12 @@ function Menu() {
     return <ErrorMessage error={error} onRetry={refetch} />;
   }
 
-  if (!stories || stories.length === 0) {
-    return (
-      <div style={menuStyles}>
-        <Roll />
-        <div style={toggleContainerStyles}>
-          <label>
-            <input
-              type="checkbox"
-              className="nes-checkbox is-dark"
-              checked={isMusicPlaying}
-              onChange={handleToggleMusic}
-            />
-            <span>BGM</span>
-          </label>
-        </div>
-        <div style={titleContainerStyles}>
-          <img
-            src={logoImage}
-            alt="Story Filler"
-            style={{
-              width: '700px',
-              height: 'auto',
-            }}
-          />
-        </div>
-        <div style={infoButtonContainerStyles}>
-          <InfoCredits />
-        </div>
-        <div className="nes-container is-rounded" style={{ textAlign: 'center', maxWidth: '500px' }}>
-          <h2>No Stories Available</h2>
-          <p>There are currently no stories to display. Please check back later!</p>
-        </div>
-      </div>
-    );
-  }
-
+  // Render unified menu layout
   return (
     <div style={menuStyles}>
       <Roll />
+
+      {/* BGM Control */}
       <div style={toggleContainerStyles}>
         <label>
           <input
@@ -222,6 +211,15 @@ function Menu() {
           <span>BGM</span>
         </label>
       </div>
+
+      {/* BGM Hint */}
+      {showBgmHint && (
+        <div style={bgmHintStyles}>
+          👆 Click to start music
+        </div>
+      )}
+
+      {/* Logo */}
       <div style={titleContainerStyles}>
         <img
           src={logoImage}
@@ -232,20 +230,31 @@ function Menu() {
           }}
         />
       </div>
+
+      {/* Info/Credits Button */}
       <div style={infoButtonContainerStyles}>
         <InfoCredits />
       </div>
-      <div style={menuListStyles}>
-        {stories.map((story) => (
-          <Link
-            key={story.id}
-            to={`/story/${story.id}`}
-            className="nes-btn is-primary"
-          >
-            {story.title}
-          </Link>
-        ))}
-      </div>
+
+      {/* Story List or No Stories Message */}
+      {(!stories || stories.length === 0) ? (
+        <div className="nes-container is-rounded" style={{ textAlign: 'center', maxWidth: '500px', position: 'relative', zIndex: 10 }}>
+          <h2>No Stories Available</h2>
+          <p>There are currently no stories to display. Please check back later!</p>
+        </div>
+      ) : (
+        <div style={menuListStyles}>
+          {stories.map((story) => (
+            <Link
+              key={story.id}
+              to={`/story/${story.id}`}
+              className="nes-btn is-primary"
+            >
+              {story.title}
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
