@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import Roll from '../components/Roll';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
+import InfoCredits from '../components/InfoCredits';
 import '../components/Roll.css';
 import { useStories } from '../hooks/useStories';
 import { getApiUrl } from '../config/api';
@@ -44,6 +45,15 @@ const toggleContainerStyles = {
   textShadow: '1px 1px #000',
 };
 
+const infoButtonContainerStyles = {
+  width: '100%',
+  display: 'flex',
+  justifyContent: 'center',
+  marginBottom: '1rem',
+  position: 'relative',
+  zIndex: 10,
+};
+
 const menuListStyles = {
   display: 'flex',
   flexDirection: 'column',
@@ -59,7 +69,7 @@ const menuListStyles = {
 function Menu() {
   const { stories, loading, error, refetch } = useStories();
 
-  const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+  const [isMusicPlaying, setIsMusicPlaying] = useState(true);
   const [bgmPath, setBgmPath] = useState(null);
   const audioRef = useRef(null);
 
@@ -70,9 +80,22 @@ function Menu() {
         const response = await fetch(getApiUrl('/api/config/'));
         if (response.ok) {
           const config = await response.json();
+          console.log('BGM config received:', config);
           // Use the audio_url from the menu_bgm object
           if (config.menu_bgm && config.menu_bgm.audio_url) {
-            setBgmPath(config.menu_bgm.audio_url);
+            // Build full URL for media file
+            let fullUrl;
+            if (config.menu_bgm.audio_url.startsWith('http')) {
+              fullUrl = config.menu_bgm.audio_url;
+            } else {
+              // For relative paths like /media/..., prepend API base URL
+              const apiBase = import.meta.env.VITE_API_URL || '';
+              fullUrl = `${apiBase}${config.menu_bgm.audio_url}`;
+            }
+            console.log('BGM URL:', fullUrl);
+            setBgmPath(fullUrl);
+          } else {
+            console.warn('No menu_bgm in config');
           }
         } else {
           console.warn('Failed to fetch BGM config, BGM will be disabled');
@@ -88,13 +111,24 @@ function Menu() {
   // Initialize audio when BGM path is available
   useEffect(() => {
     if (!bgmPath) {
+      console.log('No BGM path yet');
       return;
     }
 
+    console.log('Initializing audio with path:', bgmPath);
     const audio = new Audio(bgmPath);
     audio.loop = true;
     audio.volume = 0.3;
     audioRef.current = audio;
+
+    // Try to auto-play BGM when loaded
+    // Note: Browsers may block autoplay until user interaction
+    audio.play().then(() => {
+      console.log('BGM autoplay started successfully');
+    }).catch((e) => {
+      console.warn('Autoplay blocked by browser. Click BGM checkbox to start:', e);
+      setIsMusicPlaying(false);
+    });
 
     return () => {
       if (audioRef.current) {
@@ -105,18 +139,27 @@ function Menu() {
   }, [bgmPath]);
 
   const handleToggleMusic = () => {
+    console.log('Toggle music clicked, current state:', isMusicPlaying);
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio) {
+      console.warn('No audio ref available');
+      return;
+    }
 
     const newMusicState = !isMusicPlaying;
+    console.log('New music state will be:', newMusicState);
     setIsMusicPlaying(newMusicState);
 
     if (newMusicState) {
-      audio.play().catch((e) => {
+      console.log('Attempting to play audio');
+      audio.play().then(() => {
+        console.log('Audio playing successfully');
+      }).catch((e) => {
         console.warn('Failed to play audio:', e);
         setIsMusicPlaying(false);
       });
     } else {
+      console.log('Pausing audio');
       audio.pause();
     }
   };
@@ -133,6 +176,17 @@ function Menu() {
     return (
       <div style={menuStyles}>
         <Roll />
+        <div style={toggleContainerStyles}>
+          <label>
+            <input
+              type="checkbox"
+              className="nes-checkbox is-dark"
+              checked={isMusicPlaying}
+              onChange={handleToggleMusic}
+            />
+            <span>BGM</span>
+          </label>
+        </div>
         <div style={titleContainerStyles}>
           <img
             src={logoImage}
@@ -142,6 +196,9 @@ function Menu() {
               height: 'auto',
             }}
           />
+        </div>
+        <div style={infoButtonContainerStyles}>
+          <InfoCredits />
         </div>
         <div className="nes-container is-rounded" style={{ textAlign: 'center', maxWidth: '500px' }}>
           <h2>No Stories Available</h2>
@@ -158,7 +215,7 @@ function Menu() {
         <label>
           <input
             type="checkbox"
-            className="nes-checkbox"
+            className="nes-checkbox is-dark"
             checked={isMusicPlaying}
             onChange={handleToggleMusic}
           />
@@ -174,6 +231,9 @@ function Menu() {
             height: 'auto',
           }}
         />
+      </div>
+      <div style={infoButtonContainerStyles}>
+        <InfoCredits />
       </div>
       <div style={menuListStyles}>
         {stories.map((story) => (
