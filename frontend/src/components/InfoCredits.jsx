@@ -26,7 +26,7 @@ const modalOverlayStyles = {
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
-  zIndex: 9999,
+  zIndex: 99999,
 };
 
 const modalContentStyles = {
@@ -39,6 +39,7 @@ const modalContentStyles = {
   background: '#D2B48C',
   border: '4px solid #654321',
   boxShadow: '0 0 0 2px #8B4513, 4px 4px 0 4px #000',
+  zIndex: 100000,
 };
 
 const closeButtonStyles = {

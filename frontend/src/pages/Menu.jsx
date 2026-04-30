@@ -215,7 +215,7 @@ function Menu() {
       {/* BGM Hint */}
       {showBgmHint && (
         <div style={bgmHintStyles}>
-          👆 Click to start music
+          Click to start music ⇑
         </div>
       )}
 
