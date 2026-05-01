@@ -4,9 +4,78 @@ This file contains various architecture diagram codes that can be rendered using
 
 ---
 
-## 1. System Architecture Diagram (Mermaid)
+## 0. Current Production Architecture (GCP)
 
-### High-Level 3-Tier Architecture
+**⭐ This is the CURRENT production deployment ⭐**
+
+### GitHub Pages + Cloud Run + Neon PostgreSQL
+
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        Browser[🌐 Web Browser<br/>Desktop / Mobile / Tablet]
+    end
+
+    subgraph "CDN & Static Hosting"
+        GHPages[📄 GitHub Pages<br/>jothep.github.io/maori-story-fill<br/>React SPA + CDN<br/>HTTPS Default<br/>Cost: FREE]
+    end
+
+    subgraph "Google Cloud Platform"
+        direction TB
+        
+        CloudRun[🚀 Cloud Run<br/>maori-story-backend<br/>Django 5.2 API<br/>us-central1<br/>Min: 0, Max: 100<br/>Memory: 512Mi<br/>Cost: FREE 2M req/mo]
+        
+        GCS[☁️ Cloud Storage<br/>maori-story-media<br/>Images + Audio<br/>Cost: $0.02/GB/mo]
+        
+        ArtifactReg[📦 Artifact Registry<br/>Docker Images<br/>Trivy Scans<br/>Cost: FREE 0.5GB]
+        
+        SecretMgr[🔐 Secret Manager<br/>DB URL + Keys<br/>Encrypted<br/>Cost: FREE 6 secrets]
+    end
+
+    subgraph "Database - Neon"
+        NeonDB[(🐘 Neon PostgreSQL<br/>Serverless DB<br/>US East Ohio<br/>Auto-suspend 5min<br/>Storage: 500MB free<br/>Cost: FREE)]
+    end
+
+    subgraph "CI/CD"
+        GHActions[⚙️ GitHub Actions<br/>Test → Build → Deploy<br/>Backend + Frontend]
+    end
+
+    Browser -->|1. HTTPS GET /| GHPages
+    GHPages -->|2. index.html + assets| Browser
+    Browser -->|3. API Calls /api/*| CloudRun
+    
+    CloudRun -->|4. SQL Queries| NeonDB
+    CloudRun -->|5. Read/Write Media| GCS
+    CloudRun -->|6. Load Secrets| SecretMgr
+    
+    GHActions -.->|Build & Push| ArtifactReg
+    ArtifactReg -.->|Pull Image| CloudRun
+    GHActions -.->|Deploy Static| GHPages
+
+    style Browser fill:#e1f5ff,stroke:#01579b,stroke-width:3px
+    style GHPages fill:#fff9c4,stroke:#f57f17,stroke-width:4px
+    style CloudRun fill:#c8e6c9,stroke:#2e7d32,stroke-width:4px
+    style NeonDB fill:#ffccbc,stroke:#d84315,stroke-width:4px
+    style GCS fill:#b3e5fc,stroke:#0277bd,stroke-width:2px
+    style ArtifactReg fill:#e1bee7,stroke:#6a1b9a,stroke-width:2px
+    style SecretMgr fill:#f8bbd0,stroke:#c2185b,stroke-width:2px
+    style GHActions fill:#c5e1a5,stroke:#558b2f,stroke-width:2px
+```
+
+**Key Features**:
+- ✅ **$0/month cost** (all free tiers)
+- ✅ **Auto-scaling** (0 to 100 instances)
+- ✅ **Serverless** (no server management)
+- ✅ **Global CDN** (GitHub Pages)
+- ✅ **Auto-suspend DB** (Neon pauses when idle)
+
+**Full Documentation**: See [architecture-production-gcp.md](architecture-production-gcp.md)
+
+---
+
+## 1. Kubernetes Architecture Diagram (Alternative Deployment)
+
+### High-Level 3-Tier Architecture (Self-hosted / Oracle Cloud)
 
 ```mermaid
 graph TB

@@ -19,8 +19,9 @@ This project is fully containerized and designed for a Kubernetes-native deploym
 - [REFACTORING_PLAN.md](REFACTORING_PLAN.md) - Project refactoring roadmap
 
 ### Architecture & Design
-- [**ARCHITECTURE.md**](docs/ARCHITECTURE.md) - **Complete system architecture documentation**
-- [**Architecture Diagrams**](docs/architecture-diagrams.md) - **Visual diagrams with Mermaid code**
+- [**⭐ Production Architecture (GCP)**](docs/architecture-production-gcp.md) - **CURRENT production deployment** (GitHub Pages + Cloud Run + Neon)
+- [**ARCHITECTURE.md**](docs/ARCHITECTURE.md) - Complete system architecture documentation (includes Kubernetes alternative)
+- [**Architecture Diagrams**](docs/architecture-diagrams.md) - Visual diagrams with Mermaid code
 
 ### Deployment & Infrastructure
 - [CODE_ANALYSIS.md](CODE_ANALYSIS.md) - Detailed codebase analysis

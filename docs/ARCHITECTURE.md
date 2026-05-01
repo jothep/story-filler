@@ -28,22 +28,34 @@ Educational web application for learning Māori language through interactive sto
 
 ### Architecture Style
 - **Pattern**: Three-tier architecture (Presentation, Application, Data)
-- **Deployment**: Cloud-native microservices with Kubernetes orchestration
+- **Deployment**: Serverless on Google Cloud Platform (current production)
 - **API**: RESTful API with Django REST Framework
 - **Frontend**: Single Page Application (SPA) with React
 
+### Current Production Stack
+- ⭐ **Frontend**: GitHub Pages (global CDN, free)
+- ⭐ **Backend**: Google Cloud Run (serverless, auto-scaling 0-100)
+- ⭐ **Database**: Neon PostgreSQL (serverless, auto-suspend)
+- ⭐ **Storage**: Google Cloud Storage (media files)
+- ⭐ **Cost**: $0/month (within free tiers)
+
 ### Key Characteristics
-- ✅ **Cloud-native**: Designed for containerized deployment
-- ✅ **Scalable**: Horizontal scaling support via Kubernetes
-- ✅ **Resilient**: Health checks, auto-restart, graceful degradation
-- ✅ **Secure**: HTTPS, CORS policies, input validation, secret management
-- ✅ **Observable**: Structured logging, health endpoints
+- ✅ **Serverless**: Zero server management, auto-scaling
+- ✅ **Cost-Effective**: $0/month for current traffic (~5K requests/month)
+- ✅ **Scalable**: Auto-scales from 0 to 100 instances
+- ✅ **Global**: CDN distribution via GitHub Pages
+- ✅ **Secure**: HTTPS everywhere, encrypted secrets, input validation
+- ✅ **Observable**: Cloud Run logs, Neon metrics, GitHub Actions
 
 ---
 
 ## Architecture Diagrams
 
-### 1. High-Level System Architecture
+> **Note**: The diagrams below show the **Kubernetes deployment architecture**. For the **current production architecture** (GitHub Pages + Cloud Run + Neon), see:
+> - **Detailed docs**: [architecture-production-gcp.md](architecture-production-gcp.md)
+> - **Mermaid diagrams**: [architecture-diagrams.md](architecture-diagrams.md#0-current-production-architecture-gcp)
+
+### 1. High-Level System Architecture (Kubernetes Alternative)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -564,50 +576,61 @@ annotations:
 
 ## Deployment Architectures
 
-### 4.1 Production Deployment (Google Cloud Platform)
+> **⭐ CURRENT PRODUCTION**: See [architecture-production-gcp.md](architecture-production-gcp.md) for complete details
+
+### 4.1 Production Deployment (Google Cloud Platform) - CURRENT ⭐
 
 **Services Used**:
-1. **Cloud Run** (Backend)
-   - Serverless container platform
-   - Auto-scaling (0-N instances)
-   - Pay-per-use pricing
-   - Managed SSL certificates
-
-2. **GitHub Pages** (Frontend)
-   - Static site hosting
-   - CDN distribution
+1. **GitHub Pages** (Frontend)
+   - Static site hosting with global CDN
    - HTTPS by default
-   - Free tier
+   - **Cost**: FREE (unlimited for public repos)
 
-3. **Cloud SQL** (Database)
-   - Managed PostgreSQL
-   - Automated backups
-   - High availability
-   - Private IP connection
+2. **Cloud Run** (Backend)
+   - Serverless container platform
+   - Auto-scaling (0-100 instances)
+   - Managed SSL certificates
+   - **Cost**: FREE tier 2M requests/month
 
-4. **Artifact Registry** (Container Images)
+3. **Neon PostgreSQL** (Database) ⭐ NEW
+   - Serverless PostgreSQL 16
+   - Auto-suspend after 5min idle
+   - Point-in-time restore (7 days)
+   - Built-in connection pooling
+   - **Cost**: FREE tier 500MB storage
+
+4. **Cloud Storage** (Media Files)
+   - Images and audio files
+   - Public access for `/media/*`
+   - **Cost**: $0.02/GB/month (~$0.01/month current usage)
+
+5. **Artifact Registry** (Container Images)
    - Docker image storage
-   - Vulnerability scanning
-   - Image versioning
+   - Trivy vulnerability scanning
+   - **Cost**: FREE tier 0.5GB
 
-5. **Secret Manager** (Secrets)
-   - API keys, DB passwords
+6. **Secret Manager** (Secrets)
+   - DATABASE_URL, API keys
    - Encrypted at rest
-   - Fine-grained access control
+   - **Cost**: FREE tier 6 secrets
 
 **Architecture**:
 ```
-[User] → [GitHub Pages (SPA)] → [Cloud Run (API)] → [Cloud SQL (DB)]
-                                         ↓
-                                 [Secret Manager]
-                                         ↓
-                                 [Cloud Storage / S3]
+[User] → [GitHub Pages CDN] → [Cloud Run API] → [Neon PostgreSQL]
+                                      ↓
+                               [Cloud Storage]
+                                      ↓
+                              [Secret Manager]
 ```
 
-**Cost Optimization**:
-- Cloud Run: Free tier 2M requests/month
-- GitHub Pages: Free for public repos
-- Cloud SQL: f1-micro instance (~$7/month)
+**Total Monthly Cost**: **$0 - $0.01** (essentially free) 🎉
+
+**Scaling Characteristics**:
+- **Current**: ~5K requests/month, 100MB database, 10MB storage
+- **Free Tier Limits**: 2M requests/month, 500MB database, unlimited storage
+- **Headroom**: 400x capacity before hitting limits
+
+**Full Documentation**: [architecture-production-gcp.md](architecture-production-gcp.md)
 
 ---
 
