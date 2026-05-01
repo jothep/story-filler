@@ -378,14 +378,14 @@ graph TB
         K8sBackend --> K8sPVC
     end
     
-    subgraph Option2[Option 2: Cloud Run + GitHub Pages]
+    subgraph Option2[Option 2: Cloud Run + GitHub Pages + Neon]
         GHPages[GitHub Pages<br/>Frontend CDN]
         CloudRun[Google Cloud Run<br/>Backend Auto-scale]
-        CloudSQL[Cloud SQL<br/>Managed PostgreSQL]
+        NeonDB[Neon PostgreSQL<br/>Serverless Database]
         CloudStorage[Cloud Storage<br/>Media Files]
         
         GHPages -.->|API Calls| CloudRun
-        CloudRun --> CloudSQL
+        CloudRun --> NeonDB
         CloudRun --> CloudStorage
     end
     
