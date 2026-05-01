@@ -13,31 +13,29 @@ This file contains various architecture diagram codes that can be rendered using
 ```mermaid
 graph TB
     subgraph "Client Layer"
-        Browser[🌐 Web Browser<br/>Desktop / Mobile / Tablet]
+        Browser[Web Browser<br/>Desktop PC Only<br/>Chrome / Firefox / Safari / Edge]
     end
 
     subgraph "CDN & Static Hosting"
-        GHPages[📄 GitHub Pages<br/>jothep.github.io/maori-story-fill<br/>React SPA + CDN<br/>HTTPS Default<br/>Cost: FREE]
+        GHPages[GitHub Pages<br/>jothep.github.io/maori-story-fill<br/>React SPA + CDN<br/>HTTPS Default<br/>Cost: FREE]
     end
 
     subgraph "Google Cloud Platform"
         direction TB
         
-        CloudRun[🚀 Cloud Run<br/>maori-story-backend<br/>Django 5.2 API<br/>us-central1<br/>Min: 0, Max: 100<br/>Memory: 512Mi<br/>Cost: FREE 2M req/mo]
+        CloudRun[Cloud Run<br/>maori-story-backend<br/>Django 5.2 API<br/>us-central1<br/>Min: 0, Max: 100<br/>Memory: 512Mi<br/>Cost: FREE 2M req/mo]
         
-        GCS[☁️ Cloud Storage<br/>maori-story-media<br/>Images + Audio<br/>Cost: $0.02/GB/mo]
+        GCS[Cloud Storage<br/>maori-story-media<br/>Images + Audio<br/>Cost: $0.02/GB/mo]
         
-        ArtifactReg[📦 Artifact Registry<br/>Docker Images<br/>Trivy Scans<br/>Cost: FREE 0.5GB]
-        
-        SecretMgr[🔐 Secret Manager<br/>DB URL + Keys<br/>Encrypted<br/>Cost: FREE 6 secrets]
+        ArtifactReg[Artifact Registry<br/>Docker Images<br/>Trivy Scans<br/>Cost: FREE 0.5GB]
     end
 
     subgraph "Database - Neon"
-        NeonDB[(🐘 Neon PostgreSQL<br/>Serverless DB<br/>US East Ohio<br/>Auto-suspend 5min<br/>Storage: 500MB free<br/>Cost: FREE)]
+        NeonDB[(Neon PostgreSQL<br/>Serverless DB<br/>US East Ohio<br/>Auto-suspend 5min<br/>Storage: 500MB free<br/>Cost: FREE)]
     end
 
     subgraph "CI/CD"
-        GHActions[⚙️ GitHub Actions<br/>Test → Build → Deploy<br/>Backend + Frontend]
+        GHActions[GitHub Actions<br/>Test Build Deploy<br/>Backend + Frontend]
     end
 
     Browser -->|1. HTTPS GET /| GHPages
@@ -46,7 +44,6 @@ graph TB
     
     CloudRun -->|4. SQL Queries| NeonDB
     CloudRun -->|5. Read/Write Media| GCS
-    CloudRun -->|6. Load Secrets| SecretMgr
     
     GHActions -.->|Build & Push| ArtifactReg
     ArtifactReg -.->|Pull Image| CloudRun
@@ -58,7 +55,6 @@ graph TB
     style NeonDB fill:#ffccbc,stroke:#d84315,stroke-width:4px
     style GCS fill:#b3e5fc,stroke:#0277bd,stroke-width:2px
     style ArtifactReg fill:#e1bee7,stroke:#6a1b9a,stroke-width:2px
-    style SecretMgr fill:#f8bbd0,stroke:#c2185b,stroke-width:2px
     style GHActions fill:#c5e1a5,stroke:#558b2f,stroke-width:2px
 ```
 

@@ -24,41 +24,37 @@ This document describes the **current production architecture** running on Googl
 ```mermaid
 graph TB
     subgraph "Client Layer"
-        Browser[🌐 Web Browser<br/>Desktop / Mobile / Tablet<br/>Any modern browser]
+        Browser[Web Browser<br/>Desktop PC<br/>Chrome / Firefox / Safari / Edge]
     end
 
     subgraph "CDN & Static Hosting"
-        GHPages[📄 GitHub Pages<br/>Domain: jothep.github.io/maori-story-fill<br/>React SPA + Static Assets<br/>Global CDN<br/>HTTPS by default<br/>Cost: FREE]
+        GHPages[GitHub Pages<br/>Domain: jothep.github.io/maori-story-fill<br/>React SPA + Static Assets<br/>Global CDN<br/>HTTPS by default<br/>Cost: FREE]
     end
 
     subgraph "Google Cloud Platform"
         direction TB
         
         subgraph "Container Registry"
-            ArtifactRegistry[📦 Artifact Registry<br/>us-central1-docker.pkg.dev<br/>Docker Images<br/>Trivy Security Scanning<br/>Cost: FREE 0.5GB storage]
+            ArtifactRegistry[Artifact Registry<br/>us-central1-docker.pkg.dev<br/>Docker Images<br/>Trivy Security Scanning<br/>Cost: FREE 0.5GB storage]
         end
         
         subgraph "Compute"
-            CloudRun[🚀 Cloud Run Service<br/>Name: maori-story-backend<br/>Region: us-central1<br/>Django 5.2 + Gunicorn<br/>Min: 0 instances<br/>Max: 100 instances<br/>Port: 8000<br/>Memory: 512Mi<br/>CPU: 1 vCPU<br/>Concurrency: 80<br/>Cost: FREE 2M requests/month]
+            CloudRun[Cloud Run Service<br/>Name: maori-story-backend<br/>Region: us-central1<br/>Django 5.2 + Gunicorn<br/>Min: 0 instances<br/>Max: 100 instances<br/>Port: 8000<br/>Memory: 512Mi<br/>CPU: 1 vCPU<br/>Concurrency: 80<br/>Env Vars: DATABASE_URL, SECRET_KEY<br/>Cost: FREE 2M requests/month]
         end
         
         subgraph "Storage"
-            GCS[☁️ Cloud Storage<br/>Bucket: maori-story-media<br/>Media files: images, audio<br/>Public access for /media/*<br/>Optional: CDN enabled<br/>Cost: ~$0.02/GB/month]
-        end
-        
-        subgraph "Secrets Management"
-            SecretManager[🔐 Secret Manager<br/>DATABASE_URL<br/>DJANGO_SECRET_KEY<br/>AWS_* credentials<br/>Encrypted at rest<br/>Cost: FREE 6 secrets]
+            GCS[Cloud Storage<br/>Bucket: maori-story-media<br/>Media files: images, audio<br/>Public access for /media/*<br/>Optional: CDN enabled<br/>Cost: ~$0.02/GB/month]
         end
     end
 
     subgraph "Database Provider - Neon"
-        NeonDB[(🐘 Neon PostgreSQL<br/>Serverless Database<br/>Region: US East Ohio<br/>Version: PostgreSQL 16<br/>Storage: 0.5GB used / 500MB free<br/>Auto-suspend after 5min idle<br/>Connection pooling built-in<br/>Cost: FREE tier)]
+        NeonDB[(Neon PostgreSQL<br/>Serverless Database<br/>Region: US East Ohio<br/>Version: PostgreSQL 16<br/>Storage: 0.5GB used / 500MB free<br/>Auto-suspend after 5min idle<br/>Connection pooling built-in<br/>Cost: FREE tier)]
     end
 
     subgraph "CI/CD - GitHub Actions"
         direction LR
-        BackendCI[⚙️ Backend Pipeline<br/>Test → Build → Scan → Deploy]
-        FrontendCI[⚙️ Frontend Pipeline<br/>Test → Build → Deploy]
+        BackendCI[Backend Pipeline<br/>Test Build Scan Deploy]
+        FrontendCI[Frontend Pipeline<br/>Test Build Deploy]
     end
 
     %% User Flow
@@ -68,8 +64,7 @@ graph TB
     
     %% Backend Dependencies
     CloudRun -->|4. SQL Queries<br/>PostgreSQL protocol| NeonDB
-    CloudRun -->|5. Read/Write Media<br/>S3 API| GCS
-    CloudRun -->|6. Load Secrets<br/>At startup| SecretManager
+    CloudRun -->|5. Read/Write Media<br/>GCS API| GCS
     
     %% CI/CD Flow
     BackendCI -.->|Build & Push Image| ArtifactRegistry
@@ -83,7 +78,6 @@ graph TB
     style NeonDB fill:#ffccbc,stroke:#d84315,stroke-width:3px
     style ArtifactRegistry fill:#e1bee7,stroke:#6a1b9a,stroke-width:2px
     style GCS fill:#b3e5fc,stroke:#0277bd,stroke-width:2px
-    style SecretManager fill:#f8bbd0,stroke:#c2185b,stroke-width:2px
     style BackendCI fill:#c5e1a5,stroke:#558b2f,stroke-width:2px
     style FrontendCI fill:#c5e1a5,stroke:#558b2f,stroke-width:2px
 ```
@@ -98,7 +92,6 @@ sequenceDiagram
     participant Browser
     participant GHPages as GitHub Pages<br/>(CDN)
     participant CloudRun as Cloud Run<br/>(Backend API)
-    participant SecretMgr as Secret Manager
     participant Neon as Neon PostgreSQL
     participant GCS as Cloud Storage
 
@@ -114,9 +107,7 @@ sequenceDiagram
     Browser->>CloudRun: GET /api/stories/<br/>Headers: Origin, Accept
     
     alt Cold Start (first request)
-        CloudRun->>CloudRun: Start container instance
-        CloudRun->>SecretMgr: Load DATABASE_URL, SECRET_KEY
-        SecretMgr-->>CloudRun: Encrypted secrets
+        CloudRun->>CloudRun: Start container instance<br/>Load env vars (DATABASE_URL, SECRET_KEY)
         CloudRun->>CloudRun: Initialize Django app
     end
     
@@ -226,7 +217,7 @@ Timeout: 300s (5 minutes)
 - **Scale to Zero**: After 15 minutes of no traffic
 - **Scale Up**: Automatic based on request rate
 
-**Environment Variables** (from Secret Manager):
+**Environment Variables** (set via Terraform):
 ```bash
 DATABASE_URL=postgresql://user:${DB_PASSWORD}@ep-xxx.aws.neon.tech/neondb?sslmode=require
 DJANGO_SECRET_KEY=xxx...
@@ -358,32 +349,6 @@ Layers: Multi-stage build optimized
 
 ---
 
-### 6. Secrets Management - Secret Manager
-
-**Secrets Stored**:
-1. `DATABASE_URL` - Neon PostgreSQL connection string
-2. `DJANGO_SECRET_KEY` - Django secret key (50 chars)
-3. `GCP_SERVICE_ACCOUNT_KEY` - For Cloud Storage access (optional)
-4. `CLOUD_RUN_URL` - Backend URL (for frontend builds)
-
-**Security**:
-- ✅ Encrypted at rest (Google-managed keys)
-- ✅ Audit logging enabled
-- ✅ IAM-based access control
-- ✅ Automatic rotation (manual trigger)
-
-**Access from Cloud Run**:
-```bash
-# Mounted as environment variables at runtime
-gcloud run services update maori-story-backend \
-  --update-secrets=DATABASE_URL=database-url:latest \
-  --update-secrets=DJANGO_SECRET_KEY=REMOVED_CREDENTIAL
-```
-
-**Cost**: **FREE** (first 6 secret versions free)
-
----
-
 ## CI/CD Pipeline
 
 ### Backend Deployment Flow
@@ -476,7 +441,7 @@ graph LR
 4. API Call: GET https://maori-story-backend-xxx.run.app/api/stories/
    ↓
 5. Cloud Run (cold start if needed):
-   - Load secrets from Secret Manager
+   - Load environment variables (DATABASE_URL, SECRET_KEY)
    - Initialize Django
    - Connect to Neon DB (resumes if suspended)
    ↓
@@ -529,7 +494,6 @@ graph LR
 | **Neon PostgreSQL** | 100MB storage, auto-suspend | **FREE** (within 500MB limit) |
 | **Cloud Storage** | 10MB storage, ~1GB egress | **< $0.01** |
 | **Artifact Registry** | 300MB image | **FREE** (within 0.5GB limit) |
-| **Secret Manager** | 4 secrets | **FREE** (within 6 secrets limit) |
 | **GitHub Actions** | 2000 minutes/month | **FREE** (within public repo limits) |
 
 **Total Monthly Cost**: **$0 - $0.01** 🎉
@@ -629,9 +593,9 @@ CORS_ALLOWED_ORIGINS = [
 ```
 
 ✅ **Secret Management**:
-- No secrets in code or environment files
-- All secrets in GCP Secret Manager
-- Encrypted at rest and in transit
+- No secrets in code or git repository
+- Secrets passed as environment variables via Terraform
+- DATABASE_URL and SECRET_KEY configured at deployment
 
 ---
 
@@ -688,7 +652,8 @@ CORS_ALLOWED_ORIGINS = [
 1. Go to Neon Console → Backups
 2. Select restore point
 3. Create new branch or restore to main
-4. Update DATABASE_URL in Secret Manager if needed
+4. Update DATABASE_URL in Terraform variables if needed
+5. Redeploy Cloud Run: terraform apply
 ```
 
 **Scenario 2: Accidental Code Deployment**
