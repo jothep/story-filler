@@ -4,6 +4,7 @@
 // handles loading/error states, and sets up the necessary context providers
 import { useParams } from 'react-router-dom';
 import '../assets/StoryPlayer.css';
+import '../assets/StoryPlayer.mobile.css';
 import StoryPlayerUI from './StoryPlayerUI';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';

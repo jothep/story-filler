@@ -1,0 +1,249 @@
+/* Mobile & Tablet Responsive Styles for Story Player */
+
+/* Prevent text selection during drag on all devices */
+body.dragging {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Ensure touch-friendly button sizes */
+.nes-btn {
+  min-height: 44px;
+  min-width: 100px;
+  touch-action: none; /* Prevent default touch behaviors during drag */
+}
+
+/* Mobile Phones (Portrait, < 768px) */
+@media (max-width: 767px) {
+  .game-screen {
+    /* Switch to vertical single-column layout */
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    width: 100vw;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0.5rem;
+    gap: 0.5rem;
+  }
+
+  /* Navigation bar - sticky at top */
+  .layout-nav {
+    order: 1;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .layout-nav h1 {
+    font-size: 1rem !important;
+    margin: 0 0.5rem !important;
+  }
+
+  .layout-nav .nes-container {
+    padding: 0.5rem !important;
+  }
+
+  /* Story picture - fixed height */
+  .layout-pic {
+    order: 2;
+    height: 200px;
+    min-height: 200px;
+  }
+
+  /* Main text area - scrollable */
+  .layout-text {
+    order: 3;
+    min-height: 300px;
+    max-height: none;
+  }
+
+  /* Word list - horizontal scrollable */
+  .layout-list {
+    order: 4;
+    height: auto;
+    max-height: 150px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .layout-list > div > div {
+    flex-direction: row !important;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 0.5rem;
+  }
+
+  /* Word picture/audio/tips - stack vertically */
+  .layout-w-pic {
+    order: 5;
+    height: 150px;
+  }
+
+  .layout-w-audio {
+    order: 6;
+    height: auto;
+  }
+
+  .layout-tips {
+    order: 7;
+    height: auto;
+    min-height: 100px;
+  }
+
+  /* Larger touch targets for buttons */
+  .nes-btn {
+    min-height: 48px;
+    min-width: 110px;
+    font-size: 0.8rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  /* Increase blank space height for easier touch */
+  .layout-text span[style*="inline-block"] {
+    min-height: 48px !important;
+    min-width: 120px !important;
+    line-height: 48px !important;
+  }
+
+  /* Adjust paragraph navigation buttons */
+  .layout-text button {
+    min-height: 44px;
+    min-width: 80px;
+    font-size: 0.75rem;
+  }
+}
+
+/* Tablets (Portrait & Landscape, 768px - 1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .game-screen {
+    grid-template-areas:
+      'nav nav nav'
+      'pic list list'
+      'text text list'
+      'w-pic w-aud tips';
+    grid-template-rows: 60px 1fr 3fr 1fr;
+    grid-template-columns: 1fr 3fr 1fr;
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  /* Adjust font sizes for tablet */
+  .layout-nav h1 {
+    font-size: 1.5rem !important;
+  }
+
+  /* Larger touch targets for tablet */
+  .nes-btn {
+    min-height: 48px;
+    min-width: 120px;
+  }
+
+  /* Tablet-specific blank spacing */
+  .layout-text span[style*="inline-block"] {
+    min-height: 44px !important;
+  }
+}
+
+/* Landscape Mobile (phones in landscape, height < 500px) */
+@media (max-height: 500px) and (orientation: landscape) {
+  .game-screen {
+    display: grid;
+    grid-template-areas:
+      'nav nav nav nav'
+      'pic text text list'
+      'w-pic w-aud tips list';
+    grid-template-rows: 50px 1fr 0.5fr;
+    grid-template-columns: 1fr 2fr 1fr 1fr;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .layout-nav h1 {
+    font-size: 0.9rem !important;
+  }
+
+  .layout-pic,
+  .layout-w-pic {
+    height: auto;
+  }
+
+  .layout-text {
+    overflow-y: auto;
+  }
+
+  .nes-btn {
+    font-size: 0.7rem;
+    padding: 0.3rem 0.5rem;
+    min-height: 40px;
+  }
+}
+
+/* Touch-specific enhancements */
+@media (hover: none) and (pointer: coarse) {
+  /* This targets touch devices specifically */
+
+  /* Increase tap target size */
+  button,
+  a,
+  input[type="checkbox"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Remove hover effects on touch devices */
+  button:hover {
+    transform: none !important;
+  }
+
+  /* Add active state for touch feedback */
+  button:active {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+
+  /* Smoother scrolling on touch */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Accessibility: Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  @keyframes shake {
+    0%, 100% {
+      transform: translateX(0);
+    }
+  }
+}
+
+/* Add pulse animation for mobile drop zones */
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.03);
+    opacity: 0.9;
+  }
+}
+
+/* Enhance drag overlay visibility on mobile */
+@media (max-width: 1024px) {
+  /* Make drag overlay more prominent */
+  [data-dnd-kit-drag-overlay] {
+    opacity: 0.9 !important;
+    transform: scale(1.1);
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+  }
+}

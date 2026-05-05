@@ -4,7 +4,15 @@
 // logic from contexts and specifically manages the `DragOverlay` display
 // for dnd-kit by wrapping the context's drag handlers.
 import { useState } from 'react';
-import { DndContext, DragOverlay } from '@dnd-kit/core'; 
+import {
+  DndContext,
+  DragOverlay,
+  TouchSensor,
+  MouseSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import { restrictToWindowEdges } from '@dnd-kit/modifiers';
 import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
 
@@ -49,24 +57,51 @@ function StoryPlayerUI() {
 
   const [activeWord, setActiveWord] = useState(null);
 
+  // Configure sensors for both mouse and touch
+  const mouseSensor = useSensor(MouseSensor, {
+    activationConstraint: {
+      distance: 5, // 5px movement before drag starts
+    },
+  });
+
+  const touchSensor = useSensor(TouchSensor, {
+    activationConstraint: {
+      delay: 250, // 250ms press before drag starts (prevents scroll conflicts)
+      tolerance: 5, // 5px movement tolerance
+    },
+  });
+
+  const sensors = useSensors(mouseSensor, touchSensor);
+
   const handleDragStart = (event) => {
-    originalDragStart(event); 
+    document.body.classList.add('dragging');
+    originalDragStart(event);
     const word = story.words_in_bank.find((w) => w.id === event.active.id);
     if (word) {
-      setActiveWord(word); 
+      setActiveWord(word);
+      // Haptic feedback on touch devices
+      if (window.navigator && window.navigator.vibrate) {
+        window.navigator.vibrate(50);
+      }
     }
   };
 
 
   const handleDragEnd = (event) => {
-    originalDragEnd(event); 
-    setActiveWord(null); 
+    document.body.classList.remove('dragging');
+    originalDragEnd(event);
+    setActiveWord(null);
   };
 
   const paragraphsExist = story.paragraphs && story.paragraphs.length > 0;
 
   return (
-    <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      modifiers={[restrictToWindowEdges]}
+    >
       <div className="game-screen">
 
         <div className="layout-nav"> 

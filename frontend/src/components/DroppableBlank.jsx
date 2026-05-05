@@ -36,30 +36,33 @@ function DroppableBlank({ blank, uniqueId, filledWord, isWrong }) {
   const style = {
     display: 'inline-block',
     margin: '0 0.25rem',
-    minWidth: '150px', 
-    
-    height: '3.5rem', 
-    
+    minWidth: '150px',
+
+    height: '3.5rem',
+
     verticalAlign: 'middle',
 
     backgroundColor: isOver ? colors.hover : 'transparent',
 
     borderRadius: '4px',
-    boxSizing: 'border-box', 
+    boxSizing: 'border-box',
 
-    border: `2px solid ${borderColor}`,
+    border: `3px solid ${borderColor}`,
 
     color: textColor,
 
-    animation: isWrong ? 'shake 0.5s' : 'none',
+    animation: isWrong ? 'shake 0.5s' : (isOver ? 'pulse 0.6s ease-in-out' : 'none'),
 
     padding: 0,
     textAlign: 'center',
     fontWeight: 'bold',
-    
+
     fontSize: 'inherit',
-    
-    lineHeight: 'calc(3.5rem - 4px)',
+
+    lineHeight: 'calc(3.5rem - 6px)',
+
+    transition: 'border-color 0.2s ease, transform 0.2s ease',
+    transform: isOver ? 'scale(1.02)' : 'scale(1)',
   };
 
   return (
