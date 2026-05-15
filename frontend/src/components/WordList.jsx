@@ -18,9 +18,12 @@ function DraggableWordButton({ word }) {
   const isDragging = active && active.id === word.id;
 
   const style = {
-    width: 'auto', 
-    visibility: isDragging ? 'hidden' : 'visible', 
-    zIndex: 'auto', 
+    width: 'auto',
+    opacity: isDragging ? 0.3 : 1, // Fade out when dragging
+    transform: isDragging ? 'scale(0.95)' : 'scale(1)', // Slightly shrink
+    transition: 'opacity 0.2s ease, transform 0.2s ease',
+    filter: isDragging ? 'brightness(0.6)' : 'brightness(1)', // Darken when dragging
+    zIndex: 'auto',
   };
 
   const button = (

@@ -3,35 +3,43 @@
 // When a word is dropped, it updates the `selectedWord` in the
 // `WordInteractionContext`.
 
-import { useDroppable } from '@dnd-kit/core';
+import { useDroppable, useDndContext } from '@dnd-kit/core';
 import { useWordInteraction } from '../context/WordInteractionContext';
 import questionMarkIcon from '../assets/question_mark.png';
 
 function TriggerTips() {
   const { selectedWord } = useWordInteraction();
-  
+  const { active } = useDndContext(); // Detect if anything is being dragged
+
   const { isOver, setNodeRef } = useDroppable({
     id: 'trigger-tips-droppable',
   });
 
+  const isDragging = !!active; // True if any word is being dragged
+
   const style = {
     height: '100%',
     boxSizing: 'border-box',
-    backgroundColor: isOver ? '#333' : undefined, 
-    opacity: isOver ? 0.8 : 1.0,
+    backgroundColor: isOver ? '#333' : (isDragging ? '#2a2a2a' : undefined),
+    opacity: isOver ? 0.8 : (isDragging ? 0.9 : 1.0),
+    border: isDragging ? '3px dashed #ffd700' : undefined, // Gold dashed border when dragging
+    boxShadow: isDragging ? '0 0 15px rgba(255, 215, 0, 0.5)' : undefined, // Golden glow
 
     backgroundImage: `url(${questionMarkIcon})`,
     backgroundRepeat: 'no-repeat',
     backgroundPosition: 'center center',
-    backgroundSize: 'contain', 
-    
+    backgroundSize: 'contain',
+
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    justifyContent: 'flex-start', 
-    
+    justifyContent: 'flex-start',
+
     padding: '0.5rem',
     paddingTop: '0.5rem',
+
+    transition: 'all 0.3s ease', // Smooth transitions
+    animation: isDragging ? 'pulse-glow 1.5s ease-in-out infinite' : 'none', // Pulse animation
   };
 
   const textContainerStyle = {
