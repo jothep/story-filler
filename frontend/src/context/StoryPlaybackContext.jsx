@@ -63,7 +63,12 @@ export function StoryPlaybackProvider({ story, children }) {
   }; 
 
   const handlePlayParagraphAudio = (audioUrl) => {
-    if (!audioUrl) return;
+    if (!audioUrl) {
+      console.warn('No audio URL provided');
+      return;
+    }
+
+    console.log('Attempting to play audio:', audioUrl);
 
     // Stop any currently playing paragraph audio
     if (paragraphAudioRef.current) {
@@ -75,17 +80,51 @@ export function StoryPlaybackProvider({ story, children }) {
     const audio = new Audio(audioUrl);
     paragraphAudioRef.current = audio;
 
-    // iOS/iPad Safari requires explicit user interaction
-    // Add load event to ensure audio is ready
-    audio.addEventListener('canplaythrough', () => {
-      audio.play().catch((e) => {
-        console.error('Failed to play paragraph audio:', e);
-        alert('Unable to play audio. Please check your device audio settings.');
+    // Set audio properties for better iOS compatibility
+    audio.preload = 'auto';
+    audio.crossOrigin = 'anonymous';
+
+    // Error handling
+    audio.addEventListener('error', (e) => {
+      console.error('Audio error:', {
+        error: e,
+        audioUrl: audioUrl,
+        errorCode: audio.error?.code,
+        errorMessage: audio.error?.message
       });
+
+      let errorMsg = 'Unable to play audio. ';
+      if (audio.error?.code === 4) {
+        errorMsg += 'Audio format not supported. Please convert to MP3.';
+      } else if (audio.error?.code === 2) {
+        errorMsg += 'Network error loading audio.';
+      } else {
+        errorMsg += 'Please check your internet connection.';
+      }
+      alert(errorMsg);
     }, { once: true });
 
-    // Preload the audio
-    audio.load();
+    // iOS/iPad Safari requires explicit user interaction
+    // Try to play immediately (works if triggered by user action)
+    const playPromise = audio.play();
+
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          console.log('Audio playing successfully');
+        })
+        .catch((e) => {
+          console.error('Failed to play paragraph audio:', e);
+          // If autoplay fails, try loading first then playing
+          audio.load();
+          audio.addEventListener('canplaythrough', () => {
+            audio.play().catch((err) => {
+              console.error('Still failed after load:', err);
+              alert('Audio playback failed. File format may not be supported on this device.');
+            });
+          }, { once: true });
+        });
+    }
   }; 
 
   const currentParagraph = (story && story.paragraphs && story.paragraphs.length > 0)
