@@ -31,7 +31,7 @@ function WordAudio() {
           <div>
             <button
               type="button"
-              className="nes-btn is-warning" 
+              className="nes-btn is-primary"
               style={{ marginRight: '1rem' }}
               onClick={() => playAudio(selectedWord.maori_audio)}
             >
@@ -43,7 +43,7 @@ function WordAudio() {
           <div>
             <button
               type="button"
-              className="nes-btn is-warning" 
+              className="nes-btn is-primary"
               style={{ marginRight: '1rem' }}
               onClick={() => playAudio(selectedWord.english_audio)}
             >

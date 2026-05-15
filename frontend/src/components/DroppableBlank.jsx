@@ -24,7 +24,7 @@ function DroppableBlank({ blank, uniqueId, filledWord, isWrong }) {
     correct: '#92cc41',
     wrong: '#e76e55',
     hover: '#333',
-    dragging: '#e8e8e8', // Light silver when dragging
+    dragging: '#ffd700', // Yellow when dragging
   };
 
   let borderColor = colors.default;
@@ -36,7 +36,7 @@ function DroppableBlank({ blank, uniqueId, filledWord, isWrong }) {
   } else if (isWrong) {
     borderColor = colors.wrong;
   } else if (isDragging && !filledWord) {
-    // Empty blanks turn light silver when any word is being dragged
+    // Empty blanks turn yellow when any word is being dragged
     borderColor = colors.dragging;
   }
 
