@@ -66,8 +66,8 @@ function StoryPlayerUI() {
 
   const touchSensor = useSensor(TouchSensor, {
     activationConstraint: {
-      delay: 250, // 250ms press before drag starts (prevents scroll conflicts)
-      tolerance: 5, // 5px movement tolerance
+      delay: 100, // 100ms press before drag starts (faster response)
+      tolerance: 10, // 10px movement tolerance (more forgiving)
     },
   });
 

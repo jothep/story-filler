@@ -64,13 +64,28 @@ export function StoryPlaybackProvider({ story, children }) {
 
   const handlePlayParagraphAudio = (audioUrl) => {
     if (!audioUrl) return;
+
+    // Stop any currently playing paragraph audio
     if (paragraphAudioRef.current) {
       paragraphAudioRef.current.pause();
+      paragraphAudioRef.current.currentTime = 0;
       paragraphAudioRef.current = null;
     }
+
     const audio = new Audio(audioUrl);
     paragraphAudioRef.current = audio;
-    audio.play().catch((e) => console.warn('Failed to play the audio segment:', e));
+
+    // iOS/iPad Safari requires explicit user interaction
+    // Add load event to ensure audio is ready
+    audio.addEventListener('canplaythrough', () => {
+      audio.play().catch((e) => {
+        console.error('Failed to play paragraph audio:', e);
+        alert('Unable to play audio. Please check your device audio settings.');
+      });
+    }, { once: true });
+
+    // Preload the audio
+    audio.load();
   }; 
 
   const currentParagraph = (story && story.paragraphs && story.paragraphs.length > 0)
