@@ -125,35 +125,28 @@ body.dragging {
       'pic list list'
       'text text list'
       'w-pic w-aud tips';
-    grid-template-rows: 50px 0.6fr 2.5fr 0.8fr; /* Reduced: nav 50px, smaller ratios */
-    grid-template-columns: 0.8fr 3fr 1fr; /* Adjusted proportions */
-    gap: 0.5rem; /* Reduced from 0.75rem */
-    padding: 0.5rem; /* Reduced from 0.75rem */
+    grid-template-rows: 60px 1fr 3fr 1fr;
+    grid-template-columns: 1fr 3fr 1fr;
+    gap: 0.75rem;
+    padding: 0.75rem;
     height: 100vh;
     overflow: hidden;
   }
 
-  /* Smaller font for title to save space */
+  /* Adjust font sizes for tablet */
   .layout-nav h1 {
-    font-size: 1.2rem !important;
-  }
-
-  /* Compact nav bar */
-  .layout-nav .nes-container {
-    padding: 0.4rem !important;
+    font-size: 1.5rem !important;
   }
 
   /* Larger touch targets for tablet */
   .nes-btn {
-    min-height: 44px;
-    min-width: 110px;
-    font-size: 0.85rem; /* Slightly smaller font */
-    padding: 0.4rem 0.6rem; /* More compact padding */
+    min-height: 48px;
+    min-width: 120px;
   }
 
   /* Tablet-specific blank spacing */
   .layout-text span[style*="inline-block"] {
-    min-height: 42px !important;
+    min-height: 44px !important;
   }
 
   /* Ensure text area scrolls within its container */
@@ -166,17 +159,6 @@ body.dragging {
   .layout-list {
     overflow-y: auto;
     max-height: 100%;
-  }
-
-  /* Compact picture areas */
-  .layout-pic,
-  .layout-w-pic {
-    min-height: 0; /* Allow shrinking */
-  }
-
-  /* More compact container padding */
-  .nes-container {
-    padding: 0.6rem !important;
   }
 }
 

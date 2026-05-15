@@ -20,10 +20,10 @@ function TriggerTips() {
   const style = {
     height: '100%',
     boxSizing: 'border-box',
-    backgroundColor: isOver ? '#333' : (isDragging ? '#2a2a2a' : undefined),
-    opacity: isOver ? 0.8 : (isDragging ? 0.9 : 1.0),
-    border: isDragging ? '3px dashed #ffd700' : undefined, // Gold dashed border when dragging
-    boxShadow: isDragging ? '0 0 15px rgba(255, 215, 0, 0.5)' : undefined, // Golden glow
+    backgroundColor: isOver ? '#333' : undefined,
+    opacity: isOver ? 0.8 : 1.0,
+    border: isDragging ? '3px dashed #e8e8e8' : undefined, // Light silver dashed border when dragging
+    boxShadow: isDragging ? '0 0 15px rgba(232, 232, 232, 0.6)' : undefined, // Light silver glow
 
     backgroundImage: `url(${questionMarkIcon})`,
     backgroundRepeat: 'no-repeat',
@@ -39,7 +39,7 @@ function TriggerTips() {
     paddingTop: '0.5rem',
 
     transition: 'all 0.3s ease', // Smooth transitions
-    animation: isDragging ? 'pulse-glow 1.5s ease-in-out infinite' : 'none', // Pulse animation
+    animation: isDragging ? 'pulse-glow-silver 1.5s ease-in-out infinite' : 'none', // Pulse animation
   };
 
   const textContainerStyle = {

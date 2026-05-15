@@ -30,13 +30,15 @@ function WordOverlay({ word }) {
   return (
     <button
       type="button"
-      className="nes-btn is-warning"
+      className="nes-btn"
       style={{
         width: 'auto',
         transform: 'scale(1.1)', // Slightly larger
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)', // Drop shadow
-        filter: 'brightness(1.2)', // Brighter
-        border: '3px solid #ffd700', // Gold border
+        filter: 'brightness(1.3)', // Brighter
+        border: '3px solid #e8e8e8', // Light silver border
+        backgroundColor: '#f0f0f0', // Light silver background
+        color: '#212529', // Dark text for contrast
       }}
     >
       {word.maori_word}

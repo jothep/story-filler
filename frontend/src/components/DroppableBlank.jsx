@@ -4,7 +4,7 @@
 // it is filled correctly, incorrectly, or being hovered over.
 import PropTypes from 'prop-types';
 
-import { useDroppable } from '@dnd-kit/core'; 
+import { useDroppable, useDndContext } from '@dnd-kit/core'; 
 
 function DroppableBlank({ blank, uniqueId, filledWord, isWrong }) {
   const { isOver, setNodeRef } = useDroppable({
@@ -13,24 +13,31 @@ function DroppableBlank({ blank, uniqueId, filledWord, isWrong }) {
       type: 'blank',
       correctWordId: blank.word.id,
     },
-    disabled: !!filledWord, 
+    disabled: !!filledWord,
   });
 
+  const { active } = useDndContext(); // Detect if anything is being dragged
+  const isDragging = !!active; // True if any word is being dragged
+
   const colors = {
-    default: '#adb5bd', 
-    correct: '#92cc41', 
-    wrong: '#e76e55', 
-    hover: '#333', 
+    default: '#adb5bd',
+    correct: '#92cc41',
+    wrong: '#e76e55',
+    hover: '#333',
+    dragging: '#e8e8e8', // Light silver when dragging
   };
 
   let borderColor = colors.default;
-  let textColor = colors.default; 
+  let textColor = colors.default;
 
   if (filledWord) {
     borderColor = colors.correct;
-    textColor = colors.correct; 
+    textColor = colors.correct;
   } else if (isWrong) {
     borderColor = colors.wrong;
+  } else if (isDragging && !filledWord) {
+    // Empty blanks turn light silver when any word is being dragged
+    borderColor = colors.dragging;
   }
 
   const style = {
