@@ -74,6 +74,12 @@ Named volumes preserve database and uploaded-media content when containers are r
 `docker compose -f docker-compose.dev.yml down` stops the lab without requesting volume deletion.
 The development database publishes host port 5432; do not run it alongside the prototype database on that port.
 
+### Local filesystem permissions
+
+The backend image runs as a non-root `app` user, while development Compose bind-mounts the host's `backend/` over `/app`. Image-layer ownership does not change a host bind mount. On Linux, a different host UID can prevent Django from writing logs or collected static files. The media volume target is also not explicitly created and assigned to `app` during the image build, so ownership on first volume initialization needs checking in both Compose variants.
+
+These are unresolved reproduction gaps. Before treating the startup sequence as verified, check writes as the container's application user and test an administrator media upload. A local setup fix should explicitly manage writable directories and UID/volume ownership; configuration parsing alone cannot establish that these operations work.
+
 ## Production-style Compose: different process and storage choices
 
 [`docker-compose.prod.yml`](../docker-compose.prod.yml) describes a single-host alternative to Kubernetes or Cloud Run.

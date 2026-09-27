@@ -61,15 +61,15 @@ Describe this stage as a historical Kubernetes implementation, not a verified hi
 ## Verification boundaries
 
 Public frontend, API read endpoints and a sampled GCS object were reachable on 2026-09-27.
-Cloud Run revision `maori-story-backend-00026-phc` changed credential configuration while keeping the existing image.
-That check does not verify deployment of the current repository cleanup changes.
-Historical Actions runs provide release evidence for the source versions recorded in those runs.
-The new API smoke check passed six offline tests and a local production check; its GitHub deployment-step execution is pending.
-A separate history-scanning workflow is implemented but is not a dependency of the deployment workflow.
+Backend commit `7d80196` passed its [delivery workflow](https://github.com/jothep/maori-story-fill/actions/runs/36299274042), including 11 Django tests, six offline smoke-check tests, image scanning and the post-deployment public API check.
+Cloud Run revision `maori-story-backend-00027-bzj` serves that image with 100% traffic; `00026-phc` is the earlier credential-rotation baseline.
+The frontend [Pages delivery for `a309a63`](https://github.com/jothep/maori-story-fill/actions/runs/36298824448) also succeeded.
+Independent credential-scan runs succeeded for `a309a63` and `7d80196`; that workflow is not a dependency of deployment.
+Historical Actions runs remain evidence for their recorded source versions, not subsequent edits.
 See [the verification record](verification.md) for the status of each check.
 
 Terraform formatting and validation passed, and the configured GCS remote state listed the four declared resources.
-That inventory does not establish absence of drift. Complete environment rebuilds, load limits, backup restoration and application rollback still require explicit exercises.
+No Terraform plan, apply or restore was performed in this verification; the inventory does not establish absence of drift. Complete environment rebuilds, load limits, backup restoration and application rollback still require explicit exercises.
 Precise performance, availability and cost claims need reproducible measurements or dated billing evidence.
 Provider plan features are not evidence that those features have been enabled or tested for this project.
 

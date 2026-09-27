@@ -31,10 +31,10 @@ The browser reported a normal autoplay restriction before user interaction. Thes
 | Terraform formatting and validation | Passed | No plan or apply was performed |
 | Terraform remote state inventory | Read successfully | The configured GCS backend tracks exactly the four declared resource addresses; this does not prove absence of drift or successful recovery |
 | Private local configuration generator | Passed | Owner-only permissions, no credential output, and refusal to overwrite an existing file |
-| Credential scan of the initial rewritten candidate | Gitleaks 8.30.1: no findings | The earlier candidate contained 186 commits; the final portfolio candidate must be rescanned after edits |
-| Known-value search of the initial rewritten candidate | No residual matches for 16 known values | Supplemental exact-value check; does not identify unknown secrets |
+| Credential scan of the portfolio candidate | Gitleaks 8.30.1: no findings | Current files and all 187 reachable commits at `a309a63`; a fresh remote clone also passed. Later revision scans are linked below |
+| Known-value search of the portfolio candidate | No residual matches for 16 known values across 650 blobs | Supplemental exact-value check at `a309a63`; does not identify unknown secrets |
 
-The new history-scan workflow and deployment smoke-check step are implemented. Their GitHub Actions execution status will be recorded below after the final candidate is pushed and run. Local success is not presented as a completed CI deployment.
+The history-scan workflow and updated backend delivery workflow have now passed in GitHub Actions. Their revision-specific results are recorded below, separately from local checks.
 
 ## Delivery evidence
 
@@ -46,11 +46,27 @@ Historical successful runs establish that the earlier delivery paths were used:
 
 These runs refer to commits from before credential-related history rewriting. They do **not** verify the rewritten commit IDs or the new publication changes. Old-to-new commit mappings are retained privately for audit; private archives and credentials are not portfolio attachments.
 
-**Final-candidate delivery status:** pending execution. This section will identify the candidate commit, workflow runs and resulting deployment separately from the baseline above.
+## Publication release runs
+
+| Source revision | Workflow | Result |
+| --- | --- | --- |
+| `a309a63` | [Frontend delivery](https://github.com/jothep/maori-story-fill/actions/runs/36298824448) | Passed lint, tests, build and Pages deployment |
+| `a309a63` | [Git-history credential scan](https://github.com/jothep/maori-story-fill/actions/runs/36298820622) | Passed |
+| `a309a63` | [Initial backend release](https://github.com/jothep/maori-story-fill/actions/runs/36298822546) | Tests and image build passed; Trivy blocked 12 fixable HIGH findings before image push or service update |
+| `7d80196` | [Git-history credential scan](https://github.com/jothep/maori-story-fill/actions/runs/36299274040) | Passed |
+| `7d80196` | [Backend release after remediation](https://github.com/jothep/maori-story-fill/actions/runs/36299274042) | Passed 11 backend tests, 6 smoke-check tests, image build/scan, image push, Cloud Run deployment and public API smoke check |
+
+The blocked findings comprised ten Pillow advisories and two libraries bundled inside pip. Pillow was updated from 12.2.0 to 12.3.0. The final runtime image now removes pip, its ensurepip seed and wheel archives after installation and dependency checks; the builder retains installation tools. Adding unrelated top-level packages would not replace pip's bundled copies. The scan policy and its severity threshold were not relaxed.
+
+In a separate local Python environment with pip and ensurepip absent, application imports and all 11 backend tests passed. The subsequent Linux image scan and deployment also passed in the workflow above. No database schema change is included. Backend lint remains advisory; workflow success does not mean every lint check passed.
+
+After deployment, Cloud Run reported revision `maori-story-backend-00027-bzj` receiving 100% of traffic, with image tag `7d8019603925de68306585f701e5eb5a7442f854`. The database and signing-key values still matched the private rotated configuration. This application release supersedes the configuration-only `00026-phc` baseline above. Passing the configured Trivy gate means no blocking findings under that run's policy and database, not that the image has no vulnerabilities.
 
 ## Publication state
 
-The repository remains private while publication preparation is in progress. An isolated, rewritten history was scanned and backed up. Remote history replacement, fresh-clone scanning, checks for old remote references/cached sensitive content, and final visibility review are still required before the public release is described as complete.
+The repository remains **private**. The cleaned history was pushed with an exact force-with-lease, and a fresh remote clone passed its full reachable-history scan. The original 185 commits' authorship and timestamps were retained; credential cleanup changed commit IDs. The owner's original staged working draft was not included in the published branch.
+
+A separate GitHub contents-API check found that the previous sensitive document is still retrievable through its old commit ID, outside the new reachable history. That retained content must be addressed before this repository meets the owner's publication requirement. A support request has been prepared but not sent. GitHub documents that force-pushing alone may leave cached views accessible and that Support assistance is limited; see [removing sensitive data](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository). No claim is made that all historic copies have been erased.
 
 ## Implemented but not fully proven
 

@@ -42,8 +42,10 @@ flowchart LR
 This is the backend delivery path; the frontend separately runs lint, tests and build before Pages deployment.
 Terraform creates the registry and runtime identity as well as the service configuration, but the application workflow owns image updates.
 The GCS state inventory was checked and contains the four declared resources; Terraform formatting and validation passed.
-This is not a drift or rebuild check. State may contain sensitive values and is not a public portfolio artifact.
-The smoke check and its six offline tests are implemented; local production checking passed, but the new deployment-step execution in GitHub Actions is pending.
+No Terraform plan, apply or restore was performed in this verification; the inventory is not a drift or rebuild check. State may contain sensitive values and is not a public portfolio artifact.
+The [backend delivery run for `7d80196`](https://github.com/jothep/maori-story-fill/actions/runs/36299274042) passed application tests, six offline smoke-check tests, image scanning, deployment and the public API smoke check.
+Cloud Run revision `maori-story-backend-00027-bzj` serves that commit-tagged image with 100% traffic.
+The frontend Pages run for `a309a63` and independent credential scans for both release commits also succeeded; links are in the verification record.
 A smoke-check failure does not undo deployment. The credential scan runs independently and does not gate the deployment job.
 See the current deployment page and [verification record](verification.md) for exact gates and execution status.
 

@@ -6,9 +6,9 @@ The engineering case concerns how those components are deployed, where their sta
 
 ## Evidence and scope
 
-This document reflects a September 2026 review. The [verification record](verification.md) distinguishes implementation, observed deployment behaviour, and pending work. Local changes must not be assumed to be running in production.
+This document reflects the September 2026 review and subsequent pipeline runs. The [verification record](verification.md) separates implementation, observed deployment behaviour, and pending work.
 
-On 27 September 2026, the live service was checked after a configuration rotation. Cloud Run revision **00026-phc** retained the existing application image. That check provides evidence about the updated configuration and the existing deployed application; it does not establish that the subsequent repository changes have run through GitHub Actions.
+Cloud Run now serves image **7d80196** through revision **00027-bzj**, receiving 100% of traffic. Revision **00026-phc** was the earlier credential-rotation baseline; the newer release has completed the backend pipeline and public API smoke check.
 
 The project is a single application and a personal infrastructure exercise. Its Kubernetes manifests demonstrate an earlier deployment implementation. This review did not recreate that cluster, establish a service availability history, or conduct a disaster recovery exercise.
 
@@ -20,7 +20,7 @@ The [Kubernetes implementation](../Infra/) develops those concerns into Deployme
 
 The [demo](../demo/) is a separate, smaller application: Django serves stories with full_text and directly associated words, while its MUI frontend reads that content from list responses at a fixed local API address. The main application instead has separate list/detail contracts and paragraph, blank-link and media structures. Demo Compose starts only PostgreSQL. Its contract should not be substituted for the production API.
 
-The [local platform lab](local-platform-lab.md) connects these implementations and their gaps. This review has not rerun demo, recreated Kubernetes, or completed a fresh Compose startup.
+The [local platform lab](local-platform-lab.md) records September fixes to same-origin API routing and repository-prefix handling. Compose parsing passed; demo execution, Kubernetes recreation and a fresh Compose startup remain unverified.
 
 The migration changed the operating model:
 
@@ -44,7 +44,7 @@ The [current architecture document](architecture-production-gcp.md) describes th
 
 The September review interprets this arrangement as a useful division of responsibility: infrastructure configuration can evolve separately from routine application releases. The code demonstrates the division; there is no contemporaneous decision record establishing every original reason for it.
 
-**Keep the IaC boundary explicit.** Terraform does not provision the complete environment. Neon, media storage configuration, CI authentication, and initial state-backend preparation include dependencies outside its current resource definitions. A GCS backend is configured for Terraform state, but that is not evidence of a tested, complete environment rebuild.
+**Keep the IaC boundary explicit.** Neon, media storage, CI authentication and backend preparation remain outside the Terraform resource definitions. Formatting and validation passed, and the configured GCS backend returned the four declared resource addresses. Reading state does not establish absence of drift, successful restoration, or a complete environment rebuild.
 
 **Accept multiple providers deliberately.** Pages, Cloud Run, Neon and GCS address different hosting responsibilities. The resulting system also crosses service boundaries, with separate configuration, access control, billing and troubleshooting. Cost is an operating constraint; this repository does not guarantee a zero bill.
 
@@ -54,7 +54,11 @@ The [backend workflow](../.github/workflows/deploy-backend.yml) runs tests, buil
 
 The [frontend workflow](../.github/workflows/deploy-frontend.yml) performs lint, tests and a production build before publishing to Pages. Its API endpoint is supplied at build time, allowing frontend source to remain separate from the deployed backend address.
 
-September 2026 follow-up work adds a dedicated [Gitleaks workflow](../.github/workflows/secret-scan.yml) and a [deployment smoke-check script](../scripts/smoke-check.py), supported by [six offline tests](../scripts/smoke_check_test.py). All six tests passed locally. A read-only production run also passed, checking a response containing one story, eight paragraphs and eleven words. GitHub Actions execution of both the secret-scanning workflow and the updated deployment workflow remains unverified. These checks do not exercise administrator workflows, uploads, sustained load, or data recovery.
+September follow-up adds a [Gitleaks workflow](../.github/workflows/secret-scan.yml), an [API smoke check](../scripts/smoke-check.py) and [six offline tests](../scripts/smoke_check_test.py). Both workflows now have successful GitHub execution records.
+
+The gate also stopped a release: [run 36298822546](https://github.com/jothep/maori-story-fill/actions/runs/36298822546) found 12 fixable HIGH findings—ten in Pillow and two in pip-bundled packages. Commit **7d80196** upgraded Pillow from 12.2 to 12.3 and removed pip, ensurepip and bundled wheels from the runtime after dependency checks, retaining builder tooling. The scan policy was unchanged.
+
+The [successful backend run](https://github.com/jothep/maori-story-fill/actions/runs/36299274042) passed 11 backend tests, six offline smoke tests, Trivy, image push, deployment and public API verification. [Secret scanning](https://github.com/jothep/maori-story-fill/actions/runs/36299274040) and the [frontend release](https://github.com/jothep/maori-story-fill/actions/runs/36298824448) also passed. These checks do not exercise sustained load or recovery.
 
 Application deployment workflows currently have no pull-request trigger. Database migration orchestration and automatic rollback are also outside the implemented release path.
 
@@ -62,7 +66,7 @@ Application deployment workflows currently have no pull-request trigger. Databas
 
 The publication audit found credentials in documentation and Git history. The subsequent work separates credential rotation from repository sanitisation: removing a value from Git does not revoke it, and revoking it does not remove historical copies.
 
-Current examples now use private inputs or generated local configuration. Sensitive local material is excluded from version control, and a sanitised history is being prepared for a controlled remote update. The verification record is the authority for completed checks and remaining publication steps.
+Sanitised history has been pushed to the private repository and a fresh clone passed scanning. An old sensitive document remains retrievable at its previous commit through the authenticated GitHub Contents API. The repository therefore remains **private**. A GitHub Support request is drafted but has not been sent; server-side historical access remains unresolved.
 
 This is a September 2026 improvement, not a claim that the original project had complete secrets management. Database credentials, the Django signing key and the administrator login remain separate concerns.
 
@@ -70,4 +74,4 @@ This is a September 2026 improvement, not a claim that the original project had 
 
 The strongest evidence is the relationship between a workload, a deployment model, and its operational responsibilities. The project shows practical containerisation, infrastructure configuration, automated delivery, state externalisation and careful qualification of what has been verified.
 
-The [second article draft](articles/02-operating-the-migration.md) develops those operating decisions. Remaining improvements should produce useful evidence: a verified first-deployment path, a successful pipeline run with the new checks, and a bounded rollback exercise with database compatibility made explicit.
+The [second article draft](articles/02-operating-the-migration.md) develops these decisions. Remaining work includes the publication blocker, a verified first-deployment path, and a rollback exercise with database compatibility made explicit.

@@ -3,9 +3,10 @@
 This page describes the implemented deployment and its verification limits.
 The project is a recent infrastructure practice case alongside the author's enterprise experience.
 
-**Last deployment checks: 2026-09-27.** The public frontend, API read endpoints and a sampled media object were reachable.
-Cloud Run revision `maori-story-backend-00026-phc` applied credential configuration changes while retaining the existing application image.
-Those checks do **not** establish that the repository's current cleanup changes have been deployed.
+**Online baseline checks: 2026-09-27.** The public frontend, API read endpoints and a sampled media object were reachable.
+The latest verified backend release is commit `7d8019603925de68306585f701e5eb5a7442f854`, serving 100% of traffic on Cloud Run revision `maori-story-backend-00027-bzj`.
+Its [successful delivery run](https://github.com/jothep/maori-story-fill/actions/runs/36299274042) included the post-deployment public API smoke check.
+The earlier revision `maori-story-backend-00026-phc` was the credential-rotation baseline and retained the previous application image.
 
 ## Request and data flow
 
@@ -62,7 +63,7 @@ Provider prices and plan limits must be checked when deploying or estimating cos
 4. The service's public `roles/run.invoker` binding for `allUsers`.
 
 On 2026-09-27, `terraform fmt -check` and `terraform validate` passed; `terraform state list` read the configured GCS backend and recorded exactly these four resources.
-This verifies the state inventory, not absence of drift or successful environment recreation.
+This verifies the state inventory, not absence of drift or successful environment recreation. No Terraform plan, apply or restore was performed in this verification.
 The GCS state bucket remains a prerequisite rather than a resource created here.
 Other external prerequisites include the cloud project and enabled APIs, Neon, the media bucket and its IAM policy, and CI authentication.
 GitHub Pages settings and GitHub Actions secrets are also outside this Terraform configuration.
@@ -101,7 +102,8 @@ A successful scan is not a claim of zero vulnerabilities.
 The application test workflows currently have no pull-request trigger.
 The backend now runs [a smoke check](../scripts/smoke-check.py) after updating the service.
 It validates HTTP/JSON responses, a non-empty story list, one story detail with paragraphs and a word bank, and the configuration endpoint, using bounded retries.
-Its six offline tests and a local run against production passed; execution of this new step in GitHub Actions is still pending.
+The [backend run for `7d80196`](https://github.com/jothep/maori-story-fill/actions/runs/36299274042) passed 11 Django tests, six offline smoke-check tests, image build, Trivy scan, push, deployment and the public API smoke check.
+A separate local run against production also passed.
 A failure marks the workflow failed after deployment; it does not roll back the service.
 Database migration and automatic rollback remain outside the workflow. Media playback, writes and a full game walkthrough are outside the smoke check.
 The credential scan is a separate workflow, not a dependency of deployment; no required branch-protection gate is claimed.
@@ -128,14 +130,18 @@ No credential values belong in source, examples, screenshots or deployment evide
 | Item | Status and limits |
 | --- | --- |
 | Frontend, API reads and sampled GCS object | Reachable during the 2026-09-27 checks; this is a point-in-time check |
-| Revision `maori-story-backend-00026-phc` | Credential configuration update using the existing application image |
-| Current repository cleanup | Implemented in source; deployment of these changes is not established by the checks above |
-| New API smoke check | Six offline tests and a local production check passed; new workflow execution remains pending |
-| New credential-scan workflow | Implemented independently of deployment; its GitHub execution is recorded separately in the verification record |
+| Current backend release | Commit `7d80196`; revision `maori-story-backend-00027-bzj`, image tagged with that commit, 100% traffic |
+| Earlier credential-rotation baseline | Revision `maori-story-backend-00026-phc` retained the application image deployed before the cleanup |
+| Current frontend release | Commit `a309a63`; Pages delivery completed successfully |
+| API smoke check | Six offline tests, local production checking and the post-deployment GitHub Actions step passed |
+| Credential-scan workflow | Successful independent runs for `a309a63` and `7d80196`; not a deployment dependency |
 | Historical backend and frontend releases | Successful Actions records exist; they refer to the source history used at that time |
 | Uploads, capacity, failover and restore | Not verified by the latest read-only checks |
-| Terraform configuration and remote state | Formatting and validation passed; GCS state inventory confirmed the four declared resources |
+| Terraform configuration and remote state | Formatting and validation passed; GCS state inventory confirmed four declared resources; no plan/apply/restore in this verification |
 | Complete environment rebuild | Not yet demonstrated; state inventory is not a drift or recovery test |
+
+Current release evidence: [backend `7d80196`](https://github.com/jothep/maori-story-fill/actions/runs/36299274042), [frontend `a309a63`](https://github.com/jothep/maori-story-fill/actions/runs/36298824448), and credential scans for [`a309a63`](https://github.com/jothep/maori-story-fill/actions/runs/36298820622) and [`7d80196`](https://github.com/jothep/maori-story-fill/actions/runs/36299274040).
+The repository remains private: older cached commit content is still a publication blocker, despite successful scans of the rewritten history and current release delivery.
 
 Historical release records: [backend](https://github.com/jothep/maori-story-fill/actions/runs/25036589237) and [frontend](https://github.com/jothep/maori-story-fill/actions/runs/25902475995).
 Credential removal rewrites Git history, so an older run's recorded commit may differ from the corresponding commit in the cleaned repository.
@@ -146,7 +152,7 @@ Keep the historical run date and the checked behavior explicit; do not relabel i
 The Kubernetes manifests are retained as an earlier project stage, documented in [the architecture overview](ARCHITECTURE.md).
 The author's [original migration article](https://medium.com/@shelldry325/from-on-premises-kubernetes-to-zero-cost-serverless-architecture-a-practical-guide-to-cloud-70e68304e835) reports using that environment; it has not been redeployed during this review.
 
-The smoke check is implemented and locally verified; its first deployment-workflow execution is still to be recorded.
+The smoke check is implemented and verified both locally and in the successful backend deployment workflow for `7d80196`.
 Potential follow-up work includes a verified bootstrap procedure and a documented rollback exercise.
 PR application checks and federated CI authentication are additional candidates.
 These are proposed improvements, not completed capabilities.

@@ -56,9 +56,9 @@ The Kubernetes work demonstrates practical concerns around state, network routin
 
 The [verification record](docs/verification.md) separates **implemented**, **deployment verified**, and **planned** work.
 
-- **Deployment verified, 27 September 2026:** the public frontend rendered a story; story/configuration APIs, sampled GCS media, and administrator login worked. Production credential rotation was verified separately from application delivery.
+- **Deployment verified, 27 September 2026:** the public frontend rendered a story; story/configuration APIs, sampled GCS media, and administrator login worked. The updated frontend and backend pipelines subsequently completed deployment, including the backend's image scan and public API smoke check.
 - **Implemented:** Terraform configuration, Kubernetes manifests, backend and frontend delivery workflows, basic automated tests, image scanning, and CodeQL configuration.
-- **Publication follow-up:** credential cleanup, history preparation, private configuration handling, a Git-history secret scan, and an API smoke check. The verification record identifies which checks have run locally and which have run in GitHub Actions.
+- **Publication follow-up:** credentials were rotated, reachable Git history was cleaned, and the Git-history scan passed in GitHub Actions. The repository remains private while retained sensitive content accessible through an old commit ID is addressed; see the verification record.
 - **Not demonstrated:** sustained availability or latency targets, load capacity, automatic rollback, database restore drills, a complete observability system, or a reproducible billing total of zero.
 
 Backend tests use SQLite, not Neon. Frontend tests mock HTTP and audio. Backend lint and CodeQL analysis are currently advisory; Trivy blocks fixable HIGH/CRITICAL findings. The secret scan is a separate workflow, not a dependency of the deployment job. These checks do not establish that the system has no vulnerabilities.
@@ -73,7 +73,7 @@ The original article's “zero-cost” framing describes the project's cost obje
 
 ## Explore locally
 
-Docker with Compose is required for this development path. It uses a separate local PostgreSQL database and local media storage.
+Docker with Compose is required for this development path. It uses a separate local PostgreSQL database and local media storage. This startup path still needs a fresh container run, including the non-root user's write access to source mounts and media volumes; see the [local lab's reproduction gaps](docs/local-platform-lab.md#local-filesystem-permissions).
 
 ```bash
 python3 scripts/init-local-env.py
