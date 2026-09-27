@@ -24,7 +24,13 @@ WORKDIR /app
 COPY --from=builder /app/wheels /wheels
 COPY --from=builder /app/requirements.txt .
 
-RUN pip install --no-cache /wheels/*
+# Install from the builder's wheels, then remove the runtime package installer.
+# pip bundles its own msgpack/setuptools copies; upgrading unrelated top-level
+# packages does not replace those copies. Dependencies change by rebuilding.
+RUN python -m pip install --no-cache-dir --no-index /wheels/* \
+    && python -m pip check \
+    && python -m pip uninstall --yes pip \
+    && rm -rf /wheels /usr/local/lib/python3.13/ensurepip
 
 COPY . .
 
