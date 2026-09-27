@@ -1,232 +1,104 @@
-# Maori Story Filler
+# Māori Story Filler — infrastructure and delivery case study
 
-Maori Story Filler is an interactive web application designed to teach Māori vocabulary through a gamified, fill-in-the-blanks story experience. Users progress through stories by dragging and dropping the correct words into blank spaces.
+A Māori vocabulary application used to explore container delivery, Kubernetes, and a move to managed cloud services. Originally a course project, it now provides a recent, hands-on infrastructure example alongside my professional experience in enterprise environments.
 
-This project is fully containerized and designed for a Kubernetes-native deployment, with a complete CI/CD pipeline for automated testing and image publishing.
+**[Try the application](https://jothep.github.io/maori-story-fill/)** · **[Engineering case study](docs/engineering-case-study.md)** · **[Local platform lab](docs/local-platform-lab.md)** · **[Verification record](docs/verification.md)**
 
-## Project Status
+## Start here
 
-- ✅ **CI/CD Pipeline**: All tests passing, automated security scanning enabled
-- ✅ **Security**: Zero known vulnerabilities (see [SECURITY.md](SECURITY.md))
-- ✅ **Code Quality**: Comprehensive error handling, structured logging, optimized queries
-- 📚 **Documentation**: Complete guides for deployment, cost analysis, and refactoring
+For a short review, read the [case study](docs/engineering-case-study.md): the constraints, decisions, trade-offs, and boundaries of what has been demonstrated. The source and dated evidence are linked throughout.
 
-## Documentation
+The application provides stories with drag-and-drop vocabulary, illustrations, pronunciation audio, and Django administration. Its value as a portfolio project is the infrastructure around that workload: choosing an appropriate operating model, separating persistent state from compute, and making delivery repeatable.
 
-### General
-- [CHANGELOG.md](CHANGELOG.md) - Version history and updates
-- [SECURITY.md](SECURITY.md) - Security policy and vulnerability reports
-- [REFACTORING_PLAN.md](REFACTORING_PLAN.md) - Project refactoring roadmap
+## Current deployment
 
-### Architecture & Design
-- [**⭐ Production Architecture (GCP)**](docs/architecture-production-gcp.md) - **CURRENT production deployment** (GitHub Pages + Cloud Run + Neon)
-- [**ARCHITECTURE.md**](docs/ARCHITECTURE.md) - Complete system architecture documentation (includes Kubernetes alternative)
-- [**Architecture Diagrams**](docs/architecture-diagrams.md) - Visual diagrams with Mermaid code
-
-### Deployment & Infrastructure
-- [CODE_ANALYSIS.md](CODE_ANALYSIS.md) - Detailed codebase analysis
-- [COST_COMPARISON.md](COST_COMPARISON.md) - Cloud deployment cost comparison
-- [TERRAFORM_GUIDE.md](TERRAFORM_GUIDE.md) - Terraform infrastructure automation
-- [S3_STORAGE_GUIDE.md](S3_STORAGE_GUIDE.md) - S3 storage setup (MinIO/AWS)
-## Key Features (v0.2.0+)
-
-### User Experience
-- Interactive drag-and-drop story filling with dnd-kit
-- Retro 8-bit aesthetic using NES.css
-- Audio playback for pronunciation learning
-- Configurable background music via API
-- Comprehensive error handling with user-friendly messages
-- Loading states and graceful error recovery
-
-### Code Quality & Performance
-- **85% Query Reduction**: Optimized database queries (35+ → 5-6 queries)
-- **Configuration System**: Centralized app settings via AppConfig model and `/api/config/` endpoint
-- **Error Boundaries**: JavaScript error catching and graceful degradation
-- **Structured Logging**: Rotating file logs with detailed error tracking
-- **Automatic Media Compression**: Images optimized to save 50-80% storage
-- **File Validation**: Size and extension validation for uploads
-
-### Security
-- Zero known vulnerabilities (regularly scanned with Trivy)
-- Non-root Docker containers
-- Environment-based secret management
-- CORS configured with explicit origins
-- Input validation and sanitization
-
-## Architecture Overview
-
-* **Frontend**: A React single-page application (SPA) built with Vite. It uses dnd-kit for drag-and-drop interactions and NES.css for its retro 8-bit aesthetic. Includes comprehensive error handling, loading states, and PropTypes validation. Served in production using nginx:alpine for optimal security and performance.
-
-* **Backend**: A Django REST Framework API that serves all story content, paragraphs, and word banks. It uses Gunicorn as the application server, WhiteNoise to serve static files, and psycopg2 to connect to the database. Features optimized queries, structured logging, automatic media compression, and centralized configuration management via AppConfig model.
-
-* **Database**: A PostgreSQL database deployed as a Kubernetes StatefulSet for persistent data storage.
-
-* **CI/CD**: Automated via GitHub Actions. Pushes to the main branch trigger two separate workflows (for frontend and backend) which:
-  - Install dependencies
-  - Run linters (ESLint, Flake8) and tests (Vitest, Django TestCase)
-  - Build Docker images with multi-stage builds
-  - Scan images for vulnerabilities using Trivy
-  - Push the tagged images to Docker Hub
-
-* **Deployment**: The entire stack is deployed to Kubernetes using the manifests in the Infra/ directory. An Ingress-Nginx controller routes traffic to the appropriate services. Alternative single-machine deployment available via docker-compose.
-## Tech Stack
-| **Category** | **Technology** |
-| :--- | :--- |
-| **Frontend** | React, React Router, dnd-kit (Drag & Drop), NES.css |
-| **Backend** | Django, Django Rest Framework (DRF), Gunicorn, WhiteNoise |
-| **Database** | PostgreSQL |
-| **CI/CD** | GitHub Actions, Docker, Trivy |
-| **Deployment** | Kubernetes (K8s), Ingress-Nginx |
-
-## Kubernetes Deployment Guide
-This guide provides the full, ordered steps to deploy the application from scratch onto a Kubernetes cluster (e.g., Minikube, k3d, Docker Desktop K8s).
-All manifests are located in the Infra/ directory and deploy to the story-fill namespace.
-### 1. Prerequisites
-A running Kubernetes cluster.
-kubectl command-line tool installed and configured to your cluster.
-A default StorageClass available in your cluster for dynamic Persistent Volume provisioning.
-### 2. Install Ingress-Nginx Controller
-If your cluster does not have an Ingress controller, you must install one.
-
-### 3. Create Namespace
-All resources will be deployed into the story-fill namespace.
-kubectl create namespace story-fill
-
-### 4. Create Kubernetes Secrets
-Secrets must be created before the applications that depend on them.
-A. PostgreSQL Secret (Used by the database itself)
-```bash
-# Replace with your own secure user and password
-kubectl create secret generic postgres-secret -n story-fill \
---from-literal=POSTGRES_USER=${DB_USER} \
---from-literal=POSTGRES_PASSWORD=${MY_PASSWORD}
+```mermaid
+flowchart LR
+    Pages[GitHub Pages: React assets] --> Browser
+    Browser -->|HTTPS API| Run[Cloud Run: Django and Gunicorn]
+    Run -->|PostgreSQL over TLS| Neon[(Neon PostgreSQL)]
+    Run -->|Media storage API| GCS[Google Cloud Storage]
+    Browser -->|Public image and audio URLs| GCS
 ```
 
-B. Django Backend Secrets (Used by the Django app)
-Note: The values for POSTGRES_HOST, POSTGRES_DB, POSTGRES_USER, and POSTGRES_PASSWORD must be set as shown below to match the database service and the secret from Step 4A.
-```bash
-# Replace with your own values, especially the SECRET_KEY
-kubectl create secret generic ${SECRET_NAME} \
---namespace ${K8S_NAMESPACE} \
---from-literal=SECRET_KEY="${SECRET_KEY_VALUE}" \
---from-literal=POSTGRES_PASSWORD="${DB_PASSWORD}" \
---from-literal=DEBUG="${DJANGO_DEBUG}" \
---from-literal=ALLOWED_HOSTS="${ALLOWED_HOSTS_VALUE}" \
---from-literal=POSTGRES_HOST="${DB_HOST}" \
---from-literal=POSTGRES_DB="${DB_NAME}" \
---from-literal=POSTGRES_USER="${DB_USER}" \
---from-literal=POSTGRES_PORT="${DB_PORT}" \
---from-literal=CORS_ALLOWED_ORIGINS="${CORS_ORIGINS}"
-```
+- **Frontend:** React/Vite, built and published through GitHub Pages artifacts.
+- **Backend:** a non-root container on Cloud Run, with Gunicorn and WhiteNoise.
+- **Persistent state:** PostgreSQL on Neon; public learning media in GCS.
+- **Infrastructure:** Terraform manages Cloud Run, its runtime service account, Artifact Registry, and public invocation permission. Other setup dependencies remain outside this Terraform configuration.
+- **Capacity choice:** Cloud Run is configured for **0–1 instances**, 1 vCPU and 512 MiB. This limits idle compute and scaling exposure for a small demonstration workload; cold starts and a low capacity ceiling are accepted trade-offs.
 
-C. Django Superuser Secret (Used by the initialization job)
-```bash
-# Set the desired login credentials for the Django Admin panel
-kubectl create secret generic django-superuser-creds -n story-fill \
-  --from-literal=ADMIN_USER=${ADMIN_USER} \
-  --from-literal=ADMIN_EMAIL=${ADMIN_EMAIL} \
-  --from-literal=ADMIN_PASS=${ADMIN_PASSWORD}
-```
+The [production architecture](docs/architecture-production-gcp.md) explains the live path. The local environments below show the development and orchestration work that preceded and supports it.
 
-### 5. Create Persistent Volume Claim (PVC)
-The backend requires a PVC to store user-uploaded media files (images, audio). The database's PVC is created automatically by its StatefulSet.
-```bash
-kubectl apply -f Infra/pvc.yaml
-```
+## Local engineering practice
 
-### 6. Deploy PostgreSQL Database
-This applies the postgres-deployment.yaml manifest, which creates the StatefulSet and Service for the database.
-```bash
-kubectl apply -f Infra/postgres-deployment.yaml
-```
+These environments serve different purposes. The [local platform lab](docs/local-platform-lab.md) links their implementation, startup order and verification limits.
 
-IMPORTANT: Wait for the database Pod to be fully ready before proceeding, or the migration job will fail.
-```bash
-# Run this command to wait until the Pod's 'Ready' status is true
-echo "Waiting for PostgreSQL Pod to be ready..."
-kubectl wait --for=condition=Ready pod \
-  -l app=postgres \
-  -n story-fill \
-  --timeout=300s
-echo "PostgreSQL is ready!"
-```
+| Environment | Engineering work it exposes | Evidence boundary |
+| --- | --- | --- |
+| Development Compose | Source mounts and hot reload, service discovery, a shared Nginx entry point, separate database/media volumes, database readiness before application startup | Configuration reviewed; full container startup not revalidated in this review |
+| Local Kubernetes | Deployments and Services, a PostgreSQL StatefulSet/PVC, media persistence, separate migration/admin Jobs, Secret references and a diagnostic Pod | Manifests in `Infra/` and the original migration account; cluster execution not repeated here |
+| Production-style Compose | A multi-container, single-host packaging option with Gunicorn, static serving and a reverse proxy | An alternative implementation, not the current hosted service; HTTPS and recovery are not demonstrated |
+| Earlier demo | A separate Django/MUI prototype with a story-list/full-text API, before the main application's paragraph and word-bank design | Preserved in `demo/`; its Compose file runs only PostgreSQL, and it is not a miniature copy of current production |
 
-### 7. Run Database Initialization Jobs
-With the database running, we can now initialize the schema and create the admin user.
-* A. Run Database Migrations
-This runs python manage.py migrate inside a K8s Job to create all the tables.
-```bash
-kubectl apply -f Infra/backend-migrate-job.yaml
-```
+The Kubernetes work demonstrates practical concerns around state, network routing and operational tasks. The later managed-service deployment shows how the operating model changed for a small public workload; both stages are part of this case study.
 
-* B. Create Superuser
-This runs the backend-create-superuser-job.yaml manifest to create the admin account.
-```bash
-kubectl apply -f Infra/backend-create-superuser-job.yaml
-```
+## Engineering decisions worth reviewing
 
-### 8. Deploy Applications
-Now that the database is migrated, the main application services can be deployed.
-```bash
-# Deploy the Django Backend (Deployment + Service)
-kubectl apply -f Infra/backend-deployment.yaml
-```
+| Decision | Why it matters | Source and limitation |
+| --- | --- | --- |
+| Move database and media outside the application container | Container replacement does not require carrying local content between instances | [Storage configuration](backend/maori_story_project/settings.py); restore procedures have not been demonstrated |
+| Give Terraform and application delivery different responsibilities | Terraform maintains service configuration; CI selects the application image | [Terraform lifecycle rule](terraform/main.tf), [backend workflow](.github/workflows/deploy-backend.yml); the image field is excluded from Terraform drift reconciliation |
+| Publish the frontend independently | Static hosting removes a continuously running frontend service | [Pages workflow](.github/workflows/deploy-frontend.yml); the API URL is a build-time setting |
+| Use a multi-stage, non-root backend image and SHA-tagged releases | Separate build tools from runtime and associate a release with source | [Dockerfile](backend/dockerfile); a SHA tag is not a digest-pinning or provenance guarantee |
+| Verify the release and keep credentials out of source | Make publication and delivery checks explicit | [Secret scan](.github/workflows/secret-scan.yml), [API smoke check](scripts/smoke-check.py); see dated execution status below |
+
+## What has actually been demonstrated
+
+The [verification record](docs/verification.md) separates **implemented**, **deployment verified**, and **planned** work.
+
+- **Deployment verified, 27 September 2026:** the public frontend rendered a story; story/configuration APIs, sampled GCS media, and administrator login worked. Production credential rotation was verified separately from application delivery.
+- **Implemented:** Terraform configuration, Kubernetes manifests, backend and frontend delivery workflows, basic automated tests, image scanning, and CodeQL configuration.
+- **Publication follow-up:** credential cleanup, history preparation, private configuration handling, a Git-history secret scan, and an API smoke check. The verification record identifies which checks have run locally and which have run in GitHub Actions.
+- **Not demonstrated:** sustained availability or latency targets, load capacity, automatic rollback, database restore drills, a complete observability system, or a reproducible billing total of zero.
+
+Backend tests use SQLite, not Neon. Frontend tests mock HTTP and audio. Backend lint and CodeQL analysis are currently advisory; Trivy blocks fixable HIGH/CRITICAL findings. The secret scan is a separate workflow, not a dependency of the deployment job. These checks do not establish that the system has no vulnerabilities.
+
+## Read the story
+
+1. [Original Medium article: the migration from local Kubernetes to managed services](https://medium.com/@shelldry325/from-on-premises-kubernetes-to-zero-cost-serverless-architecture-a-practical-guide-to-cloud-70e68304e835).
+2. [Follow-up article draft: operating the migration](docs/articles/02-operating-the-migration.md). This continues the first article's delivery and security theme; it is not yet published on Medium.
+3. [Architecture and historical implementation index](docs/ARCHITECTURE.md).
+
+The original article's “zero-cost” framing describes the project's cost objective. This repository does not claim a verified current monthly bill, unlimited free usage, or enterprise high availability. Older deployment and planning documents are supporting historical material; use the current architecture and verification record for current claims.
+
+## Explore locally
+
+Docker with Compose is required for this development path. It uses a separate local PostgreSQL database and local media storage.
 
 ```bash
-# Deploy the React Frontend (Deployment + Service)
-kubectl apply -f Infra/frontend-deployment.yaml
+python3 scripts/init-local-env.py
+docker compose -f docker-compose.dev.yml up --build
 ```
 
-### 9. Apply Ingress Rules
-Finally, apply the Ingress rules to route external traffic to your services.
-```bash
-kubectl apply -f Infra/ingress.yaml
-```
-
-## Accessing the Application
-The application is now running, but it's only accessible inside the cluster. To access it from your laptop, you must forward a local port to the Ingress controller.
-Find your Ingress Controller Service:
-(It is usually in the ingress-nginx namespace)
-```bash
-kubectl get svc -n ingress-nginx
-```
-Look for a service named ingress-nginx-controller.
-Start Port Forwarding:
-(This command will run continuously. Leave this terminal open.)
-```bash
-# This forwards your local port 8080 to the ingress controller's port 80
-kubectl port-forward -n ingress-nginx service/ingress-nginx-controller 8080:80
-```
-
-Access the Application:
-Main App (Frontend): Open your browser to http://localhost:8080
-Admin Panel (Backend): Open your browser to http://localhost:8080/admin/
-(Log in with the credentials from the django-superuser-creds secret).
-## Debugging
-If you suspect networking issues between Pods (e.g., the backend can't reach postgres-svc), you can use the debug-pod.yaml manifest.
-```bash
-# 1. Deploy the debug pod
-kubectl apply -f Infra/debug-pod.yaml
-```
+The generator creates an ignored `.env` with random local credentials and refuses to overwrite an existing file. Open `http://localhost/maori-story-fill/` after the services start. A fresh database contains no stories; create an administrator and add content:
 
 ```bash
-# 2. Wait for it to be ready
-kubectl wait --for=condition=Ready pod/network-debug-pod -n story-fill
+docker compose -f docker-compose.dev.yml exec backend python manage.py createsuperuser
 ```
 
-```bash
-# 3. Exec into the pod's shell
-kubectl exec -it network-debug-pod -n story-fill -- /bin/sh
-```
+Enter credentials interactively, then use `/admin/`. Production credentials and private backups are not part of the repository. Compose configuration parsing has been checked; see the verification record for the status of a full container startup.
 
-```bash
-# 4. From inside the pod, test your K8s DNS and network
-# You should see a "Connection refused" or HTTP response, *not* "bad address"
-curl maori-story-backend-svc
-```
+## Repository map
 
-```bash
-# You should see the port is open
-nc -z -v postgres-svc 5432
-# Expected: "postgres-svc (10.x.x.x:5432) open"
-```
+| Path | Purpose |
+| --- | --- |
+| [`backend/`](backend/) | Django API, administration, models, and basic tests |
+| [`frontend/`](frontend/) | React application, component tests, Pages build |
+| [`terraform/`](terraform/) | Current GCP infrastructure configuration and bootstrap boundaries |
+| [`Infra/`](Infra/) | Earlier Kubernetes manifests and operational Jobs |
+| [`demo/`](demo/) | Separate earlier Django/MUI prototype |
+| [`.github/workflows/`](.github/workflows/) | Delivery and security workflows |
+| [`scripts/`](scripts/) | Private local configuration generation and public API verification |
+| [`docs/engineering-case-study.md`](docs/engineering-case-study.md) | Decisions, alternatives, and evidence for portfolio review |
+
+For security scope and reporting, see [SECURITY.md](SECURITY.md).

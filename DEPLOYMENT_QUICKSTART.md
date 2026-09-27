@@ -1,3 +1,5 @@
+> **Historical implementation note — September 2026 review:** This document retains an earlier design, estimate, procedure or plan. It is not the current deployment specification, and its performance, cost, security and recovery claims have not all been revalidated. Use the [architecture index](docs/ARCHITECTURE.md) and [dated verification record](docs/verification.md) for current scope and evidence.
+
 # 🚀 部署快速开始（GCP Cloud Run + GitHub Pages）
 
 完全免费或接近免费的部署方案！预计成本：**$0-2/月**

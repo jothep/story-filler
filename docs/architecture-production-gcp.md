@@ -1,837 +1,153 @@
-# Production Architecture - GCP Cloud Platform
+# Current deployment architecture
 
-**Current Production Deployment**  
-**Last Updated**: 2026-05-01  
-**Stack**: GitHub Pages + Google Cloud Run + Neon PostgreSQL
+This page describes the implemented deployment and its verification limits.
+The project is a recent infrastructure practice case alongside the author's enterprise experience.
 
----
+**Last deployment checks: 2026-09-27.** The public frontend, API read endpoints and a sampled media object were reachable.
+Cloud Run revision `maori-story-backend-00026-phc` applied credential configuration changes while retaining the existing application image.
+Those checks do **not** establish that the repository's current cleanup changes have been deployed.
 
-## Architecture Overview
-
-This document describes the **current production architecture** running on Google Cloud Platform with serverless components.
-
-**Key Characteristics**:
-- ✅ **Fully Serverless**: No server management required
-- ✅ **Cost-Effective**: $0/month (free tiers)
-- ✅ **Auto-Scaling**: Scales from 0 to N instances automatically
-- ✅ **Global CDN**: GitHub Pages provides worldwide distribution
-- ✅ **Managed Database**: Neon provides serverless PostgreSQL
-
----
-
-## High-Level Architecture Diagram
+## Request and data flow
 
 ```mermaid
-graph TB
-    subgraph "Client Layer"
-        Browser[Web Browser<br/>Desktop PC<br/>Chrome / Firefox / Safari / Edge]
-    end
-
-    subgraph "CDN & Static Hosting"
-        GHPages[GitHub Pages<br/>Domain: jothep.github.io/maori-story-fill<br/>React SPA + Static Assets<br/>Global CDN<br/>HTTPS by default<br/>Cost: FREE]
-    end
-
-    subgraph "Google Cloud Platform"
-        direction TB
-        
-        subgraph "Container Registry"
-            ArtifactRegistry[Artifact Registry<br/>us-central1-docker.pkg.dev<br/>Docker Images<br/>Trivy Security Scanning<br/>Cost: FREE 0.5GB storage]
-        end
-        
-        subgraph "Compute"
-            CloudRun[Cloud Run Service<br/>Name: maori-story-backend<br/>Region: us-central1<br/>Django 5.2 + Gunicorn<br/>Min: 0 instances<br/>Max: 100 instances<br/>Port: 8000<br/>Memory: 512Mi<br/>CPU: 1 vCPU<br/>Concurrency: 80<br/>Env Vars: DATABASE_URL, SECRET_KEY<br/>Cost: FREE 2M requests/month]
-        end
-        
-        subgraph "Storage"
-            GCS[Cloud Storage<br/>Bucket: maori-story-media<br/>Media files: images, audio<br/>Public access for /media/*<br/>Optional: CDN enabled<br/>Cost: ~$0.02/GB/month]
-        end
-    end
-
-    subgraph "Database Provider - Neon"
-        NeonDB[(Neon PostgreSQL<br/>Serverless Database<br/>Region: US East Ohio<br/>Version: PostgreSQL 16<br/>Storage: 0.5GB used / 500MB free<br/>Auto-suspend after 5min idle<br/>Connection pooling built-in<br/>Cost: FREE tier)]
-    end
-
-    subgraph "CI/CD - GitHub Actions"
-        direction LR
-        BackendCI[Backend Pipeline<br/>Test Build Scan Deploy]
-        FrontendCI[Frontend Pipeline<br/>Test Build Deploy]
-    end
-
-    %% User Flow
-    Browser -->|1. HTTPS Request<br/>GET /| GHPages
-    GHPages -->|2. Serve index.html<br/>+ React bundle| Browser
-    Browser -->|3. API Calls<br/>GET /api/stories/| CloudRun
-    
-    %% Backend Dependencies
-    CloudRun -->|4. SQL Queries<br/>PostgreSQL protocol| NeonDB
-    CloudRun -->|5. Read/Write Media<br/>GCS API| GCS
-    
-    %% CI/CD Flow
-    BackendCI -.->|Build & Push Image| ArtifactRegistry
-    ArtifactRegistry -.->|Pull Image| CloudRun
-    FrontendCI -.->|Deploy Static Site| GHPages
-
-    %% Styling
-    style Browser fill:#e1f5ff,stroke:#01579b,stroke-width:3px
-    style GHPages fill:#fff9c4,stroke:#f57f17,stroke-width:3px
-    style CloudRun fill:#c8e6c9,stroke:#2e7d32,stroke-width:3px
-    style NeonDB fill:#ffccbc,stroke:#d84315,stroke-width:3px
-    style ArtifactRegistry fill:#e1bee7,stroke:#6a1b9a,stroke-width:2px
-    style GCS fill:#b3e5fc,stroke:#0277bd,stroke-width:2px
-    style BackendCI fill:#c5e1a5,stroke:#558b2f,stroke-width:2px
-    style FrontendCI fill:#c5e1a5,stroke:#558b2f,stroke-width:2px
+flowchart LR
+    Pages[GitHub Pages] -->|HTML, JavaScript and static assets| Browser[Browser]
+    Browser -->|HTTPS API requests| Run[Cloud Run: Django API]
+    Run -->|Database queries| DB[(Neon PostgreSQL)]
+    Run -->|JSON including media URLs| Browser
+    Browser -->|Direct public media reads| GCS[(GCS media bucket)]
+    Run -.->|Storage client: media writes| GCS
 ```
 
----
-
-## Detailed Request Flow
-
-```mermaid
-sequenceDiagram
-    actor User
-    participant Browser
-    participant GHPages as GitHub Pages<br/>(CDN)
-    participant CloudRun as Cloud Run<br/>(Backend API)
-    participant Neon as Neon PostgreSQL
-    participant GCS as Cloud Storage
-
-    Note over User,GCS: Initial Page Load
-    User->>Browser: Visit https://jothep.github.io/maori-story-fill/
-    Browser->>GHPages: GET /
-    GHPages-->>Browser: index.html (React SPA)
-    Browser->>GHPages: GET /assets/*.js, *.css
-    GHPages-->>Browser: Static assets (from CDN)
-    Browser->>Browser: React app initializes
-
-    Note over User,GCS: Fetch Stories List
-    Browser->>CloudRun: GET /api/stories/<br/>Headers: Origin, Accept
-    
-    alt Cold Start (first request)
-        CloudRun->>CloudRun: Start container instance<br/>Load env vars (DATABASE_URL, SECRET_KEY)
-        CloudRun->>CloudRun: Initialize Django app
-    end
-    
-    CloudRun->>Neon: SELECT * FROM story_story<br/>Connection pooling
-    Neon-->>CloudRun: [{id:1, title:"..."}, ...]
-    CloudRun-->>Browser: JSON: {stories: [...]}
-    Browser->>Browser: Render story list (NES.css)
-
-    Note over User,GCS: Load Story Details
-    User->>Browser: Click story button
-    Browser->>CloudRun: GET /api/stories/1/
-    CloudRun->>Neon: SELECT with prefetch_related<br/>Story + Paragraphs + Words
-    Neon-->>CloudRun: Complete story data
-    CloudRun-->>Browser: JSON: {story, paragraphs, words}
-
-    Note over User,GCS: Load Media Files
-    Browser->>CloudRun: GET /media/bgm/music.mp3
-    CloudRun->>GCS: Read from Cloud Storage bucket
-    GCS-->>CloudRun: Audio file stream
-    CloudRun-->>Browser: Audio file (binary)
-    Browser->>Browser: HTML5 Audio API plays
-
-    Browser->>CloudRun: GET /media/audio/paragraph1.mp3
-    CloudRun->>GCS: Read from bucket
-    GCS-->>Browser: Audio file (via signed URL or proxy)
-
-    Note over User,GCS: After 5min Idle
-    CloudRun->>CloudRun: Scale to zero (no cost)
-    Neon->>Neon: Auto-suspend database (no cost)
-```
-
----
-
-## Component Details
-
-### 1. Frontend - GitHub Pages
-
-**Service**: GitHub Pages  
-**URL**: https://jothep.github.io/maori-story-fill/  
-**Technology**: React 19 SPA  
-
-**Features**:
-- ✅ Global CDN distribution (Fastly)
-- ✅ Automatic HTTPS with GitHub certificate
-- ✅ Zero server maintenance
-- ✅ Instant deployments via GitHub Actions
-- ✅ Custom domain support (optional)
-
-**Build Process**:
-```bash
-# In GitHub Actions workflow
-npm ci
-npm run build  # Vite builds to /dist
-# Output: Optimized HTML, JS, CSS bundles
-```
-
-**Configuration**:
-```javascript
-// vite.config.js
-export default {
-  base: '/maori-story-fill/',  // GitHub Pages subpath
-  build: {
-    outDir: 'dist',
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom']
-        }
-      }
-    }
-  }
-}
-```
-
-**Environment Variables** (build-time):
-```bash
-VITE_API_URL=https://maori-story-backend-xxx-uc.a.run.app
-```
-
-**Cost**: **FREE** (unlimited bandwidth for public repos)
-
----
-
-### 2. Backend - Google Cloud Run
-
-**Service**: Cloud Run  
-**Name**: `maori-story-backend`  
-**Region**: `us-central1` (Iowa)  
-**URL**: `https://maori-story-backend-xxx-uc.a.run.app`
-
-**Container Configuration**:
-```yaml
-Platform: managed
-Image: us-central1-docker.pkg.dev/jaskojothep/maori-story/backend:latest
-Port: 8000
-Memory: 512Mi
-CPU: 1 vCPU
-Min Instances: 0  # Scale to zero when idle
-Max Instances: 100
-Concurrency: 80  # Requests per instance
-Timeout: 300s (5 minutes)
-```
-
-**Autoscaling Behavior**:
-- **Cold Start**: ~5-10 seconds (includes Django app initialization)
-- **Warm Instance**: <100ms response time
-- **Scale to Zero**: After 15 minutes of no traffic
-- **Scale Up**: Automatic based on request rate
-
-**Environment Variables** (set via Terraform):
-```bash
-# DATABASE_URL: set privately via environment or an untracked local configuration.
-# SECRET_KEY: set privately via environment or an untracked local configuration.
-ALLOWED_HOSTS=maori-story-backend-xxx-uc.a.run.app,jothep.github.io
-DJANGO_DEBUG=False
-USE_S3=true
-GS_BUCKET_NAME=maori-story-media
-```
-
-**Health Check**:
-- Endpoint: `/admin/` (Django admin as health check)
-- Interval: Not explicitly configured (Cloud Run default)
-
-**CORS Configuration**:
-```python
-CORS_ALLOWED_ORIGINS = [
-    'https://jothep.github.io',
-]
-CORS_ALLOW_CREDENTIALS = True
-```
-
-**Cost**: 
-- **FREE Tier**: 2 million requests/month
-- **Beyond Free**: $0.00002400 per request (~$2.40 per 100K requests)
-- **Current Usage**: Well within free tier
-
----
-
-### 3. Database - Neon PostgreSQL
-
-**Provider**: Neon.tech  
-**Type**: Serverless PostgreSQL  
-**Version**: PostgreSQL 16  
-**Region**: `us-east-2` (US East Ohio)
-
-**Connection**:
-Use the complete connection string held privately in the `DATABASE_URL` environment variable.
-
-**Features**:
-- ✅ **Auto-suspend**: Database pauses after 5 minutes of inactivity
-- ✅ **Instant activation**: Resumes in <1 second on new query
-- ✅ **Connection pooling**: Built-in, handles Django connections
-- ✅ **Branching**: Create dev/staging branches (git-like)
-- ✅ **Point-in-time restore**: Restore to any point in last 7 days
-- ✅ **Automatic backups**: Daily backups included
-
-**Storage**:
-- **Used**: ~100MB (stories, paragraphs, words)
-- **Free Tier**: 500MB storage
-- **Shared compute**: 0.5 vCPU shared
-
-**Performance**:
-- **Query Time**: 10-50ms for optimized queries
-- **Concurrent Connections**: Up to 100 (pooled)
-- **Latency**: ~50ms from Cloud Run (same region recommended)
-
-**Cost**: **FREE** (within 500MB storage limit)
-
----
-
-### 4. Storage - Google Cloud Storage
-
-**Bucket Name**: `maori-story-media`  
-**Region**: `us-central1` (multi-region for CDN)  
-**Storage Class**: Standard
-
-**Contents**:
-```
-gs://maori-story-media/
-├── bgm/
-│   └── Schumann_Fantasy.mp3 (3.2MB)
-├── audio/
-│   ├── paragraph1.mp3
-│   ├── paragraph2.mp3
-│   └── ...
-├── images/
-│   ├── story1_pic1.jpg (compressed)
-│   └── story2_pic1.jpg (compressed)
-└── staticfiles/ (collected Django static files)
-```
-
-**Access Control**:
-- Public read access for `/media/*` paths
-- Signed URLs for temporary access (optional)
-- CORS enabled for GitHub Pages origin
-
-**Django Integration**:
-```python
-# settings.py
-DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
-GS_BUCKET_NAME = 'maori-story-media'
-GS_PROJECT_ID = 'jaskojothep'
-MEDIA_URL = 'https://storage.googleapis.com/maori-story-media/'
-```
-
-**Cost**:
-- **Storage**: $0.020 per GB per month
-- **Current**: ~10MB × $0.020 = **$0.0002/month**
-- **Bandwidth**: $0.12 per GB (to internet)
-- **Operations**: $0.005 per 10,000 Class A operations
-
-**Total Estimated Cost**: **< $0.01/month**
-
----
-
-### 5. Container Registry - Artifact Registry
-
-**Registry**: `us-central1-docker.pkg.dev`  
-**Repository**: `jaskojothep/maori-story`  
-**Image**: `backend:latest` and `backend:<git-sha>`
-
-**Security**:
-- ✅ Trivy vulnerability scanning in CI/CD
-- ✅ Exit on HIGH/CRITICAL vulnerabilities
-- ✅ Immutable tags for production (SHA)
-- ✅ Private registry (IAM-controlled access)
-
-**Image Details**:
-```
-Image: us-central1-docker.pkg.dev/jaskojothep/maori-story/backend:latest
-Size: ~300MB (compressed)
-Base: python:3.13-slim
-Layers: Multi-stage build optimized
-```
-
-**Cost**: **FREE** (first 0.5GB storage)
-
----
-
-## CI/CD Pipeline
-
-### Backend Deployment Flow
-
-```mermaid
-graph LR
-    A[Git Push to main] --> B{backend/** changed?}
-    B -->|Yes| C[GitHub Actions Trigger]
-    C --> D[Run Tests<br/>9 Django tests]
-    D --> E[Flake8 + Pylint]
-    E --> F[Build Docker Image]
-    F --> G[Trivy Security Scan]
-    G --> H{Vulnerabilities?}
-    H -->|HIGH/CRITICAL| I[❌ Fail Build]
-    H -->|None/Low| J[Push to Artifact Registry]
-    J --> K[Deploy to Cloud Run]
-    K --> L[Update Service<br/>New revision]
-    L --> M[✅ Live in ~2min]
-
-    style A fill:#e1f5ff
-    style D fill:#c8e6c9
-    style G fill:#fff9c4
-    style I fill:#ffcdd2
-    style M fill:#c8e6c9
-```
-
-**Workflow File**: `.github/workflows/deploy-backend.yml`
-
-**Key Steps**:
-1. Checkout code
-2. Setup Python 3.13
-3. Run Django tests (must pass)
-4. Build Docker image (tag: SHA + latest)
-5. Scan with Trivy (block on HIGH/CRITICAL)
-6. Push to Artifact Registry
-7. Deploy to Cloud Run (new revision)
-8. Traffic shifts to new revision (0% downtime)
-
-**Duration**: ~5-8 minutes
-
----
-
-### Frontend Deployment Flow
-
-```mermaid
-graph LR
-    A[Git Push to main] --> B{frontend/** changed?}
-    B -->|Yes| C[GitHub Actions Trigger]
-    C --> D[npm ci Install]
-    D --> E[ESLint Check]
-    E --> F[Vitest Tests<br/>6 tests]
-    F --> G[Create .env.production<br/>Inject API URL]
-    G --> H[Vite Build<br/>npm run build]
-    H --> I[Upload Artifact<br/>/dist folder]
-    I --> J[Deploy to GitHub Pages]
-    J --> K[✅ Live in ~1min]
-
-    style A fill:#e1f5ff
-    style F fill:#c8e6c9
-    style H fill:#fff9c4
-    style K fill:#c8e6c9
-```
-
-**Workflow File**: `.github/workflows/deploy-frontend.yml`
-
-**Key Steps**:
-1. Checkout code
-2. Setup Node.js 20
-3. Run tests (must pass)
-4. Inject backend URL from secrets
-5. Build with Vite
-6. Deploy to `gh-pages` branch
-7. GitHub Pages auto-publishes
-
-**Duration**: ~3-5 minutes
-
----
-
-## Data Flow Examples
-
-### Example 1: User Loads Story List
-
-```
-1. User → https://jothep.github.io/maori-story-fill/
-   ↓
-2. GitHub Pages CDN → Serves index.html (cached globally)
-   ↓
-3. Browser executes React app
-   ↓
-4. API Call: GET https://maori-story-backend-xxx.run.app/api/stories/
-   ↓
-5. Cloud Run (cold start if needed):
-   - Load environment variables (DATABASE_URL, SECRET_KEY)
-   - Initialize Django
-   - Connect to Neon DB (resumes if suspended)
-   ↓
-6. Neon DB: SELECT * FROM story_story;
-   ↓
-7. Response: [{id:1, title:"..."}, {id:2, ...}]
-   ↓
-8. Browser renders story buttons
-```
-
-**Performance**:
-- **Warm path**: ~100-200ms total
-- **Cold start**: ~5-10 seconds first time
-- **CDN cache hit**: ~20ms for HTML
-
----
-
-### Example 2: Play Background Music
-
-```
-1. Menu page loads
-   ↓
-2. useBgmPlayer hook: GET /api/config/?key=menu_bgm_path
-   ↓
-3. Cloud Run: SELECT value FROM app_config WHERE key='menu_bgm_path'
-   ↓
-4. Response: {value: "/media/bgm/Schumann_Fantasy.mp3"}
-   ↓
-5. Browser requests: GET /media/bgm/Schumann_Fantasy.mp3
-   ↓
-6. Cloud Run proxies request to Cloud Storage
-   ↓
-7. Cloud Storage returns audio file (3.2MB)
-   ↓
-8. Browser plays via HTML5 Audio API
-```
-
-**Optimization Opportunity**:
-- Use signed URLs to serve directly from GCS (bypass Cloud Run)
-- Enable Cloud CDN for media files
-
----
-
-## Cost Breakdown (Monthly)
-
-| Service | Usage | Cost |
-|---------|-------|------|
-| **GitHub Pages** | Static hosting + CDN | **FREE** |
-| **Cloud Run** | ~10K requests/month | **FREE** (within 2M limit) |
-| **Neon PostgreSQL** | 100MB storage, auto-suspend | **FREE** (within 500MB limit) |
-| **Cloud Storage** | 10MB storage, ~1GB egress | **< $0.01** |
-| **Artifact Registry** | 300MB image | **FREE** (within 0.5GB limit) |
-| **GitHub Actions** | 2000 minutes/month | **FREE** (within public repo limits) |
-
-**Total Monthly Cost**: **$0 - $0.01** 🎉
-
----
-
-## Scaling Characteristics
-
-### Current Capacity
-
-| Metric | Current | Limit (Free Tier) | Paid Scaling |
-|--------|---------|-------------------|--------------|
-| **Concurrent Users** | ~10 | ~100 | Unlimited |
-| **Requests/Month** | ~5K | 2M (Cloud Run) | $0.024 per 1K |
-| **Database Size** | 100MB | 500MB | $0.10/GB/month |
-| **Media Storage** | 10MB | Unlimited* | $0.020/GB/month |
-| **Response Time** | 100-200ms (warm) | N/A | Same |
-
-*Cloud Storage has no free tier, but cost is negligible at low usage.
-
-### Horizontal Scaling
-
-**Frontend**:
-- ✅ Infinitely scalable (GitHub Pages CDN)
-- ✅ Edge caching worldwide
-- ✅ No action needed
-
-**Backend (Cloud Run)**:
-- ✅ Auto-scales 0-100 instances
-- ✅ Each instance: 80 concurrent requests
-- ✅ Max capacity: 8,000 concurrent requests
-- ⚠️ Cold start latency for new instances
-
-**Database (Neon)**:
-- ⚠️ Shared compute on free tier
-- ✅ Connection pooling handles bursts
-- 🔄 Upgrade to dedicated compute if needed ($10/month)
-
----
-
-## Monitoring & Observability
-
-### Cloud Run Metrics (Google Cloud Console)
-
-**Available Metrics**:
-- Request count
-- Request latency (p50, p95, p99)
-- Instance count (active)
-- CPU utilization
-- Memory utilization
-- Error rate (4xx, 5xx)
-
-**Logs**:
-- Application logs (stdout/stderr)
-- Request logs (automatic)
-- Cold start logs
-
-**Access**:
-```bash
-# View logs
-gcloud run services logs read maori-story-backend \
-  --region=us-central1 \
-  --limit=50
-
-# View metrics
-# Navigate to: Cloud Console → Cloud Run → Service → Metrics
-```
-
----
-
-### Neon Metrics (Neon Console)
-
-**Available Metrics**:
-- Connections (active, idle)
-- Storage used / limit
-- Compute time used
-- Query statistics
-
-**Access**: https://console.neon.tech/
-
----
-
-## Security Considerations
-
-### Network Security
-
-✅ **HTTPS Everywhere**:
-- GitHub Pages: Automatic HTTPS
-- Cloud Run: Automatic HTTPS with Google-managed cert
-- Neon: SSL/TLS required (`sslmode=require`)
-
-✅ **CORS Policies**:
-```python
-CORS_ALLOWED_ORIGINS = [
-    'https://jothep.github.io',
-]
-```
-
-✅ **Secret Management**:
-- No secrets in code or git repository
-- Secrets passed as environment variables via Terraform
-- DATABASE_URL and SECRET_KEY configured at deployment
-
----
-
-### Application Security
-
-✅ **Input Validation**:
-- Django form validation
-- DRF serializer validation
-- File type/size validation
-
-✅ **Dependency Scanning**:
-- Trivy scans Docker images in CI/CD
-- `npm audit` for frontend dependencies
-- Exit on HIGH/CRITICAL vulnerabilities
-
-✅ **Authentication** (Admin only):
-- Django admin protected by session auth
-- CSRF protection enabled
-- Password hashing with bcrypt
-
----
-
-## Disaster Recovery
-
-### Backup Strategy
-
-**Database (Neon)**:
-- ✅ Automatic daily backups (retained 7 days)
-- ✅ Point-in-time restore (within 7 days)
-- ✅ Manual backup via `pg_dump`:
-  ```bash
-  pg_dump "${DATABASE_URL:?Set DATABASE_URL privately before continuing}" > backup.sql
-  ```
-
-**Media Files (Cloud Storage)**:
-- ✅ Versioning enabled (optional)
-- ✅ Soft delete (30-day retention)
-- ✅ Manual backup via `gsutil`:
-  ```bash
-  gsutil -m cp -r gs://maori-story-media ./backup/
-  ```
-
-**Code & Config**:
-- ✅ Version control (GitHub)
-- ✅ Immutable Docker images (tagged by SHA)
-
----
-
-### Recovery Procedures
-
-**Scenario 1: Database Corruption**
-```bash
-# Restore from Neon backup (via Console)
-1. Go to Neon Console → Backups
-2. Select restore point
-3. Create new branch or restore to main
-4. Update DATABASE_URL in Terraform variables if needed
-5. Redeploy Cloud Run: terraform apply
-```
-
-**Scenario 2: Accidental Code Deployment**
-```bash
-# Rollback Cloud Run to previous revision
-gcloud run services update-traffic maori-story-backend \
-  --region=us-central1 \
-  --to-revisions=<previous-revision>=100
-```
-
-**Scenario 3: Lost Media Files**
-```bash
-# Restore from local backup
-gsutil -m cp -r ./backup/* gs://maori-story-media/
-```
-
----
-
-## Migration Path
-
-### To Kubernetes (Future)
-
-If traffic grows beyond free tiers, consider migrating to Kubernetes:
-
-**Benefits**:
-- Fixed monthly cost (predictable)
-- More control over resources
-- Lower per-request cost at scale
-
-**Migration Steps**:
-1. Use existing Kubernetes manifests in `/Infra` folder
-2. Deploy to GKE or self-hosted cluster
-3. Update DNS to point to Ingress
-4. Migrate database to Cloud SQL or self-hosted PostgreSQL
-5. Update CI/CD to deploy to K8s instead of Cloud Run
-
-**Estimated Cost (GKE)**:
-- GKE cluster: $74/month (zonal)
-- Cloud SQL: $7-25/month (db-f1-micro to db-g1-small)
-- **Total**: ~$80-100/month
-
-**Break-even point**: ~4M requests/month or 500MB+ database
-
----
-
-## Useful Commands
-
-### Cloud Run
-
-```bash
-# Deploy new version
-gcloud run deploy maori-story-backend \
-  --image=us-central1-docker.pkg.dev/jaskojothep/maori-story/backend:latest \
-  --region=us-central1
-
-# View service details
-gcloud run services describe maori-story-backend --region=us-central1
-
-# View logs (live)
-gcloud run services logs tail maori-story-backend --region=us-central1
-
-# Update environment variable
-gcloud run services update maori-story-backend \
-  --region=us-central1 \
-  --update-env-vars=DJANGO_DEBUG=False
-
-# Scale settings
-gcloud run services update maori-story-backend \
-  --region=us-central1 \
-  --min-instances=0 \
-  --max-instances=10 \
-  --concurrency=80
-```
-
-### Neon Database
-
-```bash
-# Connect via psql
-psql "${DATABASE_URL:?Set DATABASE_URL privately before continuing}"
-
-# Run migrations remotely
-printf 'DATABASE_URL (hidden input): '
-read -r -s DATABASE_URL
-printf '\n'
-: "${DATABASE_URL:?A non-empty value is required}"
-export DATABASE_URL
-python manage.py migrate
-
-# Create backup
-pg_dump "${DATABASE_URL:?Set DATABASE_URL privately before continuing}" > backup_$(date +%Y%m%d).sql
-
-# Restore backup
-psql "${DATABASE_URL:?Set DATABASE_URL privately before continuing}" < backup_20260501.sql
-```
-
-### Cloud Storage
-
-```bash
-# Upload file
-gsutil cp local-file.mp3 gs://maori-story-media/bgm/
-
-# Download file
-gsutil cp gs://maori-story-media/bgm/file.mp3 ./
-
-# List files
-gsutil ls -r gs://maori-story-media/
-
-# Set public access
-gsutil iam ch allUsers:objectViewer gs://maori-story-media
-
-# Sync directory
-gsutil -m rsync -r ./media/ gs://maori-story-media/media/
-```
-
----
-
-## Troubleshooting
-
-### Issue: Cold Start Latency
-
-**Symptom**: First request after idle takes 5-10 seconds
-
-**Solution**:
-```bash
-# Set minimum instances (costs money)
-gcloud run services update maori-story-backend \
-  --region=us-central1 \
-  --min-instances=1  # Keeps 1 instance always warm
-
-# Cost: ~$10/month for 1 always-on instance
-```
-
----
-
-### Issue: Database Connection Timeout
-
-**Symptom**: `FATAL: remaining connection slots reserved`
-
-**Solution**:
-```python
-# Adjust Django connection settings
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'CONN_MAX_AGE': 300,  # 5 minutes
-        'OPTIONS': {
-            'connect_timeout': 10,
-            'keepalives': 1,
-            'keepalives_idle': 30,
-        }
-    }
-}
-```
-
----
-
-### Issue: CORS Errors
-
-**Symptom**: Browser blocks API requests from GitHub Pages
-
-**Solution**:
-```python
-# Verify CORS settings in settings.py
-CORS_ALLOWED_ORIGINS = [
-    'https://jothep.github.io',
-    'http://localhost:5173',  # For local dev
-]
-CORS_ALLOW_CREDENTIALS = True
-```
-
----
-
-## Revision History
-
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.0 | 2026-05-01 | Initial production architecture documentation |
-
----
-
-**Document Owner**: Xiang Zhu  
-**Last Review**: 2026-05-01  
-**Next Review**: 2026-08-01
+GitHub Pages serves the React application; the browser calls Cloud Run directly.
+The API returns media URLs and the browser reads those objects directly from GCS.
+Pages is not an API proxy, and ordinary media playback does not require an API proxy or signed URL.
+The storage integration supports media writes, but the latest online checks covered reads rather than uploads.
+
+Implementation references:
+
+- Frontend API configuration: [frontend/src/config/api.js](../frontend/src/config/api.js).
+- Backend storage selection: [settings.py](../backend/maori_story_project/settings.py), using `USE_GCS` and Django `STORAGES`.
+- Public media URLs: `GS_QUERYSTRING_AUTH = False` and the configured GCS media URL.
+- Runtime configuration: [terraform/main.tf](../terraform/main.tf).
+
+## Runtime choices and constraints
+
+| Component | Implemented choice | Boundary |
+| --- | --- | --- |
+| Frontend | Static React build deployed to GitHub Pages | Application requests go from the browser to the API |
+| API | Cloud Run, minimum 0 and maximum 1 instance | Accepts cold starts and caps instance scaling |
+| Container | 1 vCPU, 512 MiB, request-based CPU allocation | No measured throughput claim is made |
+| Startup | CPU boost disabled; request timeout configured as 300 seconds | These settings are configuration, not latency measurements |
+| Database | External PostgreSQL, documented and deployed as Neon | Database provisioning and recovery policy are outside this Terraform configuration |
+| Media | GCS through `django-storages`; public read URLs | Bucket creation and permissions are not defined in this Terraform configuration |
+
+Keeping the database and media outside the container allows application instances to be replaced without relying on their local filesystem for persistent content.
+The migration also transfers container scheduling and static hosting responsibilities to managed services.
+Database changes, credentials, application correctness and recovery remain project responsibilities.
+
+The explicit instance limit supports a low-traffic cost constraint.
+It also limits capacity: this deployment is not configured to expand to 100 instances.
+There is no reproducible load-test result, availability measurement or monthly billing evidence included here.
+Describe this as a low-cost design that aims to use available allowances, not a guarantee of zero cost.
+Provider prices and plan limits must be checked when deploying or estimating costs.
+
+## What Terraform manages
+
+[main.tf](../terraform/main.tf) defines four resources:
+
+1. An Artifact Registry Docker repository.
+2. A dedicated Cloud Run runtime service account.
+3. The Cloud Run service, resource limits, environment and traffic configuration.
+4. The service's public `roles/run.invoker` binding for `allUsers`.
+
+On 2026-09-27, `terraform fmt -check` and `terraform validate` passed; `terraform state list` read the configured GCS backend and recorded exactly these four resources.
+This verifies the state inventory, not absence of drift or successful environment recreation.
+The GCS state bucket remains a prerequisite rather than a resource created here.
+Other external prerequisites include the cloud project and enabled APIs, Neon, the media bucket and its IAM policy, and CI authentication.
+GitHub Pages settings and GitHub Actions secrets are also outside this Terraform configuration.
+A successful apply alone therefore does not demonstrate that the entire environment can be recreated from an empty account.
+
+The service initially references an existing container image.
+A first deployment must establish the registry and make an image available before creating the service.
+The older quick-start sequence in [terraform/README.md](../terraform/README.md) needs that bootstrap ordering resolved before it can serve as a verified rebuild procedure.
+No clean-environment rebuild is claimed.
+
+### Infrastructure and application ownership
+
+Terraform uses `ignore_changes` for the container image field.
+GitHub Actions builds and deploys the application image tagged with the commit SHA.
+This allows routine Terraform changes to preserve the version selected by the application pipeline.
+
+The workflow also pushes a mutable `latest` tag; the deployment command selects the SHA tag.
+This provides a source-to-release reference, but is not image-digest pinning or a tested rollback procedure.
+Terraform itself is not run by the application deployment workflow.
+
+## Delivery pipeline and actual gates
+
+| Workflow | Trigger | Required checks and behavior |
+| --- | --- | --- |
+| [Backend](../.github/workflows/deploy-backend.yml) | Relevant changes pushed to `main`, or manual dispatch | Django and offline smoke-check tests, image build, Trivy scan, push, Cloud Run update, then public API smoke check |
+| [Frontend](../.github/workflows/deploy-frontend.yml) | Relevant changes pushed to `main`, or manual dispatch | ESLint, tests, build, artifact upload, then Pages deployment |
+| [Credential scan](../.github/workflows/secret-scan.yml) | Main pushes, pull requests, manual dispatch | Independent Gitleaks workflow scans all fetched history with redacted findings |
+| [CodeQL](../.github/workflows/codeql-analysis.yml) | Relevant main pushes, pull requests, schedule, manual dispatch | JavaScript and Python analysis; the analysis step allows failure to continue |
+| [Frontend container](../.github/workflows/build-frontend-docker.yml) | Manual dispatch | Lint, tests, container build and scan; optional Docker Hub push |
+
+Backend Flake8 and Pylint are advisory because their steps use `continue-on-error`.
+Backend tests use SQLite and therefore do not establish PostgreSQL integration behavior.
+Trivy blocks HIGH/CRITICAL findings **with available fixes**; unfixed findings are excluded from that gate.
+A successful scan is not a claim of zero vulnerabilities.
+
+The application test workflows currently have no pull-request trigger.
+The backend now runs [a smoke check](../scripts/smoke-check.py) after updating the service.
+It validates HTTP/JSON responses, a non-empty story list, one story detail with paragraphs and a word bank, and the configuration endpoint, using bounded retries.
+Its six offline tests and a local run against production passed; execution of this new step in GitHub Actions is still pending.
+A failure marks the workflow failed after deployment; it does not roll back the service.
+Database migration and automatic rollback remain outside the workflow. Media playback, writes and a full game walkthrough are outside the smoke check.
+The credential scan is a separate workflow, not a dependency of deployment; no required branch-protection gate is claimed.
+See [the verification record](verification.md) for dated execution evidence.
+
+## Identity, secrets and state
+
+The Cloud Run service uses a named runtime service account.
+The Terraform configuration does not establish all permissions held by that account or the CI identity, so it does not prove least-privilege IAM across the environment.
+The API service is publicly invokable; administrative authentication is handled by Django.
+
+CI currently authenticates using the `GCP_CREDENTIALS` GitHub secret through `credentials_json`.
+The workflow requests an OIDC token permission, but does not configure Workload Identity Federation.
+Do not describe this deployment as keyless CI authentication.
+
+Database configuration and the Django signing key are injected as environment variables from sensitive Terraform inputs.
+There is no checked-in Secret Manager resource or Cloud Run Secret Manager reference.
+Marking an input `sensitive` controls its display; it does not remove the value from Terraform state.
+State, state history, saved plans, local variable files and backup copies must remain private.
+No credential values belong in source, examples, screenshots or deployment evidence.
+
+## Evidence and status
+
+| Item | Status and limits |
+| --- | --- |
+| Frontend, API reads and sampled GCS object | Reachable during the 2026-09-27 checks; this is a point-in-time check |
+| Revision `maori-story-backend-00026-phc` | Credential configuration update using the existing application image |
+| Current repository cleanup | Implemented in source; deployment of these changes is not established by the checks above |
+| New API smoke check | Six offline tests and a local production check passed; new workflow execution remains pending |
+| New credential-scan workflow | Implemented independently of deployment; its GitHub execution is recorded separately in the verification record |
+| Historical backend and frontend releases | Successful Actions records exist; they refer to the source history used at that time |
+| Uploads, capacity, failover and restore | Not verified by the latest read-only checks |
+| Terraform configuration and remote state | Formatting and validation passed; GCS state inventory confirmed the four declared resources |
+| Complete environment rebuild | Not yet demonstrated; state inventory is not a drift or recovery test |
+
+Historical release records: [backend](https://github.com/jothep/maori-story-fill/actions/runs/25036589237) and [frontend](https://github.com/jothep/maori-story-fill/actions/runs/25902475995).
+Credential removal rewrites Git history, so an older run's recorded commit may differ from the corresponding commit in the cleaned repository.
+Keep the historical run date and the checked behavior explicit; do not relabel it as a run of the cleaned source.
+
+## Historical architecture and next steps
+
+The Kubernetes manifests are retained as an earlier project stage, documented in [the architecture overview](ARCHITECTURE.md).
+The author's [original migration article](https://medium.com/@shelldry325/from-on-premises-kubernetes-to-zero-cost-serverless-architecture-a-practical-guide-to-cloud-70e68304e835) reports using that environment; it has not been redeployed during this review.
+
+The smoke check is implemented and locally verified; its first deployment-workflow execution is still to be recorded.
+Potential follow-up work includes a verified bootstrap procedure and a documented rollback exercise.
+PR application checks and federated CI authentication are additional candidates.
+These are proposed improvements, not completed capabilities.
+See [architecture diagrams](architecture-diagrams.md) for the current and historical views, and [the local platform lab](local-platform-lab.md) for Compose, Kubernetes and prototype implementation details.

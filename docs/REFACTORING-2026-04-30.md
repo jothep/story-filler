@@ -1,3 +1,5 @@
+> **Historical implementation note — September 2026 review:** This document retains an earlier design, estimate, procedure or plan. It is not the current deployment specification, and its performance, cost, security and recovery claims have not all been revalidated. Use the [architecture index](ARCHITECTURE.md) and [dated verification record](verification.md) for current scope and evidence.
+
 # Code Refactoring - 2026-04-30
 
 ## Overview

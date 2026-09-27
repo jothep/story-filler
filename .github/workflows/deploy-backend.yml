@@ -6,6 +6,8 @@ on:
     paths:
       - 'backend/**'
       - '.github/workflows/deploy-backend.yml'
+      - 'scripts/smoke-check.py'
+      - 'scripts/smoke_check_test.py'
       # Exclude documentation files only
       - '!backend/**/*.md'
       - '!backend/.gitignore'
@@ -60,6 +62,9 @@ jobs:
         env:
           DATABASE_URL: 'sqlite:///:memory:'
 
+      - name: Test public API smoke-check validation (offline)
+        run: python -m unittest discover -s scripts -p 'smoke_check_test.py'
+
       # ==================== Docker Build & Push ====================
       - name: 7. Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
@@ -102,8 +107,10 @@ jobs:
             --region=${{ env.GCP_REGION }} \
             --image=${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY }}/backend:${{ github.sha }}
 
-      - name: 14. Show service URL
+      - name: 14. Verify deployed public API
+        timeout-minutes: 5
         run: |
-          gcloud run services describe ${{ env.SERVICE_NAME }} \
-            --region=${{ env.GCP_REGION }} \
-            --format='value(status.url)'
+          SERVICE_URL=$(gcloud run services describe "${SERVICE_NAME}" \
+            --region="${GCP_REGION}" \
+            --format='value(status.url)')
+          python scripts/smoke-check.py --base-url "$SERVICE_URL"

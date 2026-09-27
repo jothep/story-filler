@@ -1,3 +1,5 @@
+> **Historical implementation note — September 2026 review:** This document retains an earlier design, estimate, procedure or plan. It is not the current deployment specification, and its performance, cost, security and recovery claims have not all been revalidated. Use the [architecture index](docs/ARCHITECTURE.md) and [dated verification record](docs/verification.md) for current scope and evidence.
+
 # 数据迁移指南
 
 本指南说明如何将数据从本地开发环境迁移到AWS EC2生产环境。
