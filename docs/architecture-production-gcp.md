@@ -219,8 +219,8 @@ Timeout: 300s (5 minutes)
 
 **Environment Variables** (set via Terraform):
 ```bash
-DATABASE_URL=postgresql://user:${DB_PASSWORD}@ep-xxx.aws.neon.tech/neondb?sslmode=require
-DJANGO_SECRET_KEY=xxx...
+# DATABASE_URL: set privately via environment or an untracked local configuration.
+# SECRET_KEY: set privately via environment or an untracked local configuration.
 ALLOWED_HOSTS=maori-story-backend-xxx-uc.a.run.app,jothep.github.io
 DJANGO_DEBUG=False
 USE_S3=true
@@ -254,9 +254,7 @@ CORS_ALLOW_CREDENTIALS = True
 **Region**: `us-east-2` (US East Ohio)
 
 **Connection**:
-```
-postgresql://username:${DB_PASSWORD}@ep-xxx-xxx.us-east-2.aws.neon.tech/neondb?sslmode=require
-```
+Use the complete connection string held privately in the `DATABASE_URL` environment variable.
 
 **Features**:
 - ✅ **Auto-suspend**: Database pauses after 5 minutes of inactivity
@@ -627,7 +625,7 @@ CORS_ALLOWED_ORIGINS = [
 - ✅ Point-in-time restore (within 7 days)
 - ✅ Manual backup via `pg_dump`:
   ```bash
-  pg_dump "postgresql://user:${DB_PASSWORD}@ep-xxx.neon.tech/neondb" > backup.sql
+  pg_dump "${DATABASE_URL:?Set DATABASE_URL privately before continuing}" > backup.sql
   ```
 
 **Media Files (Cloud Storage)**:
@@ -732,17 +730,21 @@ gcloud run services update maori-story-backend \
 
 ```bash
 # Connect via psql
-psql "postgresql://user:${DB_PASSWORD}@ep-xxx.us-east-2.aws.neon.tech/neondb?sslmode=require"
+psql "${DATABASE_URL:?Set DATABASE_URL privately before continuing}"
 
 # Run migrations remotely
-export DATABASE_URL="postgresql://user:${DB_PASSWORD}@ep-xxx.neon.tech/neondb?sslmode=require"
+printf 'DATABASE_URL (hidden input): '
+read -r -s DATABASE_URL
+printf '\n'
+: "${DATABASE_URL:?A non-empty value is required}"
+export DATABASE_URL
 python manage.py migrate
 
 # Create backup
-pg_dump "postgresql://..." > backup_$(date +%Y%m%d).sql
+pg_dump "${DATABASE_URL:?Set DATABASE_URL privately before continuing}" > backup_$(date +%Y%m%d).sql
 
 # Restore backup
-psql "postgresql://..." < backup_20260501.sql
+psql "${DATABASE_URL:?Set DATABASE_URL privately before continuing}" < backup_20260501.sql
 ```
 
 ### Cloud Storage

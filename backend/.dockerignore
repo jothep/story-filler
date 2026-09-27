@@ -1,0 +1,17 @@
+.env
+.env.*
+!.env.example
+*.sqlite3
+*.db
+*.pem
+*.key
+*credentials*.json
+gha-creds-*.json
+.venv/
+venv/
+__pycache__/
+*.pyc
+media/
+staticfiles/
+logs/*
+!logs/.gitkeep

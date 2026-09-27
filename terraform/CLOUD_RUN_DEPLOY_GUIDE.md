@@ -77,9 +77,7 @@ gcloud services enable \
 1. 访问：https://neon.tech
 2. 创建账号并新建项目
 3. 获取连接字符串：
-   ```
-   postgresql://username:${DB_PASSWORD}@ep-xxx.region.aws.neon.tech/neondb?sslmode=require
-   ```
+   通过隐藏输入将完整连接字符串加载到当前 shell 的 `DATABASE_URL` 环境变量中。
 
 #### 选项B：Supabase
 1. 访问：https://supabase.com
@@ -108,14 +106,21 @@ vim terraform.tfvars
 **必填项：**
 ```hcl
 gcp_project_id    = "your-gcp-project-id"
-database_url      = "postgresql://..."
-django_secret_key = "生成的随机密钥"
+# Set TF_VAR_database_url in the shell; omit this value from .tfvars.
+# Set TF_VAR_django_secret_key in the shell; omit this value from .tfvars.
 cors_allowed_origins = "https://yourusername.github.io"
 ```
 
 **生成 Django Secret Key：**
 ```bash
-python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
+printf 'DATABASE_URL (hidden input): '
+read -r -s DATABASE_URL
+printf '\n'
+: "${DATABASE_URL:?A non-empty value is required}"
+export DATABASE_URL
+export TF_VAR_database_url="$DATABASE_URL"
+# 仅首次部署生成；已有部署请私下输入其现有签名密钥。
+export TF_VAR_django_secret_key="$(python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())')"
 ```
 
 ---
@@ -423,13 +428,13 @@ gcloud run jobs execute migrate-db --region=us-central1
 
 ```bash
 # 创建 secret
-echo -n "your-secret-key" | \
+printf '%s' "${SECRET_KEY:?Set SECRET_KEY privately}" | \
   gcloud secrets create django-secret-key --data-file=-
 
 # 更新 Cloud Run 使用 secret
 gcloud run services update maori-story-backend-prod \
   --region=us-central1 \
-  --update-secrets=SECRET_KEY=REMOVED_CREDENTIAL
+  --update-secrets=SECRET_KEY=${SECRET_KEY:?Set SECRET_KEY privately}
 ```
 
 ### 2. 限制访问

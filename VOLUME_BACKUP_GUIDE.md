@@ -20,7 +20,7 @@
 访问：http://localhost/admin
 
 - 用户名：`admin`
-- 密码：`REMOVED_CREDENTIAL`
+- 密码：使用此前私下设置的管理员密码；如已遗忘，运行 `python manage.py changepassword admin` 并按隐藏输入提示重置。
 
 ### 1.2 创建测试内容
 
@@ -199,7 +199,7 @@ docker exec maori-backend ls -lh /app/media/story_pictures/
 
 登录Admin：`http://your-ec2-ip/admin`
 - 用户名：`admin`（从备份恢复）
-- 密码：`REMOVED_CREDENTIAL`（从备份恢复）
+- 密码：使用此前私下设置的管理员密码；如已遗忘，运行 `python manage.py changepassword admin` 并按隐藏输入提示重置。
 
 ---
 

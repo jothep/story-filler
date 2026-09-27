@@ -24,9 +24,7 @@
 - **ElephantSQL**: https://www.elephantsql.com → 创建实例
 
 **保存连接字符串：**
-```
-postgresql://username:${DB_PASSWORD}@host:5432/dbname
-```
+通过下方隐藏输入，将完整连接字符串保存在当前 shell 的 `DATABASE_URL` 环境变量中。
 
 ### 2. 配置 Terraform (2分钟)
 
@@ -36,21 +34,28 @@ cd terraform/
 # 复制配置模板
 cp terraform.tfvars.example terraform.tfvars
 
-# 编辑配置（填写3个必填项）
+# 编辑非敏感配置；敏感值通过下方 TF_VAR_* 环境变量传入
 vim terraform.tfvars
 ```
 
 **最小配置：**
 ```hcl
 gcp_project_id = "your-project-id"
-database_url   = "postgresql://..."  # 步骤1的连接字符串
-django_secret_key = "生成随机密钥"   # 见下方命令
+# Set TF_VAR_database_url in the shell; omit this value from .tfvars.
+# Set TF_VAR_django_secret_key in the shell; omit this value from .tfvars.
 cors_allowed_origins = "https://yourusername.github.io"
 ```
 
 **生成密钥：**
 ```bash
-python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
+printf 'DATABASE_URL (hidden input): '
+read -r -s DATABASE_URL
+printf '\n'
+: "${DATABASE_URL:?A non-empty value is required}"
+export DATABASE_URL
+export TF_VAR_database_url="$DATABASE_URL"
+# 仅首次部署生成；已有部署请私下输入其现有签名密钥。
+export TF_VAR_django_secret_key="$(python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())')"
 ```
 
 ### 3. 部署后端到 Cloud Run (5分钟)

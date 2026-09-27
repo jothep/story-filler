@@ -42,24 +42,37 @@ gcloud run services update maori-story-backend \
 
 ### Method 2: Using YAML file
 
-Create a file `env-vars.yaml`:
-```yaml
-DATABASE_URL: "your-database-url"
-SECRET_KEY: "your-secret-key"
-DEBUG: "False"
-ALLOWED_HOSTS: "*"
-USE_GCS: "true"
-GS_BUCKET_NAME: "your-bucket-name"
-CORS_ALLOWED_ORIGINS: "http://localhost:5173,http://localhost:8080,https://jothep.github.io"
-CSRF_TRUSTED_ORIGINS: "http://localhost:8000,http://localhost"
-CSRF_TRUSTED_ORIGIN_WILDCARDS: "https://*.run.app"
+Create a private, untracked `.local-secrets/cloud-run-env-vars.yaml` from hidden input (JSON is valid YAML). Existing files are not overwritten:
+```bash
+printf 'DATABASE_URL (hidden input): '
+read -r -s DATABASE_URL
+printf '\n'
+: "${DATABASE_URL:?A non-empty value is required}"
+export DATABASE_URL
+printf 'SECRET_KEY (hidden input): '
+read -r -s SECRET_KEY
+printf '\n'
+: "${SECRET_KEY:?A non-empty value is required}"
+export SECRET_KEY
+umask 077
+python3 - <<'PYENV'
+import json
+import os
+from pathlib import Path
+
+values = {'DEBUG': 'False', 'ALLOWED_HOSTS': '*', 'USE_GCS': 'true', 'GS_BUCKET_NAME': 'your-bucket-name', 'CORS_ALLOWED_ORIGINS': 'http://localhost:5173,http://localhost:8080,https://jothep.github.io', 'CSRF_TRUSTED_ORIGINS': 'http://localhost:8000,http://localhost', 'CSRF_TRUSTED_ORIGIN_WILDCARDS': 'https://*.run.app'}
+values.update({key: os.environ[key] for key in ('DATABASE_URL', 'SECRET_KEY')})
+Path('.local-secrets').mkdir(mode=0o700, exist_ok=True)
+with Path('.local-secrets/cloud-run-env-vars.yaml').open('x') as config:
+    json.dump(values, config, indent=2)
+PYENV
 ```
 
 Apply the configuration:
 ```bash
 gcloud run services update maori-story-backend \
   --region=us-central1 \
-  --env-vars-file=env-vars.yaml
+  --env-vars-file=.local-secrets/cloud-run-env-vars.yaml
 ```
 
 ### Method 3: Using Google Cloud Console
@@ -164,24 +177,37 @@ gcloud run services update maori-story-backend \
 
 ### 方法二：使用 YAML 文件
 
-创建文件 `env-vars.yaml`：
-```yaml
-DATABASE_URL: "your-database-url"
-SECRET_KEY: "your-secret-key"
-DEBUG: "False"
-ALLOWED_HOSTS: "*"
-USE_GCS: "true"
-GS_BUCKET_NAME: "your-bucket-name"
-CORS_ALLOWED_ORIGINS: "http://localhost:5173,http://localhost:8080,https://jothep.github.io"
-CSRF_TRUSTED_ORIGINS: "http://localhost:8000,http://localhost"
-CSRF_TRUSTED_ORIGIN_WILDCARDS: "https://*.run.app"
+通过隐藏输入生成不提交 Git 的私有 `.local-secrets/cloud-run-env-vars.yaml`（JSON 是有效 YAML）；已有文件不会被覆盖：
+```bash
+printf 'DATABASE_URL (hidden input): '
+read -r -s DATABASE_URL
+printf '\n'
+: "${DATABASE_URL:?A non-empty value is required}"
+export DATABASE_URL
+printf 'SECRET_KEY (hidden input): '
+read -r -s SECRET_KEY
+printf '\n'
+: "${SECRET_KEY:?A non-empty value is required}"
+export SECRET_KEY
+umask 077
+python3 - <<'PYENV'
+import json
+import os
+from pathlib import Path
+
+values = {'DEBUG': 'False', 'ALLOWED_HOSTS': '*', 'USE_GCS': 'true', 'GS_BUCKET_NAME': 'your-bucket-name', 'CORS_ALLOWED_ORIGINS': 'http://localhost:5173,http://localhost:8080,https://jothep.github.io', 'CSRF_TRUSTED_ORIGINS': 'http://localhost:8000,http://localhost', 'CSRF_TRUSTED_ORIGIN_WILDCARDS': 'https://*.run.app'}
+values.update({key: os.environ[key] for key in ('DATABASE_URL', 'SECRET_KEY')})
+Path('.local-secrets').mkdir(mode=0o700, exist_ok=True)
+with Path('.local-secrets/cloud-run-env-vars.yaml').open('x') as config:
+    json.dump(values, config, indent=2)
+PYENV
 ```
 
 应用配置：
 ```bash
 gcloud run services update maori-story-backend \
   --region=us-central1 \
-  --env-vars-file=env-vars.yaml
+  --env-vars-file=.local-secrets/cloud-run-env-vars.yaml
 ```
 
 ### 方法三：使用 Google Cloud Console

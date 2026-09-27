@@ -3,19 +3,14 @@ set -e
 
 echo "Waiting for database..."
 python << END
+import os
 import sys
 import time
 import psycopg2
 
 for i in range(30):
     try:
-        conn = psycopg2.connect(
-            dbname="maori_story_dev",
-            user="devuser",
-            password="REMOVED_CREDENTIAL",
-            host="db",
-            port="5432"
-        )
+        conn = psycopg2.connect(os.environ["DATABASE_URL"])
         conn.close()
         print("Database is ready!")
         sys.exit(0)

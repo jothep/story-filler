@@ -144,9 +144,17 @@ Neon PostgreSQL (同一个)
 # 1. 进入后端目录
 cd backend
 
-# 2. 设置环境变量（从 terraform.tfvars 获取）
-export DATABASE_URL="postgresql://user:${DB_PASSWORD}@ep-xxx.us-east-2.aws.neon.tech/neondb?sslmode=require"
-export SECRET_KEY="你的Django密钥"
+# 2. 私下输入现有部署的环境变量
+printf 'DATABASE_URL (hidden input): '
+read -r -s DATABASE_URL
+printf '\n'
+: "${DATABASE_URL:?A non-empty value is required}"
+export DATABASE_URL
+printf 'SECRET_KEY (hidden input): '
+read -r -s SECRET_KEY
+printf '\n'
+: "${SECRET_KEY:?A non-empty value is required}"
+export SECRET_KEY
 
 # 3. 运行迁移
 python manage.py migrate
@@ -196,7 +204,7 @@ python manage.py createsuperuser
 gcloud run jobs create migrate-db \
   --image=us-central1-docker.pkg.dev/jaskojothep/maori-story/backend:latest \
   --region=us-central1 \
-  --set-env-vars="DATABASE_URL=你的Neon URL,SECRET_KEY=你的密钥" \
+  --set-env-vars="DATABASE_URL=${DATABASE_URL:?Set DATABASE_URL privately},SECRET_KEY=${SECRET_KEY:?Set SECRET_KEY privately}" \
   --command=python \
   --args="manage.py,migrate" \
   --project=jaskojothep
@@ -207,7 +215,7 @@ gcloud run jobs execute migrate-db --region=us-central1
 # 3. 创建超级用户（需要用脚本）
 gcloud run jobs create create-superuser \
   --image=... \
-  --set-env-vars="DATABASE_URL=...,SECRET_KEY=...,DJANGO_SUPERUSER_USERNAME=admin,DJANGO_SUPERUSER_EMAIL=admin@example.com,DJANGO_SUPERUSER_PASSWORD=临时密码" \
+  --set-env-vars="DATABASE_URL=${DATABASE_URL:?Set DATABASE_URL privately},SECRET_KEY=${SECRET_KEY:?Set SECRET_KEY privately},DJANGO_SUPERUSER_USERNAME=admin,DJANGO_SUPERUSER_EMAIL=admin@example.com,DJANGO_SUPERUSER_PASSWORD=${DJANGO_SUPERUSER_PASSWORD:?Set DJANGO_SUPERUSER_PASSWORD privately}" \
   --command=python \
   --args="manage.py,createsuperuser,--noinput"
 ```
@@ -244,7 +252,11 @@ else:
 ```
 
 ```bash
-export ADMIN_PASSWORD="你的密码"
+printf 'ADMIN_PASSWORD (hidden input): '
+read -r -s ADMIN_PASSWORD
+printf '\n'
+: "${ADMIN_PASSWORD:?A non-empty value is required}"
+export ADMIN_PASSWORD
 python create_admin.py
 ```
 
@@ -304,7 +316,11 @@ psql "$DATABASE_URL" -c "\dt"
 python manage.py dumpdata core > backup.json
 
 # 2. 切换到新数据库
-export DATABASE_URL="新数据库URL"
+printf 'DATABASE_URL (hidden input): '
+read -r -s DATABASE_URL
+printf '\n'
+: "${DATABASE_URL:?A non-empty value is required}"
+export DATABASE_URL
 
 # 3. 运行迁移（创建表结构）
 python manage.py migrate
@@ -364,7 +380,11 @@ GCS Bucket (同一个)
 pg_dump "$NEON_URL" > full_backup.sql
 
 # 2. 新数据库运行迁移
-export DATABASE_URL="新PostgreSQL URL"
+printf 'DATABASE_URL (hidden input): '
+read -r -s DATABASE_URL
+printf '\n'
+: "${DATABASE_URL:?A non-empty value is required}"
+export DATABASE_URL
 python manage.py migrate
 
 # 3. 恢复数据（跳过 django_migrations 表）
@@ -387,7 +407,7 @@ python manage.py loaddata data.json
 
 **存储格式**: 
 ```
-PASSWORD_HASH_OMITTED
+<algorithm>$<iterations>$<salt>$<derived-hash>
 ```
 
 **特点**:
@@ -474,9 +494,17 @@ backend/.env
 ```bash
 cd backend
 
-# 从 terraform.tfvars 获取这两个值
-export DATABASE_URL="postgresql://..."
-export SECRET_KEY="..."
+# 私下输入现有部署的连接字符串和签名密钥
+printf 'DATABASE_URL (hidden input): '
+read -r -s DATABASE_URL
+printf '\n'
+: "${DATABASE_URL:?A non-empty value is required}"
+export DATABASE_URL
+printf 'SECRET_KEY (hidden input): '
+read -r -s SECRET_KEY
+printf '\n'
+: "${SECRET_KEY:?A non-empty value is required}"
+export SECRET_KEY
 
 python manage.py migrate
 ```

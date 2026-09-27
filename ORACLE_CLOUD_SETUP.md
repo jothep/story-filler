@@ -212,7 +212,7 @@ services:
     command: gunicorn maori_story_project.wsgi:application --bind 0.0.0.0:8000 --workers 3 --worker-class gevent
     environment:
       - DATABASE_URL=postgresql://dbuser:${DB_PASSWORD}@db:5432/maori_story
-      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - SECRET_KEY=${DJANGO_SECRET_KEY}
       - DJANGO_DEBUG=False
       - ALLOWED_HOSTS=*
       - MEDIA_ROOT=/app/media
@@ -333,23 +333,13 @@ http {
 
 ### Step 8: 配置环境变量
 
+首次部署时，从项目根目录生成不提交 Git 的本地配置（脚本不输出密钥，已有 `.env` 不会被覆盖）：
+
 ```bash
-# 创建 .env 文件
-cat > .env << 'EOF'
-# 数据库密码（请修改为强密码）
-DB_PASSWORD=your_strong_password_here
-
-# Django密钥（运行下面命令生成）
-DJANGO_SECRET_KEY=your_django_secret_key_here
-
-# 其他配置
-DJANGO_DEBUG=False
-EOF
-
-# 生成Django密钥
-python3 -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
-# 将输出复制到 .env 文件的 DJANGO_SECRET_KEY
+python3 scripts/init-local-env.py
 ```
+
+已有数据库或部署应保留原有配置值；不要重新生成正在使用的数据库密码或签名密钥。
 
 ### Step 9: 启动服务
 

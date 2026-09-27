@@ -55,9 +55,9 @@ jobs:
 
       - name: 6. Run tests
         working-directory: ./backend
-        run: python manage.py test
+        run: |
+          SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(64))')" python manage.py test
         env:
-          SECRET_KEY: 'REMOVED_CREDENTIAL'
           DATABASE_URL: 'sqlite:///:memory:'
 
       # ==================== Docker Build & Push ====================

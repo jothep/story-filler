@@ -118,8 +118,8 @@ aws s3 ls s3://maori-story-media/ --recursive
 ```bash
 # S3配置
 USE_S3=true
-AWS_ACCESS_KEY_ID=AKIA...
-AWS_SECRET_ACCESS_KEY=your-secret-key
+# AWS_ACCESS_KEY_ID: set privately via environment or an untracked local configuration.
+# AWS_SECRET_ACCESS_KEY: set privately via environment or an untracked local configuration.
 AWS_STORAGE_BUCKET_NAME=maori-story-media
 AWS_S3_REGION_NAME=ap-southeast-2
 ```

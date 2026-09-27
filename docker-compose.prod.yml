@@ -9,7 +9,7 @@ services:
     environment:
       POSTGRES_DB: maori_story
       POSTGRES_USER: dbuser
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -33,9 +33,9 @@ services:
     restart: unless-stopped
     command: gunicorn maori_story_project.wsgi:application --bind 0.0.0.0:8000 --workers 3 --worker-class gevent
     environment:
-      - DATABASE_URL=postgresql://dbuser:${DB_PASSWORD}@db:5432/maori_story
-      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
-      - DJANGO_DEBUG=False
+      - DATABASE_URL=postgresql://dbuser:${DB_PASSWORD:?Set DB_PASSWORD}@db:5432/maori_story
+      - SECRET_KEY=${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY}
+      - DEBUG=False
       - ALLOWED_HOSTS=*
       - MEDIA_ROOT=/app/media
       - STATIC_ROOT=/app/staticfiles

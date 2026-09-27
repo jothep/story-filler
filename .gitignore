@@ -137,6 +137,8 @@ celerybeat.pid
 # Environments
 .env
 .env.production
+.env.*
+!.env.example
 .envrc
 .venv
 env/
@@ -292,3 +294,7 @@ env-vars.yaml
 test_*.py
 VERIFICATION_CHECKLIST.md
 volume-backup-*/
+
+# Local publication preparation artifacts; never part of the public source tree.
+.publication-prep/
+.local-secrets/

@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 """
 Change Django admin password remotely
-Usage: python change_admin_password.py <username> <new_password>
+Usage: python change_admin_password.py <username>
 """
 import os
 import sys
+from getpass import getpass
 import django
 
 # Add the project directory to the path
@@ -29,14 +30,12 @@ def change_password(username, new_password):
         return False
 
 if __name__ == '__main__':
-    if len(sys.argv) != 3:
-        print("Usage: python change_admin_password.py <username> <new_password>")
-        print("\nAvailable users:")
-        User = get_user_model()
-        for user in User.objects.filter(is_superuser=True):
-            print(f"  - {user.username} (superuser)")
+    if len(sys.argv) != 2:
+        print("Usage: python change_admin_password.py <username>")
         sys.exit(1)
 
     username = sys.argv[1]
-    new_password = sys.argv[2]
-    change_password(username, new_password)
+    new_password = getpass('New password: ')
+    if not new_password or new_password != getpass('Confirm password: '):
+        sys.exit('Passwords must be nonempty and match; no changes made.')
+    sys.exit(0 if change_password(username, new_password) else 1)

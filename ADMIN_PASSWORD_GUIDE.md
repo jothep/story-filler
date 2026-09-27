@@ -79,10 +79,18 @@ gcloud run services describe maori-story-backend --region=us-central1 --format="
 
 1. **配置数据库连接**
    
-   在本地创建 `.env` 文件或设置环境变量：
+   通过隐藏输入设置现有部署的环境变量（输入不会显示，也不进入命令行历史）：
    ```bash
-   export DATABASE_URL="postgresql://neondb_owner:REMOVED_CREDENTIAL@ep-restless-tree-am3e4dfx.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require"
-   export SECRET_KEY="REMOVED_CREDENTIAL"
+   printf 'DATABASE_URL (hidden input): '
+   read -r -s DATABASE_URL
+   printf '\n'
+   : "${DATABASE_URL:?A non-empty value is required}"
+   export DATABASE_URL
+   printf 'SECRET_KEY (hidden input): '
+   read -r -s SECRET_KEY
+   printf '\n'
+   : "${SECRET_KEY:?A non-empty value is required}"
+   export SECRET_KEY
    ```
 
 2. **查看所有超级用户**
@@ -110,25 +118,16 @@ gcloud run services describe maori-story-backend --region=us-central1 --format="
 
 ## 方法三：通过 Python 脚本（高级）
 
-### 使用自定义脚本
+### 使用交互式管理命令
 
-项目中包含了 `backend/change_admin_password.py` 脚本：
+先按方法二私下设置 `DATABASE_URL` 和 `SECRET_KEY`，再运行：
 
 ```bash
 cd backend
-
-# 设置数据库连接
-export DATABASE_URL="postgresql://..."
-export SECRET_KEY="..."
-
-# 运行脚本
-python change_admin_password.py <用户名> <新密码>
+python manage.py changepassword admin
 ```
 
-例如：
-```bash
-python change_admin_password.py admin MyNewPassword123!
-```
+根据提示输入新密码两次；不要把密码作为命令行参数。
 
 ### 或使用 Django Shell
 
@@ -139,6 +138,7 @@ python manage.py shell
 
 然后在 shell 中执行：
 ```python
+from getpass import getpass
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -147,7 +147,7 @@ User = get_user_model()
 user = User.objects.get(username='admin')
 
 # 设置新密码
-user.set_password('新密码')
+user.set_password(getpass('New password: '))
 user.save()
 
 print(f"密码已修改: {user.username}")
@@ -161,8 +161,16 @@ print(f"密码已修改: {user.username}")
 
 1. **通过本地连接数据库**
    ```bash
-   export DATABASE_URL="postgresql://..."
-   export SECRET_KEY="..."
+   printf 'DATABASE_URL (hidden input): '
+   read -r -s DATABASE_URL
+   printf '\n'
+   : "${DATABASE_URL:?A non-empty value is required}"
+   export DATABASE_URL
+   printf 'SECRET_KEY (hidden input): '
+   read -r -s SECRET_KEY
+   printf '\n'
+   : "${SECRET_KEY:?A non-empty value is required}"
+   export SECRET_KEY
    cd backend
    ```
 
@@ -190,12 +198,12 @@ Django 默认密码验证规则：
 - ✅ 至少 8 个字符
 - ✅ 不能与用户名太相似
 - ✅ 不能是纯数字
-- ✅ 不能是常见密码（如 "REMOVED_CREDENTIAL"）
+- ✅ 不能是常见密码
 
 **推荐密码格式**：
 - 至少 12 个字符
 - 包含大小写字母、数字和特殊符号
-- 例如：`MyApp@2026!Strong`
+- 使用密码管理器生成并保存独一无二的密码
 
 ---
 
@@ -245,9 +253,7 @@ https://maori-story-backend-454222894238.us-central1.run.app/admin/
 ⚠️ **重要安全提示**：
 
 1. **不要使用简单密码**
-   - ❌ REMOVED_CREDENTIAL
-   - ❌ password
-   - ✅ MySecure@Pass2026!
+   - 使用密码管理器生成唯一密码，不要复用公开示例
 
 2. **定期更换密码**
    - 建议每 3-6 个月更换一次

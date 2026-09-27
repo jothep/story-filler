@@ -72,9 +72,9 @@ vim terraform.tfvars
 - `django_secret_key`: Django 密钥（50+ 字符）
 - `git_repo_url`: 你的 Git 仓库地址
 
-**生成 Django 密钥**：
+**首次部署生成 Django 密钥（仅保存到当前 shell，不显示）**：
 ```bash
-python3 -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+export TF_VAR_django_secret_key="$(python3 -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())")"
 ```
 
 ---

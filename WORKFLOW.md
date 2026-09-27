@@ -301,7 +301,7 @@ fetch('https://maori-story-backend-tc2dttesfa-uc.a.run.app/api/config/')
 gcloud run jobs create migrate-db \
   --image=us-central1-docker.pkg.dev/jaskojothep/maori-story/backend:latest \
   --region=us-central1 \
-  --set-env-vars="DATABASE_URL=你的Neon数据库URL,SECRET_KEY=你的密钥" \
+  --set-env-vars="DATABASE_URL=${DATABASE_URL:?Set DATABASE_URL privately},SECRET_KEY=${SECRET_KEY:?Set SECRET_KEY privately}" \
   --command=python \
   --args="manage.py,migrate"
 
@@ -316,8 +316,16 @@ Dockerfile CMD 是 `gunicorn ...`，没有在启动前运行 `migrate`。
 
 ```bash
 # 设置环境变量
-export DATABASE_URL="你的Neon数据库URL"
-export SECRET_KEY="你的密钥"
+printf 'DATABASE_URL (hidden input): '
+read -r -s DATABASE_URL
+printf '\n'
+: "${DATABASE_URL:?A non-empty value is required}"
+export DATABASE_URL
+printf 'SECRET_KEY (hidden input): '
+read -r -s SECRET_KEY
+printf '\n'
+: "${SECRET_KEY:?A non-empty value is required}"
+export SECRET_KEY
 
 # 运行迁移
 cd backend

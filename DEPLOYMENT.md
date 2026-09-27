@@ -89,16 +89,19 @@ gcloud auth configure-docker us-central1-docker.pkg.dev
 
 创建完成后，页面会显示连接信息：
 
-```
-postgresql://username:${DB_PASSWORD}@ep-xxx-xxx.us-east-2.aws.neon.tech/neondb?sslmode=require
-```
+通过下方隐藏输入，将完整连接字符串保存在当前 shell 的 `DATABASE_URL` 环境变量中。
 
 **保存这个连接字符串！** 稍后需要用到。
 
 ### 1.4 验证连接（可选）
 
 ```bash
-psql "postgresql://username:${DB_PASSWORD}@ep-xxx-xxx.us-east-2.aws.neon.tech/neondb?sslmode=require"
+printf 'DATABASE_URL (hidden input): '
+read -r -s DATABASE_URL
+printf '\n'
+: "${DATABASE_URL:?A non-empty value is required}"
+export DATABASE_URL
+psql "$DATABASE_URL"
 # 成功连接会看到 neondb=> 提示符
 # 输入 \q 退出
 ```
@@ -126,11 +129,11 @@ vim terraform.tfvars
 gcp_project_id = "your-gcp-project-id"  # 替换为你的 GCP 项目 ID
 gcp_region     = "us-central1"
 
-# 粘贴步骤1获取的 Neon 连接字符串
-database_url = "postgresql://username:${DB_PASSWORD}@ep-xxx-xxx.us-east-2.aws.neon.tech/neondb?sslmode=require"
+# 连接字符串通过 TF_VAR_database_url 传入
+# Set TF_VAR_database_url in the shell; omit this value from .tfvars.
 
 # 生成 Django 密钥
-django_secret_key = "生成的密钥"  # 见下方
+# Set TF_VAR_django_secret_key in the shell; omit this value from .tfvars.
 
 # 前端 GitHub Pages URL（稍后配置）
 cors_allowed_origins = "https://yourusername.github.io"
@@ -139,10 +142,17 @@ cors_allowed_origins = "https://yourusername.github.io"
 ### 2.3 生成 Django 密钥
 
 ```bash
-python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
+printf 'DATABASE_URL (hidden input): '
+read -r -s DATABASE_URL
+printf '\n'
+: "${DATABASE_URL:?A non-empty value is required}"
+export DATABASE_URL
+export TF_VAR_database_url="$DATABASE_URL"
+# 仅首次部署生成；已有部署请私下输入其现有签名密钥。
+export TF_VAR_django_secret_key="$(python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())')"
 ```
 
-复制输出的密钥到 `terraform.tfvars` 的 `django_secret_key`。
+密钥仅保存在当前 shell 的 `TF_VAR_django_secret_key` 中，不会显示在终端。已有部署请通过隐藏输入加载现有值；不要重新生成。
 
 ---
 

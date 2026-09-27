@@ -681,9 +681,9 @@ Total:     ~1.5Gi memory minimum
 
 **Deployment**:
 ```bash
-# Set environment variables
-export DB_PASSWORD=<secure-password>
-export DJANGO_SECRET_KEY=<secure-key>
+# For a new local deployment, generate private .env values without printing them.
+python3 scripts/init-local-env.py
+# Existing deployments must retain their current .env values.
 
 # Start services
 docker-compose -f docker-compose.prod.yml up -d
@@ -1380,15 +1380,15 @@ erDiagram
 #### Backend
 ```bash
 # Required
-DATABASE_URL=postgresql://user:${DB_PASSWORD}@host:5432/db
-DJANGO_SECRET_KEY=<random-50-char-string>
+# DATABASE_URL: set privately via environment or an untracked local configuration.
+# SECRET_KEY: backend application setting; Compose derives this from the root .env DJANGO_SECRET_KEY.
 ALLOWED_HOSTS=example.com,api.example.com
 
 # Optional
 DJANGO_DEBUG=False
 USE_S3=false
-AWS_ACCESS_KEY_ID=<key>
-AWS_SECRET_ACCESS_KEY=<secret>
+# AWS_ACCESS_KEY_ID: set privately via environment or an untracked local configuration.
+# AWS_SECRET_ACCESS_KEY: set privately via environment or an untracked local configuration.
 AWS_STORAGE_BUCKET_NAME=<bucket>
 AWS_S3_REGION_NAME=us-east-1
 ```
