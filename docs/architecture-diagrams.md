@@ -20,13 +20,16 @@ flowchart LR
 The browser is the client of Pages, the API and public media storage.
 Pages does not proxy API requests, and ordinary media reads do not traverse Cloud Run.
 The dotted storage connection represents the implemented backend integration; the latest online checks did not exercise uploads.
-There is no Secret Manager or Workload Identity Federation component in the checked-in deployment configuration.
+Secret Manager and Workload Identity Federation are not configured. Delivery retains the existing service-account JSON key authentication through the `GCP_CREDENTIALS` GitHub Actions secret; the owner configures that secret manually in the new repository.
 
 ## Delivery and ownership
 
 ```mermaid
 flowchart LR
     Code[Application change on main] --> Checks[Tests and build]
+    Key[GitHub Actions secret: GCP_CREDENTIALS] --> Auth[Service-account JSON key authentication]
+    Auth -.-> Registry
+    Auth -.-> Run
     Checks --> Scan[Image vulnerability gate]
     Scan --> Registry[Artifact Registry<br/>SHA and latest tags]
     Registry -->|Deploy SHA tag| Run[Cloud Run]
@@ -43,8 +46,8 @@ This is the backend delivery path; the frontend separately runs lint, tests and 
 Terraform creates the registry and runtime identity as well as the service configuration, but the application workflow owns image updates.
 The GCS state inventory was checked and contains the four declared resources; Terraform formatting and validation passed.
 No Terraform plan, apply or restore was performed in this verification; the inventory is not a drift or rebuild check. State may contain sensitive values and is not a public portfolio artifact.
-The [backend delivery run for `7d80196`](https://github.com/jothep/maori-story-fill/actions/runs/36299274042) passed application tests, six offline smoke-check tests, image scanning, deployment and the public API smoke check.
-Cloud Run revision `maori-story-backend-00027-bzj` serves that commit-tagged image with 100% traffic.
+Pre-migration evidence from the former private repository: the [backend delivery run for `7d80196`](https://github.com/jothep/maori-story-fill/actions/runs/36299274042) passed application tests, six offline smoke-check tests, image scanning, deployment and the public API smoke check.
+At the 27 September check, Cloud Run revision `maori-story-backend-00027-bzj` served that commit-tagged image with 100% traffic. The new repository retains the same authentication method, but this old run does not verify its secret setup or delivery; see the [migration record](repository-migration.md).
 The frontend Pages run for `a309a63` and independent credential scans for both release commits also succeeded; links are in the verification record.
 A smoke-check failure does not undo deployment. The credential scan runs independently and does not gate the deployment job.
 See the current deployment page and [verification record](verification.md) for exact gates and execution status.

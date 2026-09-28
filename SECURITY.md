@@ -17,7 +17,7 @@ Use GitHub private vulnerability reporting from the repository's Security tab wh
 | Private configuration | Runtime credentials are supplied outside tracked source; environment and backup files are ignored | Git ignore rules do not protect files already committed; Terraform state can contain sensitive values |
 | API smoke check | Exercises public story and configuration reads after deployment | Does not verify authorization, media playback, writes, rollback or recovery; failure does not automatically roll back |
 
-Cloud Run currently receives database credentials and the Django signing key as environment variables. GitHub Actions authenticates using a service-account JSON credential in GitHub Secrets. Workload Identity Federation and Secret Manager integration are **not implemented** in the current configuration.
+Cloud Run currently receives database credentials and the Django signing key as environment variables. The backend workflow retains service-account JSON key authentication through the `GCP_CREDENTIALS` GitHub Actions secret and the authentication action's `credentials_json` input. The owner configures this secret manually in the new repository; no key value belongs in source or public evidence. Workload Identity Federation and Secret Manager integration are not implemented. See the [migration record](docs/repository-migration.md) for execution evidence.
 
 ## September 2026 publication preparation
 

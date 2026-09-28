@@ -1,0 +1,210 @@
+{
+  "source_repository": "jothep/maori-story-fill",
+  "source_visibility": "legacy private repository",
+  "collected_at_utc": "2026-09-28T00:25:55+00:00",
+  "snapshot_scope": "All workflow runs returned by the authenticated GitHub Actions API at collection time; each run is counted once.",
+  "api_reported_total_count": 198,
+  "pages_fetched": 2,
+  "workflow_runs": 198,
+  "unique_source_commits": 132,
+  "runs_with_reruns": 0,
+  "latest_attempt_numbers_sum": 198,
+  "by_status": {
+    "completed": 198
+  },
+  "by_latest_conclusion": {
+    "failure": 72,
+    "success": 126
+  },
+  "by_event": {
+    "push": 174,
+    "schedule": 21,
+    "workflow_dispatch": 3
+  },
+  "first_run_created_at": "2025-10-18T23:51:12Z",
+  "latest_run_created_at": "2026-09-27T06:18:37Z",
+  "latest_run_updated_at": "2026-09-27T06:18:47Z",
+  "by_workflow": [
+    {
+      "workflow_path": ".github/workflows/backend-ci.yml",
+      "workflow_names": [
+        ".github/workflows/backend-ci.yml",
+        "Backend CI - Build, Test, Scan, Push"
+      ],
+      "runs": 41,
+      "latest_attempt_numbers_sum": 41,
+      "unique_source_commits": 41,
+      "by_status": {
+        "completed": 41
+      },
+      "by_latest_conclusion": {
+        "failure": 20,
+        "success": 21
+      },
+      "first_created_at": "2025-10-21T08:53:59Z",
+      "last_created_at": "2026-04-28T02:02:50Z",
+      "last_updated_at": "2026-04-28T02:04:12Z",
+      "attempts_observed": 41,
+      "attempts_by_conclusion": {
+        "failure": 20,
+        "success": 21
+      }
+    },
+    {
+      "workflow_path": ".github/workflows/ci-cd.yml",
+      "workflow_names": [
+        "Pipeline for Maori story fill"
+      ],
+      "runs": 1,
+      "latest_attempt_numbers_sum": 1,
+      "unique_source_commits": 1,
+      "by_status": {
+        "completed": 1
+      },
+      "by_latest_conclusion": {
+        "success": 1
+      },
+      "first_created_at": "2025-10-18T23:51:12Z",
+      "last_created_at": "2025-10-18T23:51:12Z",
+      "last_updated_at": "2025-10-18T23:51:32Z",
+      "attempts_observed": 1,
+      "attempts_by_conclusion": {
+        "success": 1
+      }
+    },
+    {
+      "workflow_path": ".github/workflows/codeql-analysis.yml",
+      "workflow_names": [
+        "CodeQL Security Analysis"
+      ],
+      "runs": 50,
+      "latest_attempt_numbers_sum": 50,
+      "unique_source_commits": 30,
+      "by_status": {
+        "completed": 50
+      },
+      "by_latest_conclusion": {
+        "failure": 5,
+        "success": 45
+      },
+      "first_created_at": "2026-04-28T04:21:17Z",
+      "last_created_at": "2026-09-21T02:23:47Z",
+      "last_updated_at": "2026-09-21T02:27:26Z",
+      "attempts_observed": 50,
+      "attempts_by_conclusion": {
+        "failure": 5,
+        "success": 45
+      }
+    },
+    {
+      "workflow_path": ".github/workflows/deploy-backend.yml",
+      "workflow_names": [
+        "Deploy Backend to Cloud Run"
+      ],
+      "runs": 18,
+      "latest_attempt_numbers_sum": 18,
+      "unique_source_commits": 18,
+      "by_status": {
+        "completed": 18
+      },
+      "by_latest_conclusion": {
+        "failure": 12,
+        "success": 6
+      },
+      "first_created_at": "2026-04-24T01:00:58Z",
+      "last_created_at": "2026-09-27T06:09:33Z",
+      "last_updated_at": "2026-09-27T06:12:52Z",
+      "attempts_observed": 18,
+      "attempts_by_conclusion": {
+        "failure": 12,
+        "success": 6
+      }
+    },
+    {
+      "workflow_path": ".github/workflows/deploy-frontend.yml",
+      "workflow_names": [
+        "Deploy Frontend to GitHub Pages"
+      ],
+      "runs": 37,
+      "latest_attempt_numbers_sum": 37,
+      "unique_source_commits": 37,
+      "by_status": {
+        "completed": 37
+      },
+      "by_latest_conclusion": {
+        "failure": 9,
+        "success": 28
+      },
+      "first_created_at": "2026-04-24T01:00:58Z",
+      "last_created_at": "2026-09-27T06:00:29Z",
+      "last_updated_at": "2026-09-27T06:01:15Z",
+      "attempts_observed": 37,
+      "attempts_by_conclusion": {
+        "failure": 9,
+        "success": 28
+      }
+    },
+    {
+      "workflow_path": ".github/workflows/frontend-ci.yml",
+      "workflow_names": [
+        "Frontend CI - Build, Test, Scan, Push"
+      ],
+      "runs": 48,
+      "latest_attempt_numbers_sum": 48,
+      "unique_source_commits": 48,
+      "by_status": {
+        "completed": 48
+      },
+      "by_latest_conclusion": {
+        "failure": 26,
+        "success": 22
+      },
+      "first_created_at": "2025-10-21T23:23:59Z",
+      "last_created_at": "2026-04-28T03:53:51Z",
+      "last_updated_at": "2026-04-28T03:55:07Z",
+      "attempts_observed": 48,
+      "attempts_by_conclusion": {
+        "failure": 26,
+        "success": 22
+      }
+    },
+    {
+      "workflow_path": ".github/workflows/secret-scan.yml",
+      "workflow_names": [
+        "Scan Git history for credentials"
+      ],
+      "runs": 3,
+      "latest_attempt_numbers_sum": 3,
+      "unique_source_commits": 3,
+      "by_status": {
+        "completed": 3
+      },
+      "by_latest_conclusion": {
+        "success": 3
+      },
+      "first_created_at": "2026-09-27T06:00:24Z",
+      "last_created_at": "2026-09-27T06:18:37Z",
+      "last_updated_at": "2026-09-27T06:18:47Z",
+      "attempts_observed": 3,
+      "attempts_by_conclusion": {
+        "success": 3
+      }
+    }
+  ],
+  "methodology_notes": [
+    "Run counts include tests, scans, scheduled workflows, manual jobs, cancellations and failures; they are not successful-deployment counts.",
+    "A workflow run may have multiple attempts. latest_attempt_numbers_sum sums the latest run_attempt index reported by GitHub; historical attempt results are verified separately when available.",
+    "Unique source commit counts are computed internally; no commit SHAs, messages, actor emails or run IDs are published in this file.",
+    "Per-workflow unique commit counts overlap and must not be added to obtain the repository total."
+  ],
+  "attempts_observed": 198,
+  "prior_attempts_retrieved": 0,
+  "prior_attempt_reads_unavailable": 0,
+  "attempts_by_status": {
+    "completed": 198
+  },
+  "attempts_by_conclusion": {
+    "failure": 72,
+    "success": 126
+  }
+}

@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react';
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/maori-story-fill/',  // GitHub Pages repository name
+  base: '/story-filler/',  // Shared by GitHub Pages, the router and local frontends.
   test: {
     globals: true,
     environment: 'jsdom',

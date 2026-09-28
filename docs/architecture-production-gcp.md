@@ -3,10 +3,12 @@
 This page describes the implemented deployment and its verification limits.
 The project is a recent infrastructure practice case alongside the author's enterprise experience.
 
-**Online baseline checks: 2026-09-27.** The public frontend, API read endpoints and a sampled media object were reachable.
-The latest verified backend release is commit `7d8019603925de68306585f701e5eb5a7442f854`, serving 100% of traffic on Cloud Run revision `maori-story-backend-00027-bzj`.
+**Pre-migration online baseline checks: 2026-09-27, former repository `jothep/maori-story-fill`.** The public frontend, API read endpoints and a sampled media object were reachable.
+The backend release verified at that check was commit `7d8019603925de68306585f701e5eb5a7442f854`, serving 100% of traffic on Cloud Run revision `maori-story-backend-00027-bzj`.
 Its [successful delivery run](https://github.com/jothep/maori-story-fill/actions/runs/36299274042) included the post-deployment public API smoke check.
 The earlier revision `maori-story-backend-00026-phc` was the credential-rotation baseline and retained the previous application image.
+
+The public frontend target is now `https://jothep.github.io/story-filler/`. Existing Cloud Run, database, bucket and registry identifiers are intentionally retained. See the [migration record](repository-migration.md) for new-repository acceptance evidence; the historical records below do not verify a new deployment.
 
 ## Request and data flow
 
@@ -92,7 +94,9 @@ Terraform itself is not run by the application deployment workflow.
 | [Frontend](../.github/workflows/deploy-frontend.yml) | Relevant changes pushed to `main`, or manual dispatch | ESLint, tests, build, artifact upload, then Pages deployment |
 | [Credential scan](../.github/workflows/secret-scan.yml) | Main pushes, pull requests, manual dispatch | Independent Gitleaks workflow scans all fetched history with redacted findings |
 | [CodeQL](../.github/workflows/codeql-analysis.yml) | Relevant main pushes, pull requests, schedule, manual dispatch | JavaScript and Python analysis; the analysis step allows failure to continue |
-| [Frontend container](../.github/workflows/build-frontend-docker.yml) | Manual dispatch | Lint, tests, container build and scan; optional Docker Hub push |
+| [Frontend container](../.github/workflows/build-frontend-docker.yml) | Manual dispatch | Lint, tests, container build and scan; optional, separately configured Docker Hub push |
+
+The manual frontend container workflow defaults to no Docker Hub push. Its `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` inputs have not been migrated; publishing that optional image requires separate setup and is not part of the new repository's verified delivery path.
 
 Backend Flake8 and Pylint are advisory because their steps use `continue-on-error`.
 Backend tests use SQLite and therefore do not establish PostgreSQL integration behavior.
@@ -115,9 +119,7 @@ The Cloud Run service uses a named runtime service account.
 The Terraform configuration does not establish all permissions held by that account or the CI identity, so it does not prove least-privilege IAM across the environment.
 The API service is publicly invokable; administrative authentication is handled by Django.
 
-CI currently authenticates using the `GCP_CREDENTIALS` GitHub secret through `credentials_json`.
-The workflow requests an OIDC token permission, but does not configure Workload Identity Federation.
-Do not describe this deployment as keyless CI authentication.
+The backend workflow retains the former repository's service-account JSON key authentication through the `GCP_CREDENTIALS` GitHub Actions secret and `credentials_json`. The owner configures that secret manually in the new repository; the migration does not introduce a new CI identity or change IAM. Workload Identity Federation is not configured, and this is not keyless authentication. The migration record distinguishes secret setup from a successful new-repository release.
 
 Database configuration and the Django signing key are injected as environment variables from sensitive Terraform inputs.
 There is no checked-in Secret Manager resource or Cloud Run Secret Manager reference.
@@ -130,9 +132,9 @@ No credential values belong in source, examples, screenshots or deployment evide
 | Item | Status and limits |
 | --- | --- |
 | Frontend, API reads and sampled GCS object | Reachable during the 2026-09-27 checks; this is a point-in-time check |
-| Current backend release | Commit `7d80196`; revision `maori-story-backend-00027-bzj`, image tagged with that commit, 100% traffic |
+| Pre-migration backend release | Commit `7d80196`; revision `maori-story-backend-00027-bzj`, image tagged with that commit, 100% traffic |
 | Earlier credential-rotation baseline | Revision `maori-story-backend-00026-phc` retained the application image deployed before the cleanup |
-| Current frontend release | Commit `a309a63`; Pages delivery completed successfully |
+| Pre-migration frontend release | Commit `a309a63`; Pages delivery completed successfully |
 | API smoke check | Six offline tests, local production checking and the post-deployment GitHub Actions step passed |
 | Credential-scan workflow | Successful independent runs for `a309a63` and `7d80196`; not a deployment dependency |
 | Historical backend and frontend releases | Successful Actions records exist; they refer to the source history used at that time |
@@ -140,8 +142,8 @@ No credential values belong in source, examples, screenshots or deployment evide
 | Terraform configuration and remote state | Formatting and validation passed; GCS state inventory confirmed four declared resources; no plan/apply/restore in this verification |
 | Complete environment rebuild | Not yet demonstrated; state inventory is not a drift or recovery test |
 
-Current release evidence: [backend `7d80196`](https://github.com/jothep/maori-story-fill/actions/runs/36299274042), [frontend `a309a63`](https://github.com/jothep/maori-story-fill/actions/runs/36298824448), and credential scans for [`a309a63`](https://github.com/jothep/maori-story-fill/actions/runs/36298820622) and [`7d80196`](https://github.com/jothep/maori-story-fill/actions/runs/36299274040).
-The repository remains private: older cached commit content is still a publication blocker, despite successful scans of the rewritten history and current release delivery.
+Pre-migration release evidence from the former private repository: [backend `7d80196`](https://github.com/jothep/maori-story-fill/actions/runs/36299274042), [frontend `a309a63`](https://github.com/jothep/maori-story-fill/actions/runs/36298824448), and credential scans for [`a309a63`](https://github.com/jothep/maori-story-fill/actions/runs/36298820622) and [`7d80196`](https://github.com/jothep/maori-story-fill/actions/runs/36299274040).
+The former repository remains private because old commit content was still retrievable there. This repository carries forward the cleaned history; its publication and deployment status are tracked in the migration record. Old private Actions links may be inaccessible to public readers; the [aggregate evidence snapshot](evidence/README.md) records their scope.
 
 Historical release records: [backend](https://github.com/jothep/maori-story-fill/actions/runs/25036589237) and [frontend](https://github.com/jothep/maori-story-fill/actions/runs/25902475995).
 Credential removal rewrites Git history, so an older run's recorded commit may differ from the corresponding commit in the cleaned repository.
@@ -154,6 +156,6 @@ The author's [original migration article](https://medium.com/@shelldry325/from-o
 
 The smoke check is implemented and verified both locally and in the successful backend deployment workflow for `7d80196`.
 Potential follow-up work includes a verified bootstrap procedure and a documented rollback exercise.
-PR application checks and federated CI authentication are additional candidates.
-These are proposed improvements, not completed capabilities.
+PR application checks and Workload Identity Federation are possible later improvements. Neither is part of this repository migration.
+The remaining exercises above are proposed work, not completed capabilities.
 See [architecture diagrams](architecture-diagrams.md) for the current and historical views, and [the local platform lab](local-platform-lab.md) for Compose, Kubernetes and prototype implementation details.

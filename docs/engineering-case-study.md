@@ -1,4 +1,4 @@
-# Māori Story Filler: Infrastructure and Delivery Case Study
+# Story Filler: Infrastructure and Delivery Case Study
 
 This personal project complements my years of enterprise work with recent, inspectable infrastructure practice. It is a small story-based learning application with a React frontend, a Django API and administration interface, PostgreSQL data, and uploaded media.
 
@@ -6,9 +6,9 @@ The engineering case concerns how those components are deployed, where their sta
 
 ## Evidence and scope
 
-This document reflects the September 2026 review and subsequent pipeline runs. The [verification record](verification.md) separates implementation, observed deployment behaviour, and pending work.
+This document reflects the September 2026 review and pipeline runs in the former private repository, `jothep/maori-story-fill`. Its historical run links may require access; the public [aggregate snapshot](evidence/README.md) records the retained activity without exposing private raw records. New-repository work is recorded in the [migration record](repository-migration.md). The [verification record](verification.md) separates implementation, observed deployment behaviour, and pending work.
 
-Cloud Run now serves image **7d80196** through revision **00027-bzj**, receiving 100% of traffic. Revision **00026-phc** was the earlier credential-rotation baseline; the newer release has completed the backend pipeline and public API smoke check.
+At the pre-migration check on 27 September, Cloud Run served image **7d80196** through revision **00027-bzj**, receiving 100% of traffic. Revision **00026-phc** was the earlier credential-rotation baseline; the newer release has completed the backend pipeline and public API smoke check.
 
 The project is a single application and a personal infrastructure exercise. Its Kubernetes manifests demonstrate an earlier deployment implementation. This review did not recreate that cluster, establish a service availability history, or conduct a disaster recovery exercise.
 
@@ -66,7 +66,7 @@ Application deployment workflows currently have no pull-request trigger. Databas
 
 The publication audit found credentials in documentation and Git history. The subsequent work separates credential rotation from repository sanitisation: removing a value from Git does not revoke it, and revoking it does not remove historical copies.
 
-Sanitised history has been pushed to the private repository and a fresh clone passed scanning. An old sensitive document remains retrievable at its previous commit through the authenticated GitHub Contents API. The repository therefore remains **private**. A GitHub Support request is drafted but has not been sent; server-side historical access remains unresolved.
+A fresh clone of the sanitised legacy history passed scanning, but an old sensitive document remained retrievable by its previous commit ID in that repository. The former repository stays private. Publication therefore moves to `jothep/story-filler`, carrying forward only the cleaned 189-commit baseline and subsequent migration changes. This preserves the development history without claiming removal of every external or server-side copy. The [migration record](repository-migration.md) records the new repository's verification separately.
 
 This is a September 2026 improvement, not a claim that the original project had complete secrets management. Database credentials, the Django signing key and the administrator login remain separate concerns.
 
@@ -74,4 +74,4 @@ This is a September 2026 improvement, not a claim that the original project had 
 
 The strongest evidence is the relationship between a workload, a deployment model, and its operational responsibilities. The project shows practical containerisation, infrastructure configuration, automated delivery, state externalisation and careful qualification of what has been verified.
 
-The [second article draft](articles/02-operating-the-migration.md) develops these decisions. Remaining work includes the publication blocker, a verified first-deployment path, and a rollback exercise with database compatibility made explicit.
+The [second article draft](articles/02-operating-the-migration.md) develops these decisions. Remaining work includes completing the new repository's acceptance checks, a verified first-deployment path, and a rollback exercise with database compatibility made explicit.

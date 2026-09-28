@@ -30,7 +30,7 @@
 
 1. **Start Local Dev Server**:
    ```bash
-   cd /Users/zhuxiang/Documents/maori-story-fill/frontend
+   cd frontend  # from the repository root
    npm run dev
    ```
    

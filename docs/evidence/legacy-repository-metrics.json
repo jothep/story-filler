@@ -1,0 +1,118 @@
+{
+  "source_repository": "jothep/maori-story-fill",
+  "source_visibility": "legacy private repository",
+  "collected_at_utc": "2026-09-28T00:26:25+00:00",
+  "original_history": {
+    "commits": 185,
+    "author_labels": {
+      "Xiang": 184,
+      "jothep": 1
+    },
+    "commits_by_author_month_utc": {
+      "2025-10": 84,
+      "2026-03": 24,
+      "2026-04": 68,
+      "2026-05": 9
+    },
+    "first_recorded_author_time_utc": "2025-10-15T00:25:50+00:00",
+    "last_recorded_author_time_utc": "2026-05-15T05:43:29+00:00"
+  },
+  "clean_legacy_main": {
+    "commits": 189,
+    "author_labels": {
+      "Xiang": 188,
+      "jothep": 1
+    },
+    "commits_by_author_month_utc": {
+      "2025-10": 84,
+      "2026-03": 24,
+      "2026-04": 68,
+      "2026-05": 9,
+      "2026-09": 4
+    },
+    "first_recorded_author_time_utc": "2025-10-15T00:25:50+00:00",
+    "last_recorded_author_time_utc": "2026-09-27T06:17:27+00:00"
+  },
+  "history_rewrite": {
+    "original_commits_preserved": 185,
+    "mapped_original_commits_removed": 0,
+    "subsequent_commits_on_clean_main": 4,
+    "note": "The preserved and rewritten histories represent the same original work. Do not add them together."
+  },
+  "clean_snapshot": {
+    "tracked_files": 210,
+    "files_by_type": {
+      ".backup": 2,
+      ".conf": 3,
+      ".css": 4,
+      ".example": 1,
+      ".html": 3,
+      ".ico": 1,
+      ".js": 12,
+      ".json": 6,
+      ".jsx": 24,
+      ".md": 38,
+      ".png": 7,
+      ".py": 57,
+      ".sh": 11,
+      ".svg": 2,
+      ".tf": 2,
+      ".toml": 1,
+      ".txt": 2,
+      ".yaml": 9,
+      ".yml": 9,
+      "Dockerfile": 4,
+      "environment template": 4,
+      "no extension": 8
+    },
+    "implementation_counts": {
+      "maintained_backend_test_methods": 11,
+      "maintained_frontend_test_cases": 6,
+      "offline_smoke_check_test_methods": 6,
+      "prototype_test_methods": 0,
+      "terraform_resource_declarations": 4,
+      "terraform_resource_types": [
+        "google_artifact_registry_repository",
+        "google_service_account",
+        "google_cloud_run_v2_service",
+        "google_cloud_run_v2_service_iam_member"
+      ],
+      "terraform_configuration_files": 2,
+      "kubernetes_manifest_documents_by_kind": {
+        "Deployment": 2,
+        "Ingress": 1,
+        "Job": 2,
+        "PersistentVolumeClaim": 1,
+        "Pod": 2,
+        "Service": 3,
+        "StatefulSet": 1
+      },
+      "infra_yaml_files": 10,
+      "compose_files": [
+        "demo/docker-compose.yml",
+        "docker-compose.dev.yml",
+        "docker-compose.prod.yml"
+      ],
+      "workflow_files": [
+        ".github/workflows/build-frontend-docker.yml",
+        ".github/workflows/codeql-analysis.yml",
+        ".github/workflows/deploy-backend.yml",
+        ".github/workflows/deploy-frontend.yml",
+        ".github/workflows/secret-scan.yml"
+      ],
+      "dockerfiles": [
+        "backend/dockerfile",
+        "frontend/Dockerfile",
+        "frontend/Dockerfile.dev",
+        "frontend/Dockerfile.nginx"
+      ]
+    }
+  },
+  "methodology_notes": [
+    "Author labels come from Git author names, not inferred roles or independent identity verification. No email addresses or commit SHAs are published.",
+    "Month distribution uses recorded author timestamps converted to UTC. Commit counts do not establish hours worked, complexity or independent authorship.",
+    "Counts describe checked-in source at the snapshot, not test coverage percentages or proof of production deployment.",
+    "Kubernetes counts enumerate kind documents in Infra YAML files; the Helm values file is configuration, not an additional workload.",
+    "Compose, prototype and Kubernetes execution status must be stated separately; static counts do not show that these environments were rerun."
+  ]
+}

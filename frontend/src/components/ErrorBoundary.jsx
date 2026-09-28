@@ -32,7 +32,7 @@ class ErrorBoundary extends Component {
   handleReset = () => {
     this.setState({ hasError: false, error: null, errorInfo: null });
     // Navigate to home or reset app state
-    window.location.href = '/';
+    window.location.href = import.meta.env.BASE_URL;
   };
 
   render() {

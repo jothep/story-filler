@@ -1,8 +1,10 @@
 # Verification record
 
-Reviewed on **27 September 2026**. This record distinguishes repository implementation from observations of a deployed service. A successful check applies to its stated scope and date, not to continuous uptime or all future versions.
+Legacy deployment reviewed on **27 September 2026**; repository migration begun on **28 September 2026**. This record distinguishes repository implementation from observations of a deployed service. A successful check applies to its stated scope and date, not to continuous uptime or all future versions.
 
-## Live deployment baseline
+The run links and release observations on this page belong to the former private `jothep/maori-story-fill` repository. They do not establish that `jothep/story-filler` has run the same workflows. See the [migration record](repository-migration.md) for new-repository checks and the [public aggregate snapshot](evidence/README.md) for historical activity counts.
+
+## Pre-migration live deployment baseline
 
 | Check | Result | Scope |
 | --- | --- | --- |
@@ -46,7 +48,7 @@ Historical successful runs establish that the earlier delivery paths were used:
 
 These runs refer to commits from before credential-related history rewriting. They do **not** verify the rewritten commit IDs or the new publication changes. Old-to-new commit mappings are retained privately for audit; private archives and credentials are not portfolio attachments.
 
-## Publication release runs
+## Legacy publication-preparation release runs
 
 | Source revision | Workflow | Result |
 | --- | --- | --- |
@@ -62,19 +64,21 @@ In a separate local Python environment with pip and ensurepip absent, applicatio
 
 After deployment, Cloud Run reported revision `maori-story-backend-00027-bzj` receiving 100% of traffic, with image tag `7d8019603925de68306585f701e5eb5a7442f854`. The database and signing-key values still matched the private rotated configuration. This application release supersedes the configuration-only `00026-phc` baseline above. Passing the configured Trivy gate means no blocking findings under that run's policy and database, not that the image has no vulnerabilities.
 
-## Publication state
+## Legacy publication state and new repository
 
-The repository remains **private**. The cleaned history was pushed with an exact force-with-lease, and a fresh remote clone passed its full reachable-history scan. The original 185 commits' authorship and timestamps were retained; credential cleanup changed commit IDs. The owner's original staged working draft was not included in the published branch.
+The former `jothep/maori-story-fill` repository remains **private**. The cleaned history was pushed with an exact force-with-lease, and a fresh remote clone passed its full reachable-history scan. The original 185 commits' authorship and timestamps were retained; credential cleanup changed commit IDs. The owner's original staged working draft was not included in the published branch.
 
-A separate GitHub contents-API check found that the previous sensitive document is still retrievable through its old commit ID, outside the new reachable history. That retained content must be addressed before this repository meets the owner's publication requirement. A support request has been prepared but not sent. GitHub documents that force-pushing alone may leave cached views accessible and that Support assistance is limited; see [removing sensitive data](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository). No claim is made that all historic copies have been erased.
+A separate GitHub contents-API check found that the previous sensitive document is still retrievable through its old commit ID, outside the new reachable history. That retained content prevents making the former repository public under the owner's publication requirement. A support request has been prepared but not sent. GitHub documents that force-pushing alone may leave cached views accessible and that Support assistance is limited; see [removing sensitive data](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository). No claim is made that all historic copies have been erased. The chosen publication path is a separate `jothep/story-filler` repository, starting from the 189-commit clean baseline (185 preserved historical commits plus four preparation commits). Its own acceptance evidence is tracked in the migration record, rather than relabelling the old runs.
 
 ## Implemented but not fully proven
 
 - Terraform declares the registry, runtime service account, Cloud Run service and public invoker binding, and those four addresses were confirmed in remote state. No clean-room recreation of the whole environment has been demonstrated; Neon, media/state buckets, IAM setup and GitHub configuration are prerequisites outside that resource set.
 - Kubernetes manifests preserve the earlier deployment design. The original article reports the historical exercise; the current review did not redeploy a cluster.
-- The [local platform lab](local-platform-lab.md) covers Compose, local Kubernetes and the earlier demo separately. The current machine has local cluster tooling, but Colima is stopped. Neither the existing clusters nor other local projects were started or modified. The current Kubernetes image tags/base-path configuration need alignment before a fresh reproduction; the demo has no dedicated dependency lock or substantive tests.
+- The [local platform lab](local-platform-lab.md) covers Compose, local Kubernetes and the earlier demo separately. The current machine has local cluster tooling, but Colima is stopped. Neither the existing clusters nor other local projects were started or modified. The current NGINX image source now supports `/story-filler/`, but the historical Kubernetes image tags still need replacement with a rebuilt image before a fresh reproduction; the demo has no dedicated dependency lock or substantive tests.
 - CodeQL and image scanning are configured. Scan results depend on definitions, scope and advisory settings; no “zero vulnerabilities” claim is made.
 - ORM prefetching and image processing exist in code. The previously stated percentage improvements have no reproducible benchmark included here.
+
+The new repository retains the service-account JSON key authentication method used by the old successful releases. The owner configures `GCP_CREDENTIALS` manually as a GitHub Actions secret. Workload Identity Federation is not implemented. The old runs do not verify the new repository's secret setup or delivery; see the migration record for its execution status.
 
 ## Planned, not claimed as delivered
 

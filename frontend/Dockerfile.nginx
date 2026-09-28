@@ -1,5 +1,5 @@
-# Dockerfile.nginx - Production-ready nginx-based frontend image
-# This approach eliminates Node.js runtime dependencies and security vulnerabilities
+# Dockerfile.nginx - nginx-based frontend image
+# The final image serves static files without a Node.js runtime.
 # Switched from serve to nginx:alpine on 2026-03-08 to resolve CVE issues
 
 # --- Stage 1: Build ---
@@ -24,11 +24,11 @@ RUN apk update && \
     apk upgrade --no-cache && \
     rm -rf /var/cache/apk/*
 
-# Copy custom nginx configuration (optional)
-# COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Match the Vite public base and support SPA route refreshes.
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy built static files from builder stage
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=builder /app/dist /usr/share/nginx/html/story-filler
 
 EXPOSE 80
 

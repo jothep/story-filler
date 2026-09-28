@@ -2,9 +2,9 @@
 
 *Draft for review. September 2026 follow-up to [From On-premises Kubernetes to Zero-Cost Serverless Architecture](https://medium.com/@shelldry325/from-on-premises-kubernetes-to-zero-cost-serverless-architecture-a-practical-guide-to-cloud-70e68304e835). This article has not been published.*
 
-My first article described moving Māori Story Filler from a local container and Kubernetes setup to managed hosting. It ended by introducing the next subject: the delivery pipeline and security practices supporting that architecture.
+My first article described moving the Māori vocabulary application, now published as Story Filler, from a local container and Kubernetes setup to managed hosting. It ended by introducing the next subject: the delivery pipeline and security practices supporting that architecture.
 
-This follow-up connects the running application and infrastructure code to September 2026 improvements, successful releases and remaining manual dependencies.
+This follow-up connects the running application and infrastructure code to September 2026 improvements, successful releases and remaining manual dependencies. Release links below refer to the former private repository, `jothep/maori-story-fill`; they may require access and are not new-repository run evidence. A [public aggregate snapshot](../evidence/README.md) preserves the scope of the retained delivery history.
 
 The project complements my years of enterprise work with recent, inspectable infrastructure practice.
 
@@ -64,7 +64,7 @@ Commit **7d80196** upgraded Pillow from 12.2 to 12.3. After installing dependenc
 
 The [next backend run](https://github.com/jothep/maori-story-fill/actions/runs/36299274042) passed 11 backend tests, six offline smoke tests, Trivy, image push, deployment and public API verification. The [new secret scan](https://github.com/jothep/maori-story-fill/actions/runs/36299274040) also passed. This demonstrates a gate blocking a specific release, a bounded fix, and a verified retry. It does not establish zero vulnerabilities or validate uploads, administrator tasks, sustained load or recovery.
 
-Cloud Run now directs **100% of traffic** to revision **00027-bzj**, running image **7d80196**. The earlier **00026-phc** revision remains evidence of configuration rotation using the previous image, not the current application release.
+At the 27 September pre-migration check, Cloud Run directed **100% of traffic** to revision **00027-bzj**, running image **7d80196**. The earlier **00026-phc** revision remains evidence of configuration rotation using the previous image, not the current application release.
 
 The [verification record](../verification.md) keeps these categories separate and records their limits.
 
@@ -74,7 +74,9 @@ Preparing the private repository for public review exposed credentials in docume
 
 The response has two independent parts. Credential rotation changes what the running services accept. Repository sanitisation removes sensitive material from the content intended for publication. Either action alone leaves part of the problem unresolved.
 
-Sanitised history has now been pushed to the private repository, and a fresh clone passed scanning. However, the authenticated GitHub Contents API can still retrieve an old sensitive document at its previous commit. The repository remains **private**. A GitHub Support request is drafted but unsent; historical server-side access must be resolved before publication.
+A fresh clone of the sanitised history passed scanning, but an old sensitive document remained retrievable by commit ID in the former repository. That repository stays private. The publication path is a new `jothep/story-filler` repository based on the cleaned 189-commit history: 185 preserved historical commits and four preparation commits. The frontend moves to `/story-filler/`; existing cloud resource IDs remain in place. This does not claim that every historical copy has been erased.
+
+The backend keeps its existing service-account JSON key authentication. The owner configures the `GCP_CREDENTIALS` GitHub Actions secret manually in the new repository; no credentials are copied into tracked source. Changing to Workload Identity Federation is a possible later improvement, outside this migration. The [migration record](../repository-migration.md) keeps new-repository execution evidence separate from the successful runs described above.
 
 These are September 2026 improvements prompted by publication review, rather than controls that had always existed.
 
@@ -84,6 +86,6 @@ Adding a scanner helps catch future mistakes. It cannot prove that no sensitive 
 
 ## What I would verify next
 
-The immediate prerequisite for publication is resolving historical access on GitHub. Further engineering work should exercise the initial deployment sequence, including dependencies outside Terraform, and rehearse an application rollback with database compatibility explicitly assessed.
+The immediate publication work is completing and recording the new repository's acceptance checks. Further engineering work should exercise the initial deployment sequence, including dependencies outside Terraform, and rehearse an application rollback with database compatibility explicitly assessed.
 
 The [case study](../engineering-case-study.md), [current architecture](../architecture-production-gcp.md) and verification record connect these decisions to their implementation, completed checks and remaining work.

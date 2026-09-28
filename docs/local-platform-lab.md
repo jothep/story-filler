@@ -44,7 +44,7 @@ These are two concrete startup checks, not proof that every application dependen
 The browser API base is empty so `/api/` stays on the NGINX origin.
 This was corrected from a host `localhost:8000` setting that bypassed NGINX even though the backend port was not published.
 The correction is implemented and configuration-checked; the complete container path still needs a live run.
-Open the frontend at **http://localhost/maori-story-fill/**, matching the Vite base and React router basename.
+Open the frontend at **http://localhost/story-filler/**, matching the Vite base and React router basename.
 
 ### Startup sequence to verify with Docker running
 
@@ -96,7 +96,7 @@ It does not define the currently deployed cloud service.
 
 The chosen frontend is [frontend/Dockerfile](../frontend/Dockerfile), matching the port-3000 upstream in [nginx.prod.conf](../nginx.prod.conf).
 The separate [Dockerfile.nginx](../frontend/Dockerfile.nginx) is used by the manual frontend-image workflow; it is not the image selected by this Compose file.
-NGINX now redirects `/` to `/maori-story-fill/` and strips that prefix before proxying frontend assets to the root of `serve`.
+NGINX now redirects `/` to `/story-filler/` and strips that prefix before proxying frontend assets to the root of `serve`.
 This corrects the checked-in path mismatch; Compose parsing passed, but container-side `nginx -t` and browser asset loading are still unverified.
 Publishing port 443 does not enable HTTPS: the SSL server block is commented out.
 The NGINX `/health` response checks only that proxy process, not Django or PostgreSQL.
@@ -133,8 +133,8 @@ These files demonstrate more than container packaging: they express lifecycle or
 Select a dedicated lab context explicitly; never assume the current `kubectl` context is this project.
 A cluster, NGINX Ingress controller, usable storage class, namespace and available application image tags are prerequisites.
 The manifests retain historical tags, including frontend `v1`; the manual image workflow publishes `latest` and SHA tags instead.
-Before rebuilding this lab, align image selection and asset routing: the current NGINX frontend image serves `dist` at its root while Vite builds for `/maori-story-fill/`.
-No Kubernetes image/base-path fix was made in this review, and current Dockerfile behavior is not evidence of what the historical `v1` image contains.
+The current NGINX frontend Dockerfile now copies `dist` under `/usr/share/nginx/html/story-filler/` and enables the checked-in configuration for `/story-filler/`, including the SPA fallback. The Ingress forwards that path unchanged. This is a source-level migration fix; it has not been built or exercised in a cluster.
+Before rebuilding the lab, select a newly built image from this source and update the local manifest image reference. The historical `v1` tag is retained as evidence of the earlier design; its contents are not established by the current Dockerfile.
 Use either the PostgreSQL StatefulSet path below or the separate Helm values file, not both together.
 
 Prepare private environment files for the referenced Secrets; their values are not supplied in this repository:
@@ -193,7 +193,7 @@ demo/.venv/bin/python demo/manage.py runserver 127.0.0.1:8000
 ```
 
 Wait for PostgreSQL to become ready before migrating; prototype Compose has no database health check.
-In another terminal, run `npm ci` then `npm run dev` inside `demo/frontend/maori-story-frontend/` and use port 5173.
+In another terminal, run `npm ci` then `npm run dev` inside `demo/frontend/maori-story-frontend/` and open `http://localhost:5173/`. This separate prototype retains its root base and fixed host API address; it does not use the maintained application's `/story-filler/` prefix.
 The prototype requires host environment variables explicitly; its settings do not load the `.env` file themselves.
 Populate its own database through its Django admin. Do not point it at production data.
 Both prototype `tests.py` files are scaffolds, so retaining them is not evidence of prototype test coverage.

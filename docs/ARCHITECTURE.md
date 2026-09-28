@@ -2,7 +2,7 @@
 
 This repository records the evolution of a story application from local containers and Kubernetes to a managed cloud deployment.
 It is an infrastructure practice case that complements the author's enterprise experience.
-The repository preserves both stages; they are not two independently verified current production environments.
+The repository preserves both stages; they are not two independently verified current production environments. The [repository migration](repository-migration.md) moves the public name and frontend path to Story Filler while retaining the existing backend resources.
 
 ## Current deployment
 
@@ -60,9 +60,9 @@ Describe this stage as a historical Kubernetes implementation, not a verified hi
 
 ## Verification boundaries
 
-Public frontend, API read endpoints and a sampled GCS object were reachable on 2026-09-27.
+The following observations were collected in the former `jothep/maori-story-fill` repository, before migration. Public frontend, API read endpoints and a sampled GCS object were reachable on 2026-09-27.
 Backend commit `7d80196` passed its [delivery workflow](https://github.com/jothep/maori-story-fill/actions/runs/36299274042), including 11 Django tests, six offline smoke-check tests, image scanning and the post-deployment public API check.
-Cloud Run revision `maori-story-backend-00027-bzj` serves that image with 100% traffic; `00026-phc` is the earlier credential-rotation baseline.
+At that check, Cloud Run revision `maori-story-backend-00027-bzj` served that image with 100% traffic; `00026-phc` is the earlier credential-rotation baseline.
 The frontend [Pages delivery for `a309a63`](https://github.com/jothep/maori-story-fill/actions/runs/36298824448) also succeeded.
 Independent credential-scan runs succeeded for `a309a63` and `7d80196`; that workflow is not a dependency of deployment.
 Historical Actions runs remain evidence for their recorded source versions, not subsequent edits.
