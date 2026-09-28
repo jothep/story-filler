@@ -1,0 +1,68 @@
+{
+  "checked_at_utc": "2026-09-28T01:16:40.209476+00:00",
+  "repository": "jothep/story-filler",
+  "transport": "anonymous HTTPS clone; credential helpers, global/system Git config and extra headers disabled",
+  "head": "805c1644080d5b067f0361abe37b222c1035d6c3",
+  "commits": 191,
+  "current_tracked_files": 215,
+  "refs": [
+    "refs/heads/main"
+  ],
+  "current_scan": {
+    "exit": 0,
+    "findings_count": 0,
+    "locations": []
+  },
+  "history_scan": {
+    "exit": 0,
+    "findings_count": 0,
+    "locations": []
+  },
+  "exact_values": {
+    "objects_checked": {
+      "blob": 691,
+      "commit": 191,
+      "tag": 0
+    },
+    "known_values_checked": 86,
+    "matching_objects_count": 0,
+    "locations": []
+  },
+  "original_commit_objects": {
+    "mapping_entries": 185,
+    "same_sha_count": 0,
+    "old_objects_present": 0,
+    "rewritten_objects_present": 185
+  },
+  "anonymous_http_checks": [
+    {
+      "check": "public_metadata",
+      "anonymous_http_status": 200,
+      "private": false
+    },
+    {
+      "check": "old_commit_api",
+      "anonymous_http_status": 422
+    },
+    {
+      "check": "old_document_api",
+      "anonymous_http_status": 404
+    },
+    {
+      "check": "old_document_raw",
+      "anonymous_http_status": 404
+    },
+    {
+      "check": "legacy_repo_metadata",
+      "anonymous_http_status": 404
+    }
+  ],
+  "fsck": "passed",
+  "exact_scan_scope": {
+    "historical_and_rotated_values": 20,
+    "new_ci_key_json_and_pem": true,
+    "pem_line_fragments": 25,
+    "encoded_variants": true
+  },
+  "limits": "Point-in-time rule and exact-value review of reachable Git history and selected old-object URLs; no exhaustive claim for unknown secrets or external copies."
+}

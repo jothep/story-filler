@@ -1,6 +1,6 @@
 # Repository migration: Story Filler
 
-Migration started on **28 September 2026**. This record separates carried-forward work from checks performed for the new repository. The new repository's frontend and backend releases have both succeeded at source revision `1713b97`. The repository remains **private**; the owner will change its visibility personally.
+Migration started on **28 September 2026**. This record separates carried-forward work from checks performed for the new repository. The new repository's frontend and backend releases have both succeeded at source revision `1713b97`. The owner made the repository **public on 28 September 2026**; the former repository remains private.
 
 ## Publication target and retained history
 
@@ -9,6 +9,12 @@ The new repository is [`jothep/story-filler`](https://github.com/jothep/story-fi
 Its starting point is cleaned legacy commit `04fa234`: **185 preserved historical commits plus four preparation commits, totalling 189**. The first migration commit, `1713b97ea6264c50c3321ed3fdd164b594cff5ed`, brings the checked release history to **190 commits**. Later documentation commits are additional to that dated snapshot; a newer documentation HEAD is not evidence that the application image or Pages artifact was rebuilt. The release evidence below remains attached to `1713b97`. Credential removal changed historical commit IDs while retaining authorship and timestamps; 185 and 189 are not separate bodies of work to be added together.
 
 The former `jothep/maori-story-fill` repository remains private. A fresh clone of its rewritten reachable history passed scanning, but an old sensitive document was still retrievable there by its old commit ID. The new repository carries forward only the cleaned history. This approach does not claim deletion of cached or external copies from the former repository. Credentials and private backups are not public evidence.
+
+## Why the historical commits remain
+
+The cleanup rewrote sensitive content throughout Git history with `git-filter-repo`; it preserved the project's development sequence instead of discarding commits that also contained useful code. The original 185 commits therefore have rewritten equivalents. Their commit IDs changed, while authorship, timestamps and mapped parent relationships were retained.
+
+The post-publication anonymous clone at `805c164` contained all 185 rewritten commit objects and none of the 185 original objects. Current files and all reachable history passed the recorded rule and known-value checks. See the [anonymous verification record](verification.md#anonymous-verification-after-publication) for the snapshot and its limits. This evidence concerns the new repository; it does not claim erasure of retained objects in the former private repository.
 
 ## What moves and what stays
 
@@ -41,7 +47,7 @@ The last pre-migration backend observation was image `7d80196` on Cloud Run revi
 
 ## New-repository acceptance record
 
-The following new-repository checks were completed on **28 September 2026** for source revision [`1713b97ea6264c50c3321ed3fdd164b594cff5ed`](https://github.com/jothep/story-filler/commit/1713b97ea6264c50c3321ed3fdd164b594cff5ed). Implementation-only limitations and the private visibility state remain explicit below. Old repository run IDs are not used as substitutes.
+The following new-repository checks were completed on **28 September 2026** for source revision [`1713b97ea6264c50c3321ed3fdd164b594cff5ed`](https://github.com/jothep/story-filler/commit/1713b97ea6264c50c3321ed3fdd164b594cff5ed). Implementation-only limitations and the subsequent visibility change remain explicit below. Old repository run IDs are not used as substitutes.
 
 | Check | Result | Evidence and limits |
 | --- | --- | --- |
@@ -58,7 +64,7 @@ The following new-repository checks were completed on **28 September 2026** for 
 | Fresh-clone source and history review | Passed within the checked scope | 214 current tracked files, 190 reachable commits and 682 reachable blobs; Gitleaks found no findings and a supplemental search found zero matches for 20 known values |
 | Selected old-content lookups in the new repository | Not retrievable by the checked requests | The old-commit query returned HTTP 422; the old-document query returned HTTP 404. This does not establish deletion from the former repository or external copies |
 | Legacy deployment handover | Completed | The former repository's `deploy-backend.yml` and `deploy-frontend.yml` workflows were confirmed `disabled_manually`; their history is retained. Other workflows were left unchanged |
-| Repository visibility | Private | The owner will make the repository public personally; successful application delivery does not change repository visibility |
+| Repository visibility | Public, 28 September 2026 | The owner changed the visibility. An unauthenticated GitHub repository API request returned HTTP 200 with `private: false`; the former private repository returned HTTP 404 to an unauthenticated request |
 
 The [backend verification summary](evidence/backend-migration-verification.json), recorded at **2026-09-28 00:58 UTC**, contains run/step results, test counts, boolean configuration comparisons and scan counts. It contains no runtime environment values or key material. A clean scan covers those inputs and rules; it does not prove absence of all unknown secrets.
 

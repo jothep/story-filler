@@ -12,7 +12,7 @@ The earlier revision `maori-story-backend-00026-phc` was the credential-rotation
 
 **New backend verified, 2026-09-28:** [run 36363802780, attempt 2](https://github.com/jothep/story-filler/actions/runs/36363802780/attempts/2) passed 11 backend tests, six offline smoke-check tests, authentication, build/scan/push, deployment and the public API smoke check. At 00:58 UTC, ready revision `maori-story-backend-00028-gdm` received 100% of traffic with image tag `1713b97ea6264c50c3321ed3fdd164b594cff5ed`.
 
-Existing Cloud Run, database, bucket and registry identifiers are retained. All runtime environment entries and the runtime service account were unchanged; the runtime specification differed only in image. The [verification summary](evidence/backend-migration-verification.json) records these comparisons, an independent API smoke check and the scoped workflow-log review without private values. Release evidence applies to `1713b97`, independently of later documentation commits. The repository remains private until the owner changes its visibility.
+Existing Cloud Run, database, bucket and registry identifiers are retained. All runtime environment entries and the runtime service account were unchanged; the runtime specification differed only in image. The [verification summary](evidence/backend-migration-verification.json) records these comparisons, an independent API smoke check and the scoped workflow-log review without private values. Release evidence applies to `1713b97`, independently of later documentation commits. The owner made `jothep/story-filler` public on **28 September 2026**; the former repository remains private.
 
 ## Request and data flow
 

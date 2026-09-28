@@ -6,7 +6,7 @@ New-repository checks are listed first. The later pre-migration sections retain 
 
 ## New repository: 28 September 2026
 
-These results apply to `jothep/story-filler` at released revision `1713b97ea6264c50c3321ed3fdd164b594cff5ed`, a 190-commit history comprising the 189-commit cleaned baseline and one migration commit. Subsequent documentation commits are not a new application release; the commit and file/blob counts below describe the checked snapshot. The repository remains private, with the visibility change reserved for the owner.
+These results apply to `jothep/story-filler` at released revision `1713b97ea6264c50c3321ed3fdd164b594cff5ed`, a 190-commit history comprising the 189-commit cleaned baseline and one migration commit. Subsequent documentation commits are not a new application release; the commit and file/blob counts below describe the checked snapshot. The owner made the new repository public on **28 September 2026**. An unauthenticated GitHub repository API request returned HTTP 200 with `private: false`; the former repository remains private.
 
 | Check | Result | Scope and limitation |
 | --- | --- | --- |
@@ -22,6 +22,12 @@ These results apply to `jothep/story-filler` at released revision `1713b97ea6264
 | Independent public API smoke check after release | Passed | Story list/detail and configuration reads only; no writes, media playback or load test |
 
 Frontend, backend and scan results now have new-repository evidence independent of the historical runs below. The [backend verification summary](evidence/backend-migration-verification.json) records the successful attempt and comparison results without credential values or raw logs. The backend retains the existing service-account JSON key method; Workload Identity Federation is not implemented.
+
+## Anonymous verification after publication
+
+After the owner made the repository public on 28 September 2026, an anonymous HTTPS clone at `805c1644080d5b067f0361abe37b222c1035d6c3` was checked with credential helpers and global/system Git configuration disabled. It contained 215 current files, 191 reachable commits and 691 reachable blobs. Gitleaks found no findings in current files or all reachable history. Supplemental matching covered 20 historical/rotated values and the new deployment key, including encoded forms and 25 PEM line fragments; none matched.
+
+All 185 original commit IDs were absent from that clone; all 185 rewritten equivalents were present. Selected old-commit and old-document requests returned HTTP 422/404, including the raw-file URL. The former repository returned HTTP 404 anonymously. These results are recorded in the [public-history verification summary](evidence/public-history-verification.json); later publication-documentation commits are additional to this snapshot.
 
 ## Pre-migration live deployment baseline
 
