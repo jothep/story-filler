@@ -4,7 +4,7 @@
 
 My first article described moving the Māori vocabulary application, now published as Story Filler, from a local container and Kubernetes setup to managed hosting. It ended by introducing the next subject: the delivery pipeline and security practices supporting that architecture.
 
-This follow-up connects the running application and infrastructure code to September 2026 improvements, successful releases and remaining manual dependencies. Release links below refer to the former private repository, `jothep/maori-story-fill`; they may require access and are not new-repository run evidence. A [public aggregate snapshot](../evidence/README.md) preserves the scope of the retained delivery history.
+This follow-up connects the running application and infrastructure code to September 2026 improvements, successful releases and remaining manual dependencies. Unless explicitly marked as new-repository evidence, release links below refer to the former private repository, `jothep/maori-story-fill`; they may require access and do not establish a run in the new repository. A [public aggregate snapshot](../evidence/README.md) preserves the scope of the retained delivery history.
 
 The project complements my years of enterprise work with recent, inspectable infrastructure practice.
 
@@ -76,7 +76,7 @@ The response has two independent parts. Credential rotation changes what the run
 
 A fresh clone of the sanitised history passed scanning, but an old sensitive document remained retrievable by commit ID in the former repository. That repository stays private. The publication path is a new `jothep/story-filler` repository based on the cleaned 189-commit history: 185 preserved historical commits and four preparation commits. The frontend moves to `/story-filler/`; existing cloud resource IDs remain in place. This does not claim that every historical copy has been erased.
 
-The backend keeps its existing service-account JSON key authentication. The owner configures the `GCP_CREDENTIALS` GitHub Actions secret manually in the new repository; no credentials are copied into tracked source. Changing to Workload Identity Federation is a possible later improvement, outside this migration. The [migration record](../repository-migration.md) keeps new-repository execution evidence separate from the successful runs described above.
+The backend keeps its existing service-account JSON key authentication. The owner configured the `GCP_CREDENTIALS` GitHub Actions secret manually in the new repository, and the release authenticated successfully; no credentials were copied into tracked source. Changing to Workload Identity Federation is a possible later improvement, outside this migration. The [migration record](../repository-migration.md) keeps new-repository execution evidence separate from the successful runs described above.
 
 These are September 2026 improvements prompted by publication review, rather than controls that had always existed.
 
@@ -86,6 +86,10 @@ Adding a scanner helps catch future mistakes. It cannot prove that no sensitive 
 
 ## What I would verify next
 
-The immediate publication work is completing and recording the new repository's acceptance checks. Further engineering work should exercise the initial deployment sequence, including dependencies outside Terraform, and rehearse an application rollback with database compatibility explicitly assessed.
+The new repository's [Pages release for `1713b97`](https://github.com/jothep/story-filler/actions/runs/36363233923) completed on 28 September, and Chrome showed the menu followed by story 1 text and an image at `/story-filler/`. The new credential-scan and CodeQL workflows also completed; a fresh clone passed Gitleaks and a search for 20 known values. These checks are recorded with their limits in the migration record.
+
+The new repository's [backend run 36363802780, attempt 2](https://github.com/jothep/story-filler/actions/runs/36363802780/attempts/2) also passed: 11 backend tests, six offline smoke-check tests, JSON-key authentication, image build/scan/push, deployment and public API verification. At the 28 September check, revision **00028-gdm** served image **1713b97** with 100% traffic. All environment entries and the runtime service account were preserved; the runtime specification changed only in image. A scoped log review found no Gitleaks findings or known-value matches, and an independent public API smoke check passed. The [verification summary](../evidence/backend-migration-verification.json) publishes results without credentials or raw logs.
+
+These completed releases apply to source **1713b97**, the 190-commit migration code snapshot. Later documentation commits do not establish another deployment. The repository remains private until the owner changes its visibility personally. Further engineering work should exercise the initial deployment sequence, including dependencies outside Terraform, and rehearse an application rollback with database compatibility explicitly assessed.
 
 The [case study](../engineering-case-study.md), [current architecture](../architecture-production-gcp.md) and verification record connect these decisions to their implementation, completed checks and remaining work.

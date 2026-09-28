@@ -60,6 +60,8 @@ Describe this stage as a historical Kubernetes implementation, not a verified hi
 
 ## Verification boundaries
 
+On 28 September 2026, the new repository's [Pages release](https://github.com/jothep/story-filler/actions/runs/36363233923) deployed `1713b97` to `/story-filler/`. Chrome loaded the menu and story 1 text/image. New credential-scan runs and a CodeQL workflow also completed successfully; their scope is recorded in the [migration record](repository-migration.md). The new repository's [backend run 36363802780, attempt 2](https://github.com/jothep/story-filler/actions/runs/36363802780/attempts/2) also passed 11 backend tests, six offline smoke-check tests, build/scan/push, deployment and the public API check. Cloud Run revision `maori-story-backend-00028-gdm` received 100% of traffic with image `1713b97`; environment entries and the runtime service account were unchanged. Release evidence refers to that source SHA, not later documentation commits.
+
 The following observations were collected in the former `jothep/maori-story-fill` repository, before migration. Public frontend, API read endpoints and a sampled GCS object were reachable on 2026-09-27.
 Backend commit `7d80196` passed its [delivery workflow](https://github.com/jothep/maori-story-fill/actions/runs/36299274042), including 11 Django tests, six offline smoke-check tests, image scanning and the post-deployment public API check.
 At that check, Cloud Run revision `maori-story-backend-00027-bzj` served that image with 100% traffic; `00026-phc` is the earlier credential-rotation baseline.

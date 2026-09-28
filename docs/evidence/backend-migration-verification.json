@@ -1,0 +1,171 @@
+{
+  "checked_at_utc": "2026-09-28T00:58:54.517629+00:00",
+  "repository": "jothep/story-filler",
+  "workflow_run_url": "https://github.com/jothep/story-filler/actions/runs/36363802780",
+  "attempt": 2,
+  "source_commit": "1713b97ea6264c50c3321ed3fdd164b594cff5ed",
+  "expected_source_commit_matches": true,
+  "workflow_status": "completed",
+  "workflow_conclusion": "success",
+  "jobs": [
+    {
+      "name": "Test, Build, Scan and Deploy to Cloud Run",
+      "status": "completed",
+      "conclusion": "success",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "1. Checkout code",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "2. Setup Python",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "3. Install dependencies",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "4. Run Flake8 (Code style check)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "5. Run Pylint (Static code analysis)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "6. Run tests",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Test public API smoke-check validation (offline)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "7. Authenticate to Google Cloud",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "8. Set up Cloud SDK",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "9. Configure Docker for Artifact Registry",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "10. Build Docker image",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "11. Scan Docker image for vulnerabilities",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "12. Push Docker image",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "13. Deploy new image to Cloud Run",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "14. Verify deployed public API",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post 11. Scan Docker image for vulnerabilities",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post 7. Authenticate to Google Cloud",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post 2. Setup Python",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post 1. Checkout code",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "log_scan": {
+    "archive_files_scanned": 23,
+    "bytes_scanned": 523552,
+    "archive_issues": [],
+    "historical_and_rotated_known_values_checked": 20,
+    "new_key_full_json_and_pem_checked": true,
+    "encoded_variants_checked": true,
+    "known_value_matches": [],
+    "gitleaks_version": "8.30.1",
+    "gitleaks_exit_code": 0,
+    "gitleaks_findings": [],
+    "limitations": "Exact-value and rule scans do not establish absence of unknown or deliberately encoded secrets.",
+    "new_key_pem_line_fragments_checked": 25,
+    "new_key_pem_fragment_matches": []
+  },
+  "cloud_run": {
+    "existing_service_name_preserved": true,
+    "all_environment_entries_unchanged": true,
+    "database_configuration_unchanged": true,
+    "signing_key_configuration_unchanged": true,
+    "runtime_service_account_unchanged": true,
+    "media_configuration_unchanged": true,
+    "runtime_spec_except_image_unchanged": true,
+    "image_tag_matches_expected_commit": true,
+    "latest_created_revision_is_ready": true,
+    "latest_ready_revision": "maori-story-backend-00028-gdm",
+    "traffic_percent_to_latest_ready_revision": 100,
+    "all_traffic_on_expected_revision": true
+  },
+  "independent_public_api_smoke": {
+    "passed": true,
+    "scope": "Public story list/detail and configuration reads; no writes, media playback or load test."
+  },
+  "log_test_counts": [
+    {
+      "step_log": "7_6. Run tests.txt",
+      "reported_test_counts": [
+        11
+      ]
+    },
+    {
+      "step_log": "8_Test public API smoke-check validation (offline).txt",
+      "reported_test_counts": [
+        6
+      ]
+    }
+  ]
+}

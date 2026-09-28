@@ -42,7 +42,7 @@ flowchart LR
     TF -.->|GCS state backend| State[(Private Terraform state)]
 ```
 
-This is the backend delivery path; the frontend separately runs lint, tests and build before Pages deployment.
+This backend delivery path passed in the new repository's [run 36363802780, attempt 2](https://github.com/jothep/story-filler/actions/runs/36363802780/attempts/2), using `GCP_CREDENTIALS`. At the 28 September check, Cloud Run revision `maori-story-backend-00028-gdm` served image `1713b97` with 100% traffic; environment entries and runtime identity were preserved. The [verification summary](evidence/backend-migration-verification.json) records the runtime comparison and clean scoped log review. The frontend separately runs lint, tests and build before Pages deployment. The new repository's [Pages run for `1713b97`](https://github.com/jothep/story-filler/actions/runs/36363233923) passed on 28 September, followed by a Chrome menu-to-story text/image check at `/story-filler/`. New scan evidence is recorded in the [migration record](repository-migration.md).
 Terraform creates the registry and runtime identity as well as the service configuration, but the application workflow owns image updates.
 The GCS state inventory was checked and contains the four declared resources; Terraform formatting and validation passed.
 No Terraform plan, apply or restore was performed in this verification; the inventory is not a drift or rebuild check. State may contain sensitive values and is not a public portfolio artifact.

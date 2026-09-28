@@ -8,7 +8,11 @@ The backend release verified at that check was commit `7d8019603925de68306585f70
 Its [successful delivery run](https://github.com/jothep/maori-story-fill/actions/runs/36299274042) included the post-deployment public API smoke check.
 The earlier revision `maori-story-backend-00026-phc` was the credential-rotation baseline and retained the previous application image.
 
-The public frontend target is now `https://jothep.github.io/story-filler/`. Existing Cloud Run, database, bucket and registry identifiers are intentionally retained. See the [migration record](repository-migration.md) for new-repository acceptance evidence; the historical records below do not verify a new deployment.
+**New frontend verified, 2026-09-28:** [Pages run 36363233923](https://github.com/jothep/story-filler/actions/runs/36363233923) deployed commit `1713b97` to `https://jothep.github.io/story-filler/`. Chrome loaded the menu and, after selection, story 1 text and an image. Full gameplay and audio playback were not checked.
+
+**New backend verified, 2026-09-28:** [run 36363802780, attempt 2](https://github.com/jothep/story-filler/actions/runs/36363802780/attempts/2) passed 11 backend tests, six offline smoke-check tests, authentication, build/scan/push, deployment and the public API smoke check. At 00:58 UTC, ready revision `maori-story-backend-00028-gdm` received 100% of traffic with image tag `1713b97ea6264c50c3321ed3fdd164b594cff5ed`.
+
+Existing Cloud Run, database, bucket and registry identifiers are retained. All runtime environment entries and the runtime service account were unchanged; the runtime specification differed only in image. The [verification summary](evidence/backend-migration-verification.json) records these comparisons, an independent API smoke check and the scoped workflow-log review without private values. Release evidence applies to `1713b97`, independently of later documentation commits. The repository remains private until the owner changes its visibility.
 
 ## Request and data flow
 
@@ -119,7 +123,7 @@ The Cloud Run service uses a named runtime service account.
 The Terraform configuration does not establish all permissions held by that account or the CI identity, so it does not prove least-privilege IAM across the environment.
 The API service is publicly invokable; administrative authentication is handled by Django.
 
-The backend workflow retains the former repository's service-account JSON key authentication through the `GCP_CREDENTIALS` GitHub Actions secret and `credentials_json`. The owner configures that secret manually in the new repository; the migration does not introduce a new CI identity or change IAM. Workload Identity Federation is not configured, and this is not keyless authentication. The migration record distinguishes secret setup from a successful new-repository release.
+The backend workflow retains the former repository's service-account JSON key authentication through the `GCP_CREDENTIALS` GitHub Actions secret and `credentials_json`. The owner configured that secret manually in the new repository, and the new release authenticated successfully; the migration did not introduce a new CI identity or change IAM roles. Workload Identity Federation is not configured, and this is not keyless authentication. The migration record distinguishes secret setup from a successful new-repository release.
 
 Database configuration and the Django signing key are injected as environment variables from sensitive Terraform inputs.
 There is no checked-in Secret Manager resource or Cloud Run Secret Manager reference.
@@ -131,7 +135,11 @@ No credential values belong in source, examples, screenshots or deployment evide
 
 | Item | Status and limits |
 | --- | --- |
-| Frontend, API reads and sampled GCS object | Reachable during the 2026-09-27 checks; this is a point-in-time check |
+| New frontend release | Commit `1713b97`; new-repository Pages deployment and Chrome menu-to-story text/image check passed on 2026-09-28 |
+| New-repository scans | Two Git-history credential-scan runs and one CodeQL workflow completed successfully; fresh-clone Gitleaks and 20-known-value review found no matches/findings; see the migration record for scope |
+| New-repository backend release | Run 36363802780 attempt 2 passed; revision `maori-story-backend-00028-gdm`, image `1713b97`, 100% traffic at the 2026-09-28 check |
+| Backend configuration comparison and log review | Environment entries/runtime identity unchanged; runtime specification changed only in image. Gitleaks and known-value log checks found no findings or matches within their scope |
+| Legacy frontend, API reads and sampled GCS object | Reachable during the 2026-09-27 checks; this is a point-in-time check |
 | Pre-migration backend release | Commit `7d80196`; revision `maori-story-backend-00027-bzj`, image tagged with that commit, 100% traffic |
 | Earlier credential-rotation baseline | Revision `maori-story-backend-00026-phc` retained the application image deployed before the cleanup |
 | Pre-migration frontend release | Commit `a309a63`; Pages delivery completed successfully |

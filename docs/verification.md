@@ -2,7 +2,26 @@
 
 Legacy deployment reviewed on **27 September 2026**; repository migration begun on **28 September 2026**. This record distinguishes repository implementation from observations of a deployed service. A successful check applies to its stated scope and date, not to continuous uptime or all future versions.
 
-The run links and release observations on this page belong to the former private `jothep/maori-story-fill` repository. They do not establish that `jothep/story-filler` has run the same workflows. See the [migration record](repository-migration.md) for new-repository checks and the [public aggregate snapshot](evidence/README.md) for historical activity counts.
+New-repository checks are listed first. The later pre-migration sections retain evidence from the former private `jothep/maori-story-fill` repository and do not verify subsequent changes. See the [migration record](repository-migration.md) for migration scope and the [public aggregate snapshot](evidence/README.md) for historical activity counts.
+
+## New repository: 28 September 2026
+
+These results apply to `jothep/story-filler` at released revision `1713b97ea6264c50c3321ed3fdd164b594cff5ed`, a 190-commit history comprising the 189-commit cleaned baseline and one migration commit. Subsequent documentation commits are not a new application release; the commit and file/blob counts below describe the checked snapshot. The repository remains private, with the visibility change reserved for the owner.
+
+| Check | Result | Scope and limitation |
+| --- | --- | --- |
+| [Frontend Pages release](https://github.com/jothep/story-filler/actions/runs/36363233923) | Passed | Lint, component tests, production build and deployment to the new `/story-filler/` path |
+| Chrome browser check | Passed | Menu loaded at `https://jothep.github.io/story-filler/`; selecting story 1 displayed text and an image. Full gameplay, audio playback and nested-route refresh were not verified |
+| Git-history credential scans | Passed | [Run 36363234688](https://github.com/jothep/story-filler/actions/runs/36363234688) and [run 36363233992](https://github.com/jothep/story-filler/actions/runs/36363233992); pattern-based detection has limits |
+| [CodeQL workflow](https://github.com/jothep/story-filler/actions/runs/36363233980) | Completed successfully | Analysis remains advisory; workflow success is not a claim that no alerts exist |
+| Fresh-clone credential review | No findings or known-value matches | 214 current tracked files, 190 reachable commits and 682 reachable blobs; Gitleaks plus a supplemental search for 20 known values. Values and private scan inputs are not published |
+| Selected old-content lookups in the new repository | HTTP 422 for the old-commit query; HTTP 404 for the old-document query | These specific requests could not retrieve the selected old content. This is not evidence of deletion from the former repository or external copies |
+| [Backend delivery, attempt 2](https://github.com/jothep/story-filler/actions/runs/36363802780/attempts/2) | Passed | 11 backend tests, six offline smoke-check tests, JSON-key authentication, image build, Trivy gate, push, Cloud Run update and public API smoke check succeeded |
+| Cloud Run after the new release | Verified at 2026-09-28 00:58 UTC | Ready revision `maori-story-backend-00028-gdm`, image tagged with full `1713b97` source SHA, 100% traffic. All environment entries, runtime service account and runtime specification except the image were unchanged |
+| Backend workflow-log review | No findings or known-value matches | 23 archive files / 523,552 bytes; Gitleaks 8.30.1 and exact/variant checks covering 20 known values and the new JSON key, including 25 PEM line fragments. This does not establish absence of unknown secrets |
+| Independent public API smoke check after release | Passed | Story list/detail and configuration reads only; no writes, media playback or load test |
+
+Frontend, backend and scan results now have new-repository evidence independent of the historical runs below. The [backend verification summary](evidence/backend-migration-verification.json) records the successful attempt and comparison results without credential values or raw logs. The backend retains the existing service-account JSON key method; Workload Identity Federation is not implemented.
 
 ## Pre-migration live deployment baseline
 
@@ -18,7 +37,7 @@ The run links and release observations on this page belong to the former private
 
 The browser reported a normal autoplay restriction before user interaction. These checks do not establish a complete game walkthrough, accessibility compliance, mobile coverage, a performance target, or an availability percentage.
 
-## Local verification of publication changes
+## Legacy local verification of publication changes
 
 | Check | Result | Limitation |
 | --- | --- | --- |
@@ -36,7 +55,7 @@ The browser reported a normal autoplay restriction before user interaction. Thes
 | Credential scan of the portfolio candidate | Gitleaks 8.30.1: no findings | Current files and all 187 reachable commits at `a309a63`; a fresh remote clone also passed. Later revision scans are linked below |
 | Known-value search of the portfolio candidate | No residual matches for 16 known values across 650 blobs | Supplemental exact-value check at `a309a63`; does not identify unknown secrets |
 
-The history-scan workflow and updated backend delivery workflow have now passed in GitHub Actions. Their revision-specific results are recorded below, separately from local checks.
+The legacy history-scan workflow and updated backend delivery workflow passed in GitHub Actions. Their revision-specific results are recorded below, separately from local checks and the new-repository checks above.
 
 ## Delivery evidence
 
@@ -78,7 +97,7 @@ A separate GitHub contents-API check found that the previous sensitive document 
 - CodeQL and image scanning are configured. Scan results depend on definitions, scope and advisory settings; no “zero vulnerabilities” claim is made.
 - ORM prefetching and image processing exist in code. The previously stated percentage improvements have no reproducible benchmark included here.
 
-The new repository retains the service-account JSON key authentication method used by the old successful releases. The owner configures `GCP_CREDENTIALS` manually as a GitHub Actions secret. Workload Identity Federation is not implemented. The old runs do not verify the new repository's secret setup or delivery; see the migration record for its execution status.
+The new repository retains the service-account JSON key authentication method used by the old successful releases. The owner configured `GCP_CREDENTIALS` manually as a GitHub Actions secret, and new-repository backend attempt 2 succeeded. Workload Identity Federation is not implemented. The old runs remain historical evidence; the migration record and new-repository section above document the completed migration checks.
 
 ## Planned, not claimed as delivered
 
