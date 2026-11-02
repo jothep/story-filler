@@ -37,6 +37,48 @@ vulnerabilities. CI preserves pip-audit's failure status while retaining its JSO
 output, then checks coverage. Tests include the missing preinstalled packages
 found during the [dependency review](../docs/dependency-findings.md).
 
+## CodeQL result gate
+
+`check_codeql_results.py` runs after the official CodeQL analysis succeeds. Point
+it at that run's fresh output directory and the matrix language:
+
+```sh
+python scripts/check_codeql_results.py --directory /tmp/codeql-results --language python
+```
+
+The directory must contain exactly one regular `python.sarif` or
+`javascript.sarif`, matching `--language`. Missing, additional, nested or malformed
+reports fail. Every run must use SARIF 2.1.0, identify the CodeQL driver and supply
+a results array. Every result blocks the gate, including suppressed, unchanged,
+low-severity and unidentified-rule results; there is no ignore list or threshold.
+The failure summary prints restricted rule identifiers and counts, never source
+snippets or result messages.
+
+Invocation metadata is optional in SARIF. When present, it must declare successful
+execution; nonzero or malformed CodeQL exit codes, process failures, and error
+notifications fail. This parser cannot prove that analysis ran or covered every
+source file. The preceding required analyzer step and its fresh runner-temporary
+output provide that execution boundary. Its tests are included in the offline
+maintenance suite above.
+
+`check_demo_security.py` separately runs the historical demo's response-safety
+tests. It uses PostgreSQL settings and Django `SimpleTestCase`, which rejects
+database access; stored question text comes from a synthetic mocked query.
+
+## Documentation-only pull requests
+
+`check_docs_only.py` reads GitHub's PR event and compares the complete change with
+`git diff --no-renames`. Only root Markdown and Markdown below `docs/` qualify.
+It writes `docs_only=true` only after a successful, nonempty comparison; unknown
+paths keep full validation, malformed metadata fails, and non-PR events always
+require full validation. Its tests use real Git history, including code-to-docs
+renames and base-branch changes.
+
+Image and recovery jobs still start and report status on every PR. Their costly
+steps skip only for that explicit true value. The other tests and source/history
+checks remain active. This avoids pending required checks from path-filtered
+workflows without rebuilding containers for a prose-only change.
+
 ## Local backup and recovery
 
 `local_recovery.py` coordinates explicit local Docker operations;
@@ -57,7 +99,9 @@ workflow's result.
 
 ## Backend delivery
 
-The backend workflow has three jobs:
+The backend workflow has three delivery stages plus a reusable source and
+credential check. Main-branch image publication and deployment depend on those
+security checks for the same caller commit:
 
 1. **Test:** install the development dependency lock, audit the runtime,
    development and image-build locks, require Black/Flake8 and Django-aware
@@ -107,7 +151,8 @@ modules, shared libraries and APK records must all be absent.
 
 The integration script uses an internal network, temporary labelled containers
 and a PostgreSQL tmpfs. It publishes no ports and mounts no host files. A separate
-test container runs all 31 Django tests against PostgreSQL, then system and
+test container runs the complete Django suite, including the 31 original tests,
+against PostgreSQL, then system and
 migration checks. It confirms Django removed its test database. A different
 one-off container migrates and seeds the synthetic application database before
 the application's normal Gunicorn command starts. Resource IDs and ownership labels govern cleanup,
@@ -172,8 +217,9 @@ resolved image digest. See the official [label configuration][labels],
 
 ## Scan policy
 
-The workflow pins the Trivy action and scanner version. It blocks fixable HIGH
-and CRITICAL image vulnerabilities (`ignore-unfixed: true`); a passing scan is
+The workflow pins the Trivy action and scanner version. It blocks HIGH
+and CRITICAL image vulnerabilities, including unfixed findings
+(`ignore-unfixed: false`), and exposed secrets; a passing scan is
 limited to that policy and the vulnerability database available on that run.
 The full JSON scan, including all package records, severities and unfixed items,
 is saved as a 30-day workflow artifact before the gate. Strict dependency audits
@@ -183,6 +229,22 @@ the earlier finding missing from the Alpine feed. Runtime absence checks verify
 the removal independently of the scanner.
 Review version updates and their checks together rather than rebuilding an old
 commit silently.
+
+The reusable [source workflow](../.github/workflows/codeql-analysis.yml) combines
+CodeQL with full fetched-history Gitleaks checks and exposes `Security Gate`
+for every pull request to `main`, without path filters. Release and maintenance
+workflows call the same checks; there is no additional standalone main-push scan. Its original
+`analyze` job identifier is retained for analysis continuity.
+Repository required-check settings must separately enforce that status.
+
+[Scheduled maintenance](../.github/workflows/security-maintenance.yml) runs at
+18:17 UTC on Mondays, or manually. It repeats source and credential checks,
+audits the runtime/development/build Python locks with coverage checks, runs full
+and production npm audits, and builds/scans both application images. These jobs
+have no cloud credentials or publication steps. SARIF, Python audit and full image
+reports are retained for 30 days. See the [closeout record](../docs/security-closeout.md)
+for the alert assessment and the separate verification of remote runs and branch
+protection.
 
 [labels]: https://docs.cloud.google.com/run/docs/configuring/services/labels
 [revisions]: https://docs.cloud.google.com/run/docs/reference/rest/v1/namespaces.revisions

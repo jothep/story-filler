@@ -15,16 +15,6 @@ on:
       - '!backend/.gitignore'
   pull_request:
     branches: [main]
-    paths:
-      - 'backend/**'
-      - '.github/workflows/deploy-backend.yml'
-      - 'scripts/**'
-      - 'terraform/**'
-      - 'pyproject.toml'
-      - '.flake8'
-      - '.pylintrc'
-      - '!backend/**/*.md'
-      - '!backend/.gitignore'
   workflow_dispatch:
 
 permissions:
@@ -37,6 +27,15 @@ env:
   SERVICE_NAME: maori-story-backend
 
 jobs:
+  security:
+    name: Release security
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    uses: ./.github/workflows/codeql-analysis.yml
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+
   test:
     name: Test backend and maintenance scripts
     runs-on: ubuntu-latest
@@ -142,8 +141,8 @@ jobs:
 
       - name: Check Python formatting and style
         run: |
-          black --check backend scripts
-          flake8 backend scripts
+          black --check backend scripts demo/polls
+          flake8 backend scripts demo/polls
 
       - name: Analyze backend code with Django support
         working-directory: backend
@@ -169,13 +168,22 @@ jobs:
           python manage.py check
           python manage.py makemigrations --check --dry-run
 
+      - name: Check historical demo response safety without database access
+        run: python scripts/check_demo_security.py
+
       - name: Test maintenance and release checks without cloud access
         run: python -m unittest discover -s scripts -p '*_test.py'
 
   build-scan:
     name: Verify the candidate image; publish from main
-    needs: test
-    if: github.event_name == 'pull_request' || (github.ref == 'refs/heads/main' && needs.test.outputs.release == 'true')
+    needs: [test, security]
+    # PRs have their own required Security Gate. Main publication waits for a
+    # fresh scan of this exact commit before any registry credentials are used.
+    if: >-
+      !cancelled() && needs.test.result == 'success' &&
+      (github.event_name == 'pull_request' ||
+       (github.ref == 'refs/heads/main' && needs.security.result == 'success' &&
+        needs.test.outputs.release == 'true'))
     runs-on: ubuntu-latest
     outputs:
       image: ${{ steps.publish.outputs.image }}
@@ -184,9 +192,15 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
 
+      - name: Identify a documentation-only pull request
+        id: scope
+        run: python3 scripts/check_docs_only.py
+
       - name: Name the candidate image
+        if: steps.scope.outputs.docs_only != 'true'
         id: image
         run: |
           repository="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${ARTIFACT_REGISTRY}/backend"
@@ -194,6 +208,7 @@ jobs:
           printf 'repository=%s\ntag=%s\n' "$repository" "$tag" >> "$GITHUB_OUTPUT"
 
       - name: Build once
+        if: steps.scope.outputs.docs_only != 'true'
         env:
           IMAGE_TAG: ${{ steps.image.outputs.tag }}
         run: |
@@ -202,6 +217,7 @@ jobs:
             --tag "$IMAGE_TAG" backend
 
       - name: Verify the runtime and isolated PostgreSQL integration
+        if: steps.scope.outputs.docs_only != 'true'
         env:
           IMAGE_TAG: ${{ steps.image.outputs.tag }}
         run: |
@@ -211,6 +227,7 @@ jobs:
             --docker-host unix:///var/run/docker.sock --image "$IMAGE_TAG"
 
       - name: Record the complete image scan
+        if: steps.scope.outputs.docs_only != 'true'
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           version: v0.76.1
@@ -224,6 +241,7 @@ jobs:
           exit-code: '0'
 
       - name: Save the full package and vulnerability report
+        if: steps.scope.outputs.docs_only != 'true'
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
         with:
           name: backend-image-scan-${{ github.run_attempt }}
@@ -233,6 +251,7 @@ jobs:
 
       # This job has no Google credentials until after the local image scan passes.
       - name: Scan the built image
+        if: steps.scope.outputs.docs_only != 'true'
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           version: v0.76.1
@@ -242,21 +261,27 @@ jobs:
           format: table
           exit-code: '1'
           severity: HIGH,CRITICAL
-          ignore-unfixed: true
+          ignore-unfixed: false
 
       - name: Authenticate for registry push
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: >-
+          steps.scope.outputs.docs_only != 'true' &&
+          github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
         with:
           credentials_json: ${{ secrets.GCP_CREDENTIALS }}
 
       - name: Set up Cloud SDK
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: >-
+          steps.scope.outputs.docs_only != 'true' &&
+          github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
 
       - name: Push the scanned image and record its digest
         id: publish
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: >-
+          steps.scope.outputs.docs_only != 'true' &&
+          github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         env:
           IMAGE_TAG: ${{ steps.image.outputs.tag }}
           IMAGE_REPOSITORY: ${{ steps.image.outputs.repository }}
@@ -283,7 +308,7 @@ jobs:
 
   deploy:
     name: Deploy and verify the selected revision
-    needs: build-scan
+    needs: [build-scan, security]
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     # The ancestry check also prevents stale releases; this lock does not imply FIFO.

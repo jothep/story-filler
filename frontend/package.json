@@ -8,7 +8,7 @@
     "build": "vite build && node scripts/create-pages-fallback.mjs",
     "preview": "vite preview",
     "test": "vitest",
-    "test:pages": "node --test scripts/check-pages-fallback.mjs",
+    "test:pages": "node --test scripts/check-pages-requests.mjs scripts/check-pages-fallback.mjs",
     "test:lint": "node --test scripts/check-lint-config.mjs",
     "lint": "npm run lint:js && npm run typecheck",
     "format:check": "prettier --check .",

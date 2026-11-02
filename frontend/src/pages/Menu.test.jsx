@@ -1,7 +1,8 @@
-import { render, screen, cleanup, waitFor } from '@testing-library/react';
+import { act, render, screen, cleanup, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import Menu from './Menu';
+import { deferred } from '../testUtils/audio';
 
 const MOCK_STORIES = [
   { id: 1, title: 'Story 1' },
@@ -55,7 +56,9 @@ const renderComponent = (storiesMock, configMock) => {
 };
 
 describe('Menu Component - BGM Configuration', () => {
-  it('should fetch BGM path from API and create Audio element', async () => {
+  it('creates configured audio when config JSON arrives after the stories', async () => {
+    const pendingConfig = deferred();
+    const readConfig = vi.fn(() => pendingConfig.promise);
     renderComponent(
       {
         ok: true,
@@ -63,18 +66,23 @@ describe('Menu Component - BGM Configuration', () => {
       },
       {
         ok: true,
-        json: async () => MOCK_CONFIG,
+        json: readConfig,
       }
     );
 
-    await waitFor(() => {
-      expect(screen.queryByText(/Loading stories.../i)).not.toBeInTheDocument();
-    });
+    expect(await screen.findByText('Story 1')).toBeInTheDocument();
+    await waitFor(() => expect(readConfig).toHaveBeenCalledTimes(1));
+    expect(global.Audio).not.toHaveBeenCalled();
+
+    await act(async () => pendingConfig.resolve(MOCK_CONFIG));
 
     // URL format depends on VITE_API_URL env var (full URL in dev, relative in prod build)
-    expect(global.Audio).toHaveBeenCalled();
-    const audioCall = global.Audio.mock.calls[0][0];
-    expect(audioCall).toMatch(/\/media\/bgm\/Schumann_Fantasy\.mp3$/);
+    await waitFor(() => {
+      expect(global.Audio).toHaveBeenCalledTimes(1);
+      expect(global.Audio).toHaveBeenCalledWith(
+        expect.stringMatching(/\/media\/bgm\/Schumann_Fantasy\.mp3$/)
+      );
+    });
   });
 
   it('should handle missing BGM configuration gracefully', async () => {

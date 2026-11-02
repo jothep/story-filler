@@ -5,8 +5,13 @@ import { createServer } from 'node:http';
 import { extname } from 'node:path';
 import { test } from 'node:test';
 import { URL } from 'node:url';
+import {
+  fetchPagesResource,
+  pagesBase as base,
+  pagesResourceUrl,
+} from './pages-requests.mjs';
+import { listPagesAssets, selectPagesAssets } from './pages-assets.mjs';
 
-const base = '/story-filler/';
 const outputDirectory = new URL('../dist/', import.meta.url);
 const indexHtml = await readFile(
   new URL('index.html', outputDirectory),
@@ -16,8 +21,9 @@ const fallbackHtml = await readFile(
   new URL('404.html', outputDirectory),
   'utf8'
 );
-const resources = [...indexHtml.matchAll(/(?:src|href)="([^"]+)"/g)].map(
-  ([, url]) => url
+const resources = selectPagesAssets(
+  indexHtml,
+  await listPagesAssets(outputDirectory)
 );
 
 test('the fallback preserves the application and absolute asset paths', async () => {
@@ -28,11 +34,8 @@ test('the fallback preserves the application and absolute asset paths', async ()
   assert.ok(resources.some((resource) => resource.endsWith('.css')));
 
   for (const resource of resources) {
-    assert.ok(
-      resource.startsWith(base),
-      `Unexpected resource path: ${resource}`
-    );
-    const file = new URL(resource.slice(base.length), outputDirectory);
+    const pathname = pagesResourceUrl(resource, 80).pathname;
+    const file = new URL(pathname.slice(base.length), outputDirectory);
     assert.ok((await readFile(file)).length > 0, `Empty asset: ${resource}`);
   }
 });
@@ -68,17 +71,17 @@ test('Pages-style 404 responses can load the app without hiding missing assets',
   t.after(() => new Promise((resolve) => server.close(resolve)));
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');
-  const origin = `http://127.0.0.1:${server.address().port}`;
+  const port = server.address().port;
 
   for (const path of ['story/1', 'story/1?from=bookmark']) {
-    const response = await globalThis.fetch(origin + base + path);
+    const response = await fetchPagesResource(base + path, port);
     assert.equal(response.status, 404);
     assert.match(response.headers.get('content-type'), /text\/html/);
     assert.equal(await response.text(), indexHtml);
   }
 
   for (const resource of resources) {
-    const response = await globalThis.fetch(origin + resource);
+    const response = await fetchPagesResource(resource, port);
     assert.equal(response.status, 200, resource);
     if (resource.endsWith('.js') || resource.endsWith('.css')) {
       assert.doesNotMatch(response.headers.get('content-type'), /text\/html/);
@@ -87,7 +90,7 @@ test('Pages-style 404 responses can load the app without hiding missing assets',
   }
 
   for (const path of ['assets/missing-build.js', 'assets/missing-build.css']) {
-    const response = await globalThis.fetch(origin + base + path);
+    const response = await fetchPagesResource(base + path, port);
     assert.equal(
       response.status,
       404,
