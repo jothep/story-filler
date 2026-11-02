@@ -22,6 +22,7 @@ function InfoCredits() {
   const openModal = () => setIsOpen(true);
   const closeModal = () => setIsOpen(false);
 
+  /** @param {import('react').KeyboardEvent<HTMLDivElement>} e */
   const handleKeyDown = (e) => {
     if (e.key === 'Escape') {
       closeModal();

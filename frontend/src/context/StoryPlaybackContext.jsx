@@ -8,7 +8,9 @@ import {
 } from 'react';
 import PropTypes from 'prop-types';
 
-const StoryPlaybackContext = createContext();
+const StoryPlaybackContext = createContext(
+  /** @type {import('../types').PlaybackState|undefined} */ (undefined)
+);
 
 export const useStoryPlayback = () => {
   const context = useContext(StoryPlaybackContext);
@@ -20,6 +22,7 @@ export const useStoryPlayback = () => {
   return context;
 };
 
+/** @param {import('react').RefObject<HTMLAudioElement|null>} audioRef */
 function stopAudio(audioRef) {
   const audio = audioRef.current;
   audioRef.current = null;
@@ -29,14 +32,16 @@ function stopAudio(audioRef) {
   }
 }
 
+/** @param {{story: import('../types').Story, children: import('react').ReactNode}} props */
 export function StoryPlaybackProvider({ story, children }) {
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
   const [currentParagraphIndex, setCurrentParagraphIndex] = useState(0);
-  const bgmAudioRef = useRef(null);
-  const paragraphAudioRef = useRef(null);
+  const bgmAudioRef = useRef(/** @type {HTMLAudioElement|null} */ (null));
+  const paragraphAudioRef = useRef(/** @type {HTMLAudioElement|null} */ (null));
   const musicRequestedRef = useRef(false);
   const musicRequestRef = useRef(0);
 
+  /** @type {(audio: HTMLAudioElement) => Promise<void>} */
   const startBackgroundMusic = useCallback(async (audio) => {
     const request = ++musicRequestRef.current;
     musicRequestedRef.current = true;
@@ -113,6 +118,7 @@ export function StoryPlaybackProvider({ story, children }) {
     setCurrentParagraphIndex((previous) => Math.max(previous - 1, 0));
   };
 
+  /** @param {string|null} audioUrl */
   const handlePlayParagraphAudio = async (audioUrl) => {
     if (!audioUrl) return;
     stopAudio(paragraphAudioRef);

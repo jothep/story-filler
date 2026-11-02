@@ -12,6 +12,8 @@ function TriggerTips() {
 
   const isDragging = !!active; // True if any word is being dragged
 
+  /** @type {import('react').CSSProperties} */
+
   const style = {
     height: '100%',
     boxSizing: 'border-box',
@@ -36,6 +38,8 @@ function TriggerTips() {
     transition: 'all 0.3s ease', // Smooth transitions
     animation: isDragging ? 'pulse-glow 1.5s ease-in-out infinite' : 'none', // Pulse animation
   };
+
+  /** @type {import('react').CSSProperties} */
 
   const textContainerStyle = {
     flexShrink: 0,

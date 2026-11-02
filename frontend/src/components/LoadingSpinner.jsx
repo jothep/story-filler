@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types';
 
+/** @param {{message?: string}} props */
 function LoadingSpinner({ message = 'Loading...' }) {
   return (
     <div

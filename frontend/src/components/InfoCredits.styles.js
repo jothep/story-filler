@@ -4,6 +4,8 @@
  */
 import { COLORS, SPACING, Z_INDEX } from '../constants/theme';
 
+/** @type {import('react').CSSProperties} */
+
 export const buttonStyles = {
   position: 'relative',
   zIndex: Z_INDEX.CONTENT,
@@ -18,9 +20,13 @@ export const buttonStyles = {
   letterSpacing: '1px',
 };
 
+/** @type {import('react').CSSProperties} */
+
 export const buttonHoverStyles = {
   background: COLORS.WOOD_LIGHT,
 };
+
+/** @type {import('react').CSSProperties} */
 
 export const modalOverlayStyles = {
   position: 'fixed',
@@ -35,6 +41,8 @@ export const modalOverlayStyles = {
   zIndex: Z_INDEX.MODAL_OVERLAY,
 };
 
+/** @type {import('react').CSSProperties} */
+
 export const modalContentStyles = {
   position: 'relative',
   maxWidth: '600px',
@@ -47,6 +55,8 @@ export const modalContentStyles = {
   boxShadow: `0 0 0 2px ${COLORS.WOOD_PRIMARY}, 4px 4px 0 4px #000`,
   zIndex: Z_INDEX.MODAL_CONTENT,
 };
+
+/** @type {import('react').CSSProperties} */
 
 export const closeButtonStyles = {
   position: 'absolute',
@@ -66,9 +76,13 @@ export const closeButtonStyles = {
   fontWeight: 'bold',
 };
 
+/** @type {import('react').CSSProperties} */
+
 export const closeButtonHoverStyles = {
   background: COLORS.WOOD_LIGHTER,
 };
+
+/** @type {import('react').CSSProperties} */
 
 export const titleStyles = {
   textAlign: 'center',
@@ -78,6 +92,8 @@ export const titleStyles = {
   textShadow: `2px 2px ${COLORS.TEXT_LIGHT}`,
 };
 
+/** @type {import('react').CSSProperties} */
+
 export const sectionStyles = {
   marginBottom: SPACING.LARGE,
   lineHeight: '1.8',
@@ -85,12 +101,16 @@ export const sectionStyles = {
   color: COLORS.TEXT_PRIMARY,
 };
 
+/** @type {import('react').CSSProperties} */
+
 export const sectionTitleStyles = {
   fontSize: '1rem',
   fontWeight: 'bold',
   marginBottom: SPACING.SMALL,
   color: COLORS.WOOD_PRIMARY,
 };
+
+/** @type {import('react').CSSProperties} */
 
 export const linkStyles = {
   color: COLORS.LINK,

@@ -1,9 +1,18 @@
 import { Component } from 'react';
 import PropTypes from 'prop-types';
 
+/**
+ * @typedef {{children: import('react').ReactNode}} BoundaryProps
+ * @typedef {{hasError: boolean, error: Error|null,
+ *   errorInfo: import('react').ErrorInfo|null}} BoundaryState
+ */
+
+/** @extends {Component<BoundaryProps, BoundaryState>} */
 class ErrorBoundary extends Component {
+  /** @param {BoundaryProps} props */
   constructor(props) {
     super(props);
+    /** @type {BoundaryState} */
     this.state = { hasError: false, error: null, errorInfo: null };
   }
 
@@ -11,6 +20,7 @@ class ErrorBoundary extends Component {
     return { hasError: true };
   }
 
+  /** @param {Error} error @param {import('react').ErrorInfo} errorInfo */
   componentDidCatch(error, errorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
 

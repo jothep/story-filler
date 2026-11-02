@@ -1,11 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getAllStories } from '../api/storyApi';
+import { getErrorMessage } from '../utils/errors';
 
 /* Custom hook to fetch and manage the state for the story list. */
 export function useStories() {
-  const [stories, setStories] = useState([]);
+  const [stories, setStories] = useState(
+    /** @type {import('../types').StorySummary[]} */ ([])
+  );
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(/** @type {string|null} */ (null));
 
   const fetchStories = useCallback(async () => {
     setLoading(true);
@@ -14,7 +17,7 @@ export function useStories() {
       const data = await getAllStories();
       setStories(data);
     } catch (err) {
-      setError(err.message);
+      setError(getErrorMessage(err, 'Unable to load stories.'));
     } finally {
       setLoading(false);
     }

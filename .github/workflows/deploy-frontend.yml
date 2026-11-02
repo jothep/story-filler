@@ -47,10 +47,9 @@ jobs:
         run: npm audit --omit=dev
 
       - name: Audit development and build dependencies
-        # Known moderate ESLint-chain findings remain visible; high/critical fail.
-        run: npm audit --audit-level=high
+        run: npm audit
 
-      - name: Run ESLint
+      - name: Check JavaScript and React
         run: npm run lint
 
       - name: Check formatting

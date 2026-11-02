@@ -21,6 +21,27 @@ beforeEach(() => {
 });
 
 describe('useStory request ownership', () => {
+  it.each([null, 'private transport detail', { message: 42 }])(
+    'finishes loading with a safe message after an unexpected rejection: %j',
+    async (rejection) => {
+      vi.mocked(getStoryById).mockRejectedValue(rejection);
+      const { result } = renderHook(() => useStory('A'));
+      await act(async () => {});
+
+      expect(result.current.loading).toBe(false);
+      expect(result.current.error).toBe('Unable to load this story.');
+    }
+  );
+
+  it('recognizes cancellation from a transport with a different Error prototype', async () => {
+    vi.mocked(getStoryById).mockRejectedValue({ name: 'AbortError' });
+    const { result } = renderHook(() => useStory('A'));
+    await act(async () => {});
+
+    expect(result.current.loading).toBe(false);
+    expect(result.current.error).toBeNull();
+  });
+
   it('never returns the loaded story on the first render of another route', async () => {
     const nextRequest = deferredRequest();
     vi.mocked(getStoryById)

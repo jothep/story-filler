@@ -1,6 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 
+/**
+ * @param {{error?: string|{message?: string}|null, onRetry?: () => void}} props
+ */
 function ErrorMessage({ error, onRetry }) {
   const navigate = useNavigate();
 

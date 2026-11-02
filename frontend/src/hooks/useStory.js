@@ -1,15 +1,25 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getStoryById } from '../api/storyApi';
+import { getErrorMessage, isAbortError } from '../utils/errors';
 
-/** Load a story while keeping results owned by the current route and request. */
+/**
+ * @typedef {object} RequestScope
+ * @property {string|number|undefined} storyId
+ * @property {AbortController|null} controller
+ */
+
+/**
+ * Load a story while keeping results owned by the current route and request.
+ * @param {string|number|undefined} storyId
+ */
 export function useStory(storyId) {
   const [state, setState] = useState({
     storyId,
-    story: null,
+    story: /** @type {import('../types').Story|null} */ (null),
     loading: Boolean(storyId),
-    error: null,
+    error: /** @type {string|null} */ (null),
   });
-  const activeScope = useRef(null);
+  const activeScope = useRef(/** @type {RequestScope|null} */ (null));
 
   const fetchStory = useCallback(async () => {
     const scope = activeScope.current;
@@ -45,8 +55,11 @@ export function useStory(storyId) {
         setState((current) => ({ ...current, story: data }));
       }
     } catch (err) {
-      if (isCurrentRequest() && err.name !== 'AbortError') {
-        setState((current) => ({ ...current, error: err.message }));
+      if (isCurrentRequest() && !isAbortError(err)) {
+        setState((current) => ({
+          ...current,
+          error: getErrorMessage(err, 'Unable to load this story.'),
+        }));
       }
     } finally {
       if (isCurrentRequest()) {
@@ -56,6 +69,7 @@ export function useStory(storyId) {
   }, [storyId]);
 
   useEffect(() => {
+    /** @type {RequestScope} */
     const scope = { storyId, controller: null };
     activeScope.current = scope;
     void fetchStory();

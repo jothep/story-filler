@@ -24,7 +24,7 @@ The Vite base is `/story-filler/`. The router and error recovery derive their ba
 
 ```bash
 npm audit --omit=dev
-npm audit --audit-level=high
+npm audit
 npm run lint
 npm run format:check
 npm run test:lint
@@ -33,61 +33,72 @@ npm run build
 npm run test:pages
 ```
 
-The unit and component tests cover content, answer validation, request ownership and audio lifecycle, using controlled HTTP and media behavior. The separate Pages checks inspect the generated files and their HTTP responses. Neither suite substitutes for browser gameplay checks; the latest local results and browser scope are recorded in [verification](../docs/verification.md#local-frontend-lifecycle-review-2-november-2026).
+The unit and component tests cover content, answer validation, request ownership and audio lifecycle, using controlled HTTP and media behavior. The separate Pages checks inspect the generated files and their HTTP responses. Neither suite substitutes for browser gameplay checks; the latest local results and browser scope are recorded in [verification](../docs/verification.md#frontend-tooling-migration-3-november-2026).
 
-### Lint coverage
+### JavaScript, React and type checks
 
-`eslint.config.js` separates browser application code, Node build/check scripts,
-and Vitest tests. Application code retains all 19 previously enabled React rules
-and now also checks the Rules of Hooks and complete effect dependencies. Browser
-code cannot rely on Node globals such as `process`; Vite configuration and build
-scripts use the Node environment. Tests and shared test helpers are checked rather
-than ignored, with JSX name checks and explicit imports for Vitest APIs.
+`npm run lint` runs two required checks:
 
-`npm run test:lint` runs 16 positive and negative examples against the actual
-configuration. They cover list keys, duplicate props, component names, DOM props,
-prop declarations, class render returns, unsafe child markup, Hooks, and the
-browser/Node/test boundaries. This detects a disabled or mis-scoped check even
-when the application itself currently passes lint.
+1. **Oxlint** reads `oxlint.config.mjs`. It checks JavaScript, React, Hooks and
+   environment boundaries. Browser code cannot use Node globals; build scripts
+   use Node globals; tests require explicit Vitest imports. Unused suppression
+   comments also fail the check.
+2. **TypeScript checkJs** checks the existing JavaScript/JSX using `jsconfig.json`.
+   JSDoc describes API data, component props, contexts and browser references.
+   It does not compile a second application or add a browser dependency. Tests
+   and build scripts retain lint and syntax checks without application-level
+   semantic type checking.
+
+The migration reviews the intent of the previous **61 JavaScript, 19 React and
+2 Hooks rules**. Most map directly to Oxlint. The remaining checks use the parser,
+JSX reference tracking, or TypeScript:
+
+- Component prop contracts use strict checkJs and JSDoc. Missing and incorrectly
+  typed props fail.
+  A PropTypes assignment alone no longer satisfies the static check.
+- Removed React APIs fail against the installed React type definitions.
+  `react/no-unsafe` also rejects deprecated lifecycle names and their `UNSAFE_`
+  aliases; this is stricter than the previous React 19 deprecation check.
+- `scripts/lint-component-names.mjs` covers anonymous React `memo`/`forwardRef`
+  callbacks that Oxlint's display-name rule currently misses. It reuses the
+  TypeScript program to distinguish React APIs from unrelated local functions.
+- A syntax pass also rejects legacy octal literals in CommonJS scripts.
+
+`npm run test:lint` runs 229 positive and negative examples against the actual
+configuration and type checker, including rule options, file scopes, suppression
+comments and command failure. This preserves the reviewed checks without
+claiming that two different analysis engines behave identically for every
+possible program. Keep these examples when updating either tool.
+
+Prettier remains the formatting check. Type annotations describe contracts;
+they do not validate JSON returned by a server at runtime.
 
 ## Dependency maintenance
 
-The 2 November 2026 update retained the current React application and lint rules. The main locked-version changes were:
-
-| Package                 | Previous lock | Current lock |
-| ----------------------- | ------------- | ------------ |
-| React Router DOM        | 7.13.1        | 7.18.5       |
-| Vite                    | 7.3.2         | 7.3.7        |
-| Vitest                  | 3.2.4         | 4.1.12       |
-| jsdom                   | 27.0.1        | 27.4.0       |
-| Vite React plugin       | 5.0.4         | 5.2.0        |
-| ESLint and `@eslint/js` | 9.38.0        | 9.39.5       |
-
-Unused `vite-plugin-eslint` and `eslint-plugin-react-refresh` dependencies were removed. ESLint runs as its own required check. Compatible transitive updates are recorded in `package-lock.json`; use `npm ci` to install that selection.
-
-The dependency review used Node 24.22.2 and passed lint, the component tests and the production build. The npm audit snapshot changed from 25 affected packages (2 critical, 10 high, 11 moderate and 2 low) to 6 moderate findings. The production dependency audit reported no known vulnerabilities. These are dated results, so both audit commands run again in CI.
+The 3 November 2026 frontend tooling migration replaces ESLint 9 and its React
+plugins with **Oxlint 1.90.0 and TypeScript 6.0.3**. React, Vite, the application
+runtime and Prettier are retained. Use Node 24 and `npm ci` to install the reviewed
+lock; update `package.json` and `package-lock.json` together.
 
 ### Remaining development dependency findings
 
-The six remaining moderate findings share [GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249): `minimatch` and five affected parent packages in the ESLint dependency tree. The advisory describes excessive CPU and memory use from an attacker-controlled glob pattern with `optimizationLevel >= 2`; its fixed version is 11.0.1. This tree belongs to development tooling, not the browser bundle or the Nginx runtime image. The audit result still needs to be tracked.
+The previous six moderate package findings came from one minimatch advisory,
+[GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249), in the
+ESLint dependency tree. That tree is now removed. Fresh full and production-only
+npm audits report **zero known findings**. Both CI workflows now fail on any
+audit severity, including low and moderate development findings.
 
-Full audit fails CI for high or critical findings; production audit fails for any reported severity. Moderate development findings stay visible in the log.
+The review also checked the native linter, beyond npm's advisory database:
+registry signatures, release provenance, and the Rust dependency lock at the
+verified Oxlint release commit. See [dependency findings](../docs/dependency-findings.md)
+and [verification](../docs/verification.md) for the dated results and their scope.
+The optional Go-based `oxlint-tsgolint` tool is not installed; checkJs uses the
+TypeScript package instead.
 
-[ESLint 9 reached end of life on 6 August 2026](https://eslint.org/version-support/). Version 9.39.5 remains a temporary compatibility choice. On 2 November 2026, the latest `eslint-plugin-react` release, 7.37.5, still declared ESLint support only through version 9. Its [ESLint 10 compatibility issue](https://github.com/jsx-eslint/eslint-plugin-react/issues/3977) remained open. Moving to another React lint plugin would require a separate rule-by-rule review because its recommended preset does not preserve all these checks.
-
-The follow-up review on the same date tested the available upgrades in separate temporary installations:
-
-| Check                                   | Result                                                                                                                                                                                           |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| ESLint 10.14.0 with React plugin 7.37.5 | npm rejected the unsupported peer combination. Loading the current rules directly with ESLint 10 also failed in `react/display-name`, which still calls the removed `context.getFilename()` API. |
-| ESLint 10.14.0 on its own               | Installed minimatch 10.2.6 and retained four moderate package findings from the same advisory. An ESLint upgrade alone does not resolve it.                                                      |
-| minimatch 11.0.4                        | Its CommonJS export is an object; 3.1.5 exports a callable function. Replacing the major version under existing callers is not a compatible patch.                                               |
-
-The installed minimatch 3.1.5 source has none of the `optimizationLevel`, `firstPhasePreProcess` or `secondPhasePreProcess` code described in this advisory. The current lint command and configuration also use repository-defined file patterns, rather than input from website visitors. These observations narrow the exposure of this particular installation; they do not remove the audit finding or establish that every glob-processing path is safe. The advisory's affected range still includes 3.1.5, and the registry's latest 3.x release remains 3.1.5.
-
-There is no verified compatible fix for this dependency tree at this review date. The lock file, React and Hooks rules, and audit thresholds remain unchanged. Recheck the advisory, ESLint's dependency versions and the React compatibility issue before the next dependency update. Do not use a major-version override or bypass peer checks to make the audit count disappear.
-
-For later dependency changes, update package and lock files together, run the checks above, and review major-version migration notes. Do not use `npm audit fix --force` as a substitute for a compatibility review.
+Future releases can introduce new advisories. Repeat the checks above after
+updating dependencies; do not force incompatible overrides or weaken rules to
+make an audit pass. Useful references are the [Oxlint migration guide](https://oxc.rs/docs/guide/usage/linter/migrate-from-eslint.html)
+and [TypeScript JavaScript checking guide](https://www.typescriptlang.org/docs/handbook/type-checking-javascript-files.html).
 
 ## Serving the build
 

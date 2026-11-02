@@ -1,7 +1,9 @@
 import { createContext, useState, useContext } from 'react';
 import PropTypes from 'prop-types';
 
-const WordInteractionContext = createContext();
+const WordInteractionContext = createContext(
+  /** @type {import('../types').WordInteractionState|undefined} */ (undefined)
+);
 
 export const useWordInteraction = () => {
   const context = useContext(WordInteractionContext);
@@ -13,15 +15,25 @@ export const useWordInteraction = () => {
   return context;
 };
 
+/**
+ * @param {{children: import('react').ReactNode, wordsInBank?: import('../types').Word[]}} props
+ */
 export function WordInteractionProvider({ children, wordsInBank }) {
-  const [selectedWord, setSelectedWord] = useState(null);
-  const [filledBlanks, setFilledBlanks] = useState({});
-  const [wrongAttempt, setWrongAttempt] = useState(null);
+  const [selectedWord, setSelectedWord] = useState(
+    /** @type {import('../types').Word|null} */ (null)
+  );
+  const [filledBlanks, setFilledBlanks] = useState(
+    /** @type {Record<string, import('../types').Word>} */ ({})
+  );
+  const [wrongAttempt, setWrongAttempt] = useState(
+    /** @type {import('@dnd-kit/core').UniqueIdentifier|null} */ (null)
+  );
 
   function handleDragStart() {
     setWrongAttempt(null);
   }
 
+  /** @param {import('@dnd-kit/core').DragEndEvent} event */
   function handleDragEnd(event) {
     const { active, over } = event;
     if (!over || !active) return;
@@ -35,10 +47,10 @@ export function WordInteractionProvider({ children, wordsInBank }) {
       return;
     }
 
-    const dropZoneType = over.data.current?.type;
-    if (dropZoneType === 'blank') {
+    const dropZone = over.data.current;
+    if (dropZone?.type === 'blank') {
       const uniqueBlankId = over.id;
-      const correctWordId = over.data.current.correctWordId;
+      const correctWordId = dropZone.correctWordId;
 
       if (draggedWord.id === correctWordId) {
         setFilledBlanks((prevBlanks) => ({
