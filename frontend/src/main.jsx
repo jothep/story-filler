@@ -7,7 +7,12 @@ import 'nes.css/css/nes.min.css';
 
 import '@fontsource/press-start-2p';
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  throw new Error('The application root element is missing.');
+}
+
+ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <App />

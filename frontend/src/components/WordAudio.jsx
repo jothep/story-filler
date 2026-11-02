@@ -3,8 +3,10 @@ import { useWordInteraction } from '../context/WordInteractionContext';
 
 function WordAudio() {
   const { selectedWord } = useWordInteraction();
-  const audioRef = useRef(null);
-  const [audioError, setAudioError] = useState(null);
+  const audioRef = useRef(/** @type {HTMLAudioElement|null} */ (null));
+  const [audioError, setAudioError] = useState(
+    /** @type {string|null} */ (null)
+  );
 
   const stopAudio = useCallback(() => {
     const audio = audioRef.current;
@@ -20,6 +22,7 @@ function WordAudio() {
     return stopAudio;
   }, [selectedWord, stopAudio]);
 
+  /** @param {string|null} audioSrc */
   const playAudio = async (audioSrc) => {
     if (!audioSrc) return;
     stopAudio();

@@ -2,6 +2,10 @@ import PropTypes from 'prop-types';
 
 import { useDroppable, useDndContext } from '@dnd-kit/core';
 
+/**
+ * @param {{blank: import('../types').BlankLink, uniqueId: string,
+ *   filledWord?: import('../types').Word|null, isWrong: boolean}} props
+ */
 function DroppableBlank({ blank, uniqueId, filledWord, isWrong }) {
   const correctWordId = blank.word?.id;
   const isAvailable = correctWordId != null;
@@ -40,6 +44,8 @@ function DroppableBlank({ blank, uniqueId, filledWord, isWrong }) {
     // Empty blanks turn yellow when any word is being dragged
     borderColor = colors.dragging;
   }
+
+  /** @type {import('react').CSSProperties} */
 
   const style = {
     display: 'inline-block',
@@ -83,7 +89,7 @@ function DroppableBlank({ blank, uniqueId, filledWord, isWrong }) {
       style={style}
       aria-label={isAvailable ? undefined : 'Word unavailable'}
     >
-      {!isAvailable ? 'Unavailable' : isFilled ? filledWord.maori_word : null}
+      {!isAvailable ? 'Unavailable' : isFilled ? filledWord?.maori_word : null}
     </span>
   );
 }

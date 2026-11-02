@@ -1,5 +1,7 @@
 import { useStoryPlayback } from '../context/StoryPlaybackContext';
 
+/** @type {import('react').CSSProperties} */
+
 const imageStyle = {
   width: '100%',
   height: '100%',

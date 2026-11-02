@@ -2,6 +2,7 @@ import PropTypes from 'prop-types';
 import { useDraggable, useDndContext } from '@dnd-kit/core';
 import { useWordInteraction } from '../context/WordInteractionContext';
 
+/** @param {{word: import('../types').Word}} props */
 function DraggableWordButton({ word }) {
   const { setSelectedWord } = useWordInteraction();
 
@@ -11,6 +12,8 @@ function DraggableWordButton({ word }) {
 
   const { active } = useDndContext();
   const isDragging = active && active.id === word.id;
+
+  /** @type {import('react').CSSProperties} */
 
   const style = {
     width: 'auto',
@@ -44,6 +47,7 @@ DraggableWordButton.propTypes = {
   }).isRequired,
 };
 
+/** @param {{words?: import('../types').Word[]|null}} props */
 function WordList({ words }) {
   if (!words) {
     return <div>Loading words...</div>;

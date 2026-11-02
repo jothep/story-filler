@@ -3,6 +3,8 @@ import { useWordInteraction } from '../context/WordInteractionContext';
 function WordPic() {
   const { selectedWord } = useWordInteraction();
 
+  /** @type {import('react').CSSProperties} */
+
   const containerStyle = {
     height: '100%',
     width: '100%',
@@ -13,6 +15,8 @@ function WordPic() {
     padding: '0.5rem',
     overflow: 'hidden',
   }; //
+
+  /** @type {import('react').CSSProperties} */
 
   const imageStyle = {
     width: '100%',
@@ -27,7 +31,7 @@ function WordPic() {
     >
       {selectedWord ? (
         <img
-          src={selectedWord.image} //
+          src={selectedWord.image ?? undefined} //
           alt={selectedWord.english_translation} //
           style={imageStyle} //
         />

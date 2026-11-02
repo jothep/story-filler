@@ -46,9 +46,9 @@ jobs:
 
       - name: Audit development and build dependencies
         working-directory: frontend
-        run: npm audit --audit-level=high
+        run: npm audit
 
-      - name: Run ESLint
+      - name: Check JavaScript and React
         working-directory: frontend
         run: npm run lint
 

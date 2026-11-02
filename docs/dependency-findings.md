@@ -1,6 +1,6 @@
 # Dependency advisory review
 
-Reviewed on **2 November 2026**, starting from `ac6f44e`. This record separates
+Reviewed on **2–3 November 2026**: backend follow-up from `ac6f44e`, then frontend tooling migration from `191c4d2`. This record separates
 available fixes, compatibility limits and the findings retained after review.
 The [verification record](verification.md) contains the release and test results.
 
@@ -11,12 +11,13 @@ The backend image updates `tzdata` to the reviewed stable package
 `passwd` and `mount` through APT. Their four unused dependencies are removed as
 well: `libbsd0`, `libsemanage-common`, `libsemanage2` and `libsepol2`.
 The service account, essential packages, certificate store, required libraries
-and package-manager metadata remain. No application package lock changed.
+and package-manager metadata remain. Backend Python dependency locks were
+unchanged by that OS follow-up.
 
 | Scope | Before | After |
 | --- | --- | --- |
 | Frontend production dependency findings | 0 | 0 |
-| Frontend development findings | 6 moderate packages / 1 advisory | Unchanged |
+| Frontend development findings | 6 moderate packages / 1 advisory | 0 |
 | Backend OS HIGH records | 45 | 41 |
 | Backend OS MEDIUM records | 71 | 70 |
 | Backend OS LOW records | 61 | 57 |
@@ -51,40 +52,44 @@ lock syntax. CI uses a fail-on-error pipeline so saving the JSON cannot conceal
 the scanner's failure. This fixes a monitoring gap; it does not claim that the
 omitted packages previously contained a known vulnerability.
 
-## Frontend: one advisory across six development packages
+## Frontend: affected development dependency tree replaced
 
-The fresh production audit reports no findings. The full npm tree reports six
-moderate affected packages from the same advisory,
+The previous six moderate package findings shared
 [GHSA-g3hv-75wg-m249 / CVE-2026-118764](https://github.com/advisories/GHSA-g3hv-75wg-m249).
-They belong to ESLint's development dependency tree, not the browser bundle.
+An ESLint 10 upgrade retained affected minimatch versions and was incompatible
+with the existing React plugin. A minimatch major-version override changed the
+CommonJS API expected by its callers. Those options were not used.
 
-The compatible minimatch 3.x release is still 3.1.5, which is already installed.
-The advisory lists versions below 11.0.1 as affected. Independent installations
-confirmed two upgrade obstacles:
+The frontend now uses **Oxlint 1.90.0 plus TypeScript 6.0.3 checkJs**. ESLint,
+its React/Hooks plugins and their affected dependency chain are removed from the
+lock. Production and full-tree npm audits both report zero known findings.
+The two frontend workflows now reject findings at every severity, rather than
+allowing moderate development advisories.
 
-- ESLint 10.14.0 still installs minimatch 10.2.6, which remains in that range.
-- React plugin 7.37.5 does not support ESLint 10. npm rejects the peer combination,
-  and executing the current rules with ESLint 10 fails in `react/display-name`
-  because it calls the removed `context.getFilename()` API.
+This replacement preserves the intent of the reviewed 82 JavaScript, React and
+Hooks rules through direct rules, syntax checks and type checks. Positive and
+negative regression cases cover the replacement paths. The
+[frontend guide](../frontend/README.md#javascript-react-and-type-checks) explains
+specific differences, including JSDoc prop contracts and the small React wrapper
+name check. Prettier is retained.
 
-A minimatch 11 override is not a compatible patch: its CommonJS export is an
-object, while the current callers expect the function exported by 3.x. Neither
-peer checks nor React rules were bypassed. Package versions, the lock and audit
-thresholds remain unchanged.
+Native tooling was examined separately from npm advisories:
 
-The installed 3.1.5 implementation does not contain the preprocessing functions
-described in this advisory. Lint patterns also come from repository configuration,
-not website requests. These observations narrow the exposure of this particular
-installation; they do not remove the published finding or prove all glob use is
-safe. The [frontend guide](../frontend/README.md#remaining-development-dependency-findings)
-records the compatibility experiments.
+- The clean local installation verified registry signatures for 178 packages and
+  attestations for 56 packages.
+- Oxlint's Linux x64 native package integrity and provenance match release commit
+  `9b6fff42fa6edf0bec55861b6f0764c7b9acd86b` for
+  [oxlint_v1.90.0](https://github.com/oxc-project/oxc/releases/tag/oxlint_v1.90.0).
+- Trivy found no known advisories in the 441 Rust dependency entries identified
+  from that release's Cargo lock and workspace manifests. This source-level
+  check supplements package provenance; it does not claim that a stripped native
+  binary exposes every compiled dependency to a scanner.
+- The optional Go-based `oxlint-tsgolint` package is absent. An alternative
+  Go-based linter was rejected after its bundled runtime reported known HIGH
+  findings, despite a clean npm audit.
 
-ESLint 9 is also [past its support period](https://eslint.org/version-support/).
-It remains a maintenance issue. Revisit the upgrade when a compatible minimatch
-fix or dependency range is available and the
-[React compatibility issue](https://github.com/jsx-eslint/eslint-plugin-react/issues/3977)
-is resolved. Any migration must retain the current React and Hooks checks and
-pass their positive and negative test examples.
+These are dated scans, not a guarantee against future advisories. Update tool
+versions and repeat compatibility, registry and native-dependency checks together.
 
 ## Backend: distribution findings and available fixes
 

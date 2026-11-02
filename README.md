@@ -71,14 +71,14 @@ The [verification record](docs/verification.md) separates **implemented**, **dep
 - **CI authentication:** the backend workflow retains the existing service-account JSON key method through the `GCP_CREDENTIALS` GitHub Actions secret. The owner configured that secret manually, and authentication succeeded in the new backend release; this migration does not change the authentication model.
 - **Not demonstrated:** sustained availability or latency targets, load capacity, automatic rollback, hosted Neon/GCS recovery or full application cutover, a complete observability system, or a reproducible billing total of zero.
 
-Backend application tests use SQLite, not Neon; recovery integration tests use real PostgreSQL 16 with synthetic records. Frontend tests mock HTTP and audio. Formatting and backend lint are required checks, with Django-aware analysis and regression tests for the lint configuration. CodeQL analysis remains advisory; the backend Trivy gate blocks fixable HIGH/CRITICAL findings. Frontend production dependencies must pass `npm audit`; the full frontend toolchain blocks HIGH/CRITICAL findings and currently retains moderate ESLint-chain advisories. The secret scan is a separate workflow, not a dependency of deployment. Dated results and remaining work are in the [verification record](docs/verification.md).
+Backend application tests use SQLite, not Neon; recovery integration tests use real PostgreSQL 16 with synthetic records. Frontend tests mock HTTP and audio. Formatting and backend lint are required checks, with Django-aware analysis and regression tests for the lint configuration. CodeQL analysis remains advisory; the backend Trivy gate blocks fixable HIGH/CRITICAL findings. Frontend production dependencies and the full development toolchain must pass `npm audit` at every severity. Oxlint and JavaScript type checks replace the former ESLint dependency tree; React, Hooks and formatting checks remain required. The secret scan is a separate workflow, not a dependency of deployment. Dated results and remaining work are in the [verification record](docs/verification.md).
 
 ## Dependency and delivery maintenance
 
 The [dependency findings](docs/dependency-findings.md) record the current remaining
-advisories, compatible upgrade limits and complete-lock audit coverage. This
-follow-up removes unused backend tools and applies the available time-zone update;
-it retains the React lint rules and the existing security thresholds.
+advisories, upgrade decisions and complete-lock audit coverage. The latest frontend
+change removes the affected ESLint tree while preserving the reviewed check
+coverage. Backend operating-system findings remain a separate follow-up.
 
 - **Backend:** edit direct dependencies in `backend/requirements.in` and `backend/requirements-dev.in`, then regenerate their hash-locked `.txt` files. The production image installs only the runtime lock. See the [backend guide](backend/README.md) for the Python 3.13 commands.
 - **Frontend:** use Node 24 and `npm ci`. Review `package.json` and `package-lock.json` together. Nginx serves the optional local production containers; the hosted frontend still uses GitHub Pages. See the [frontend guide](frontend/README.md).

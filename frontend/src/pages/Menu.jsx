@@ -10,6 +10,8 @@ import { useBgmPlayer } from '../hooks/useBgmPlayer';
 import logoImage from '../assets/story-filler-logo-single-line.png';
 import { SPACING, DIMENSIONS, Z_INDEX, COLORS } from '../constants/theme';
 
+/** @type {import('react').CSSProperties} */
+
 const menuStyles = {
   position: 'relative',
   overflow: 'hidden',
@@ -20,6 +22,8 @@ const menuStyles = {
   minHeight: '100vh',
   boxSizing: 'border-box',
 };
+
+/** @type {import('react').CSSProperties} */
 
 const titleContainerStyles = {
   width: '100%',
@@ -32,6 +36,8 @@ const titleContainerStyles = {
   zIndex: Z_INDEX.CONTENT,
 };
 
+/** @type {import('react').CSSProperties} */
+
 const toggleContainerStyles = {
   position: 'absolute',
   top: SPACING.LARGE,
@@ -40,6 +46,8 @@ const toggleContainerStyles = {
   color: 'white',
   textShadow: '1px 1px #000',
 };
+
+/** @type {import('react').CSSProperties} */
 
 const bgmHintStyles = {
   position: 'absolute',
@@ -55,6 +63,8 @@ const bgmHintStyles = {
   animation: 'fadeIn 0.3s ease-in',
 };
 
+/** @type {import('react').CSSProperties} */
+
 const infoButtonContainerStyles = {
   width: '100%',
   display: 'flex',
@@ -63,6 +73,8 @@ const infoButtonContainerStyles = {
   position: 'relative',
   zIndex: Z_INDEX.CONTENT,
 };
+
+/** @type {import('react').CSSProperties} */
 
 const menuListStyles = {
   display: 'flex',

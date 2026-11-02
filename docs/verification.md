@@ -4,6 +4,54 @@ Legacy deployment reviewed on **27 September 2026**; repository migration begun 
 
 New-repository checks are listed first. The later pre-migration sections retain evidence from the former private `jothep/maori-story-fill` repository and do not verify subsequent changes. See the [migration record](repository-migration.md) for migration scope and the [public aggregate snapshot](evidence/README.md) for historical activity counts.
 
+## Frontend tooling migration 3 November 2026
+
+Reviewed on 2–3 November, starting from `191c4d2` on
+`codex/frontend-linter-migration`. This batch removes
+the affected ESLint development tree. Oxlint checks JavaScript, React and Hooks;
+TypeScript checks the existing JavaScript through JSDoc. The application stays
+on React/JSX, and Prettier remains required. The previous 82 rule purposes were
+reviewed individually, including their configured options and file scopes.
+
+The migration adds shared API/context contracts and component annotations.
+Small runtime adjustments preserve cancellation across browser realms, provide
+safe messages for non-Error request failures, and report a missing application
+mount element explicitly. No backend, database, infrastructure or credential
+configuration changes are included.
+
+| Check | Result | Scope |
+| --- | --- | --- |
+| npm dependency audits | Passed | Full development tree and production-only tree: zero known findings; the six moderate ESLint/minimatch records are gone |
+| Package authenticity | Passed | Clean local install: 178 registry signatures and 56 attestations verified |
+| Native linter review | Passed | Linux x64 package integrity/provenance matched the Oxlint release; Trivy found zero known findings in 441 identified Rust dependency entries at that source revision |
+| JavaScript, React and types | Passed | Oxlint with explicit rules/options, unused-suppression detection, strict checkJs, React wrapper names, and syntax checks for scripts/tests |
+| Lint/type regression examples | 229 passed | 82 rule pairs, 26 scope cases, 18 rule-option cases, 13 React wrapper-name cases and eight production-command checks |
+| Frontend behavior | 71 passed | Original 62 tests plus nine unexpected-rejection, cancellation and mount-element cases; controlled HTTP and media behavior |
+| Production build and Pages | Passed | Production assets built; two tests checked entry/fallback paths, deep links, JS/CSS and missing assets |
+| Linux amd64 | Passed | Clean Node 24.22.2 install, GNU native linter loading, lint/type checks, 71 component tests, build and Pages checks |
+| Frontend runtime containers | Passed | Both Dockerfiles; real Nginx checks for HTML, JS/CSS/favicon, SPA routes and missing-asset 404s; Node/npm/source absent from runtime |
+| Frontend image scans | Zero known findings | Both Alpine 3.24.3 runtime images, all severities including unfixed findings; 71 OS package records scanned per image |
+| Local browser | Passed | Production build with synthetic read-only API responses; menu navigation, story text/word bank and nested-route refresh |
+| Style and workflow review | Passed | Prettier, Black, Flake8, Django-aware Pylint, actionlint and whitespace checks |
+| Existing backend/maintenance suite | 150 passed | 31 Django and 119 maintenance/configuration tests; system and migration checks passed with SQLite and no cloud access |
+| Recovery integration | Seven scenarios passed | Real local PostgreSQL/media recovery checks using synthetic data; before/after container and volume sets match |
+
+The automated total is **452 passing tests**, plus the seven recovery integration
+scenarios and container/browser checks above. Independent reviewers verified the
+application behavior, lint coverage, command failure paths and dependency claims.
+
+The complete toolchain audit gate now fails at every severity in both frontend
+workflows. Oxlint does not have an identical algorithm for every ESLint rule:
+JSDoc/checkJs replaces the static prop-declaration check, current React types
+reject removed APIs, and a small compiler-API helper covers anonymous React
+wrappers. Unsafe lifecycle aliases are also rejected. The
+[frontend guide](../frontend/README.md#javascript-react-and-type-checks) records
+these differences. Type declarations do not validate incoming API JSON at runtime.
+
+The Rust scan supplements provenance and npm audits; it is not a claim that all
+compiled dependencies can be recovered from a stripped binary. Backend OS
+advisories remain as recorded in [dependency findings](dependency-findings.md).
+
 ## Published dependency follow-up 2 November 2026
 
 [PR #1](https://github.com/jothep/story-filler/pull/1) passed frontend, backend, credential-history and CodeQL checks before the reviewed source `8d81af2268581e5172b54f704a6481d38e6a31b2` was merged into `main`. The 230 local automated tests, seven recovery scenarios and candidate runtime/database checks are detailed below.

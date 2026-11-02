@@ -21,6 +21,7 @@ import TriggerTips from '../components/TriggerTips';
 import { useWordInteraction } from '../context/WordInteractionContext';
 import { useStoryPlayback } from '../context/StoryPlaybackContext';
 
+/** @param {{word: import('../types').Word}} props */
 function WordOverlay({ word }) {
   return (
     <button
@@ -51,7 +52,9 @@ function StoryPlayerUI() {
   const { handleDragStart: originalDragStart, handleDragEnd: originalDragEnd } =
     useWordInteraction();
 
-  const [activeWord, setActiveWord] = useState(null);
+  const [activeWord, setActiveWord] = useState(
+    /** @type {import('../types').Word|null} */ (null)
+  );
 
   useEffect(() => {
     return () => document.body.classList.remove('dragging');
@@ -73,6 +76,7 @@ function StoryPlayerUI() {
 
   const sensors = useSensors(mouseSensor, touchSensor);
 
+  /** @param {import('@dnd-kit/core').DragStartEvent} event */
   const handleDragStart = (event) => {
     document.body.classList.add('dragging');
     originalDragStart(event);
@@ -91,6 +95,7 @@ function StoryPlayerUI() {
     setActiveWord(null);
   };
 
+  /** @param {import('@dnd-kit/core').DragEndEvent} event */
   const handleDragEnd = (event) => {
     clearDragState();
     originalDragEnd(event);

@@ -7,6 +7,7 @@ import { useMemo } from 'react';
 
 // Use the same parsed blanks for rendering and completion checks. A missing
 // association remains visible, but can never be counted as a completed answer.
+/** @param {import('../types').Paragraph} paragraph */
 function parseParagraph(paragraph) {
   const parts = (paragraph.text || '').split(/(__BLANK_[a-zA-Z0-9_]+__)/g);
   return parts.filter(Boolean).map((text, index) => {
@@ -42,7 +43,9 @@ function StoryContent() {
     () => story.paragraphs.map(parseParagraph),
     [story.paragraphs]
   );
-  const allBlanks = parsedParagraphs.flat().filter((part) => part.blank);
+  const allBlanks = parsedParagraphs
+    .flat()
+    .filter((part) => part.blank !== undefined);
   const hasUnavailableWords = allBlanks.some(
     ({ blank }) => blank.word?.id == null
   );
@@ -73,6 +76,8 @@ function StoryContent() {
     });
   };
 
+  /** @type {import('react').CSSProperties} */
+
   const containerStyle = {
     height: '100%',
     width: '100%',
@@ -80,6 +85,8 @@ function StoryContent() {
     flexDirection: 'column',
     padding: '1rem',
   };
+
+  /** @type {import('react').CSSProperties} */
 
   const topBarStyle = {
     display: 'flex',
@@ -89,6 +96,8 @@ function StoryContent() {
     borderBottom: '2px solid #555',
     paddingBottom: '0.5rem',
   };
+
+  /** @type {import('react').CSSProperties} */
 
   const navStyle = {
     display: 'flex',
