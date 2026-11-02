@@ -4,6 +4,21 @@ Legacy deployment reviewed on **27 September 2026**; repository migration begun 
 
 New-repository checks are listed first. The later pre-migration sections retain evidence from the former private `jothep/maori-story-fill` repository and do not verify subsequent changes. See the [migration record](repository-migration.md) for migration scope and the [public aggregate snapshot](evidence/README.md) for historical activity counts.
 
+## Published dependency follow-up 2 November 2026
+
+[PR #1](https://github.com/jothep/story-filler/pull/1) passed frontend, backend, credential-history and CodeQL checks before the reviewed source `8d81af2268581e5172b54f704a6481d38e6a31b2` was merged into `main`. The 230 local automated tests, seven recovery scenarios and candidate runtime/database checks are detailed below.
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Backend release | Passed | [Run 41424061852](https://github.com/jothep/story-filler/actions/runs/41424061852): complete-lock audits and coverage checks, style, tests, built-image tests, existing image security gate, registry push, deployment and API verification |
+| Frontend release | Passed | [Run 41424061844](https://github.com/jothep/story-filler/actions/runs/41424061844): audits at the existing thresholds, lint/format, component/lint/Pages tests, build and GitHub Pages deployment |
+| Credential history scan | Passed | [Run 41424061853](https://github.com/jothep/story-filler/actions/runs/41424061853) on the release source |
+| CodeQL | Passed before merge | [Run 41423718710](https://github.com/jothep/story-filler/actions/runs/41423718710), including both analysis steps; advisory analysis |
+| Serving backend | Verified independently | Ready revision `maori-story-backend-00031-sjd`, source `8d81af2`, 100% of traffic; deployed image digest `sha256:414557c6be75721c86ad809ca2ba0279d26d8133bca4bdd3d39b08bea9c81f38` |
+| Public reads | Passed independently | Story list, story 1 with eight paragraphs and 11 words, and configuration JSON; GitHub Pages HTML and both entry assets returned successfully |
+
+The release changed the runtime image and audit safeguards, without a database migration, data restoration or IAM change. The dedicated local Docker environment is stopped. Remaining advisories and upgrade limits are recorded in [dependency findings](dependency-findings.md); passing the configured gates does not mean those advisories have disappeared.
+
 ## Dependency follow-up review 2 November 2026
 
 This follow-up starts from `ac6f44e`. The backend keeps its Python base digest and both application dependency locks, applies the reviewed stable `tzdata` update, and removes seven unused account-management/mount packages and their dependencies after creating the service account. APT dependency checks, package metadata, essential packages, certificate authorities and required native libraries are retained.
