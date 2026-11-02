@@ -12,7 +12,7 @@ permissions:
 jobs:
   source:
     name: Source and credential checks
-    uses: ./.github/workflows/security-checks.yml
+    uses: ./.github/workflows/codeql-analysis.yml
     permissions:
       contents: read
       actions: read

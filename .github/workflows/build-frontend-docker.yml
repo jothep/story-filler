@@ -15,7 +15,7 @@ permissions:
 jobs:
   security:
     name: Image publication security
-    uses: ./.github/workflows/security-checks.yml
+    uses: ./.github/workflows/codeql-analysis.yml
     permissions:
       contents: read
       actions: read

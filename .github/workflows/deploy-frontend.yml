@@ -21,7 +21,7 @@ jobs:
   security:
     name: Release security
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    uses: ./.github/workflows/security-checks.yml
+    uses: ./.github/workflows/codeql-analysis.yml
     permissions:
       contents: read
       actions: read
