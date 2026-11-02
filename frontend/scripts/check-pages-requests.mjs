@@ -1,8 +1,13 @@
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { test } from 'node:test';
+import { pathToFileURL } from 'node:url';
 import { fetchPagesResource } from './pages-requests.mjs';
+import { listPagesAssets, selectPagesAssets } from './pages-assets.mjs';
 
 async function localServer(t, handler) {
   const server = createServer(handler);
@@ -11,6 +16,53 @@ async function localServer(t, handler) {
   await once(server, 'listening');
   return server.address().port;
 }
+
+test('HTML must match the build inventory before any asset request is sent', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'pages-assets-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  await mkdir(join(directory, 'assets'));
+  await writeFile(
+    join(directory, 'assets', 'app.js'),
+    'console.log("fixture");'
+  );
+  await writeFile(
+    join(directory, 'assets', 'app.css'),
+    'body { color: black; }'
+  );
+  const inventory = await listPagesAssets(pathToFileURL(`${directory}/`));
+  assert.deepEqual(inventory.sort(), [
+    '/story-filler/assets/app.css',
+    '/story-filler/assets/app.js',
+  ]);
+  const validHtml = '<script src="/story-filler/assets/app.js"></script>';
+  assert.deepEqual(selectPagesAssets(validHtml, inventory), [
+    '/story-filler/assets/app.js',
+  ]);
+
+  let requests = 0;
+  const port = await localServer(t, (_request, response) => {
+    requests += 1;
+    response.end('must not be requested');
+  });
+  for (const resource of [
+    '/story-filler/assets/unlisted.js',
+    '/story-filler/assets/app.js?file-content=must-not-leave',
+    '/story-filler/../private.txt',
+    '//example.invalid/leak',
+    '@example.invalid/leak',
+  ]) {
+    await assert.rejects(async () => {
+      const assets = selectPagesAssets(
+        `${validHtml}<link href="${resource}">`,
+        inventory
+      );
+      for (const asset of assets) {
+        await fetchPagesResource(asset, port);
+      }
+    });
+  }
+  assert.equal(requests, 0);
+});
 
 test('Pages requests reach only the specified loopback server and preserve queries', async (t) => {
   const requests = [];

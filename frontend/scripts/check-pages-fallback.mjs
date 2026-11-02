@@ -10,6 +10,7 @@ import {
   pagesBase as base,
   pagesResourceUrl,
 } from './pages-requests.mjs';
+import { listPagesAssets, selectPagesAssets } from './pages-assets.mjs';
 
 const outputDirectory = new URL('../dist/', import.meta.url);
 const indexHtml = await readFile(
@@ -20,8 +21,9 @@ const fallbackHtml = await readFile(
   new URL('404.html', outputDirectory),
   'utf8'
 );
-const resources = [...indexHtml.matchAll(/(?:src|href)="([^"]+)"/g)].map(
-  ([, url]) => url
+const resources = selectPagesAssets(
+  indexHtml,
+  await listPagesAssets(outputDirectory)
 );
 
 test('the fallback preserves the application and absolute asset paths', async () => {

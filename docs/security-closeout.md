@@ -27,7 +27,7 @@ recorded in the final section before claiming completion.
 | [#16](https://github.com/jothep/story-filler/security/code-scanning/16) | MEDIUM · `py/log-injection` | `backend/core/views.py:111`, missing ID | Public ID remains integer-constrained; the warning itself accepted an unescaped alternate-call value. | Use the escaped ID in the warning; malformed values stay on one line and the response remains 404. |
 | [#17](https://github.com/jothep/story-filler/security/code-scanning/17) | MEDIUM · `py/log-injection` | `backend/core/views.py:116`, failed ID | Public ID remains integer-constrained. The log message and exception traceback are separate outputs. | Escape the message's ID while preserving `exc_info`, traceback diagnostics and the existing safe 500 response. |
 | [#18](https://github.com/jothep/story-filler/security/code-scanning/18) | MEDIUM · `py/log-injection` | `backend/core/views.py:139`, config IP | Server metadata has the same provenance limit as #12; the log sink lacked explicit escaping. | Escape IP fields; configuration-request logging covered alongside list/detail logging. |
-| [#19](https://github.com/jothep/story-filler/security/code-scanning/19) | MEDIUM · `js/file-access-to-http` | `frontend/scripts/check-pages-fallback.mjs:81` | Generated HTML supplies asset paths to an intentional local HTTP check. The original string concatenation warrants a destination-boundary review, but exfiltration was not demonstrated: Node 24 fetch rejects credential-bearing URLs used in the proposed origin-switch construction. | Validate project paths at each request, construct a fixed loopback origin and reject redirects. Real local HTTP tests cover valid assets, malformed/external/credential-bearing paths and redirected destinations. |
+| [#19](https://github.com/jothep/story-filler/security/code-scanning/19) | MEDIUM · `js/file-access-to-http` | `frontend/scripts/check-pages-fallback.mjs:81` | Generated HTML supplies asset paths to an intentional local HTTP check. The original string concatenation warrants a destination-boundary review, but exfiltration was not demonstrated: Node 24 fetch rejects credential-bearing URLs used in the proposed origin-switch construction. | Resolve every HTML reference against a build-directory inventory before sending requests. Request paths come from that inventory, with a fixed loopback origin and redirects rejected. Real local HTTP tests cover valid assets, malformed/external/credential-bearing paths and redirected destinations. |
 
 The historical demo's **index view had an additional, unreported stored-HTML
 problem**: question text from the database was concatenated into an HTML response.
@@ -45,8 +45,11 @@ arbitrary exception contents or every logger in the process; normal multiline
 tracebacks are retained deliberately.
 
 The Pages check remains a local test tool, not a production request endpoint.
-Its boundary tests use loopback servers and synthetic inputs, including a second
-server that must receive no redirected request. The original finding is recorded
+HTML selects only files listed in the build-directory inventory; it cannot supply
+an arbitrary request string. Every reference is validated before any request is
+sent. Boundary tests use loopback servers and synthetic inputs, including an
+unknown reference that must cause zero requests and a second server that must
+receive no redirected request. The original finding is recorded
 as an intentional file-to-request flow with hardening, not a confirmed production
 data leak. No query exclusion, source suppression or alert dismissal is used as a
 substitute for the final scan.
@@ -79,8 +82,18 @@ manual frontend-image publication depend on fresh reusable security checks for
 their caller commit. Backend/Pages pull requests receive their source-security
 status from the separate source workflow. The merge boundary additionally needs
 the repository's required-check settings to require `Security Gate`; YAML alone
-cannot enforce branch protection. Existing action restrictions and deployment
-permissions remain separate controls.
+cannot enforce branch protection. The five required checks are `Security Gate`, `Test backend and maintenance
+scripts`, `Verify the candidate image; publish from main`, `Check and Build
+Frontend`, and `Restore synthetic data in isolated Docker resources`. Each runs
+for every PR and is restricted to the GitHub Actions app. The sole-owner workflow
+requires a PR but no additional GitHub reviewer; independent review is recorded
+before merge.
+
+The Actions allowlist contains 17 reviewed commit-SHA pins, including the internal
+actions used by the Trivy/setup/cache and Pages composites. Obsolete mutable tags
+and `master` allowances were removed; blanket GitHub-owned and verified-action
+permissions remain disabled. Old workflow versions using those retired references
+cannot simply be rerun under the tightened policy.
 
 Image gates reject HIGH/CRITICAL vulnerabilities **including unfixed findings**
 and exposed secrets. Complete vulnerability reports retain all severities and
@@ -104,6 +117,19 @@ selected scanners and advisory databases. A failing maintenance run requires
 triage and a reviewed change, followed by fresh checks. The schedule's first
 successful remote run still needs to be recorded below.
 
+## Validation findings
+
+The first hosted run proved both gates can stop the change: JavaScript analysis
+completed successfully but the SARIF gate rejected the remaining file-to-HTTP
+result, and `Security Gate` failed. Its report led to the inventory-based Pages
+change above; no suppression was added.
+
+Hosted frontend tests also exposed an existing asynchronous test race: waiting
+for the story list did not ensure the independently fetched music configuration
+had arrived. The test now controls that response explicitly, verifies no audio
+before configuration, then requires one audio object with the correct path after
+it resolves. Production playback behavior is unchanged.
+
 ## Verification and remaining evidence
 
 Local regressions cover plain-text demo responses, malformed logging fields,
@@ -114,11 +140,11 @@ media, secrets and cloud deployment are outside this local validation.
 
 | Evidence | Status to record before final closeout |
 | --- | --- |
-| Local test, lint, formatting and image results | 505 automated tests passed: 40 PostgreSQL Django, 156 maintenance, four demo, 229 lint/type contracts, 71 component and five Pages HTTP tests. Seven recovery integration scenarios passed. Formatting, lint/types, actionlint, build, history scan and complete dependency/image audits passed. Final hosted results are recorded separately below. |
+| Local test, lint, formatting and image results | 506 automated tests passed: 40 PostgreSQL Django, 156 maintenance, four demo, 229 lint/type contracts, 71 component and six Pages HTTP tests. Seven recovery integration scenarios passed. Formatting, lint/types, actionlint, build, history scan and complete dependency/image audits passed. Final hosted results are recorded separately below. |
 | Pull request and exact analyzed commit | Pending URL and commit. |
 | Fresh Python and JavaScript CodeQL reports | Pending successful remote runs, retained report links and zero-result gate output. |
 | Alert state after analysis | Pending read-back of all 11 baseline alerts; do not infer `fixed` from a passing local test. |
-| Required-check enforcement | Pending read-back of the `main` rule/branch protection and required `Security Gate` status; no claim that it is already enforced. |
+| Required-check enforcement | Applied and read back: strict checks from GitHub Actions, administrator enforcement, PR-only changes, no force pushes/deletions and resolved conversations. PR #5 at `a18937f` was BLOCKED while its frontend and security checks failed. The final passing head remains to be recorded. |
 | Main-branch release dependencies | Pending remote run evidence tying successful checks to the published caller commit. |
 | Weekly/manual maintenance workflow | Pending first remote run and retained report links. |
 
