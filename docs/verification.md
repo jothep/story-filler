@@ -4,6 +4,31 @@ Legacy deployment reviewed on **27 September 2026**; repository migration begun 
 
 New-repository checks are listed first. The later pre-migration sections retain evidence from the former private `jothep/maori-story-fill` repository and do not verify subsequent changes. See the [migration record](repository-migration.md) for migration scope and the [public aggregate snapshot](evidence/README.md) for historical activity counts.
 
+## Published frontend tooling migration 3 November 2026
+
+[PR #2](https://github.com/jothep/story-filler/pull/2) was merged as
+`b7ae4cde2b9f7f7cd047fe1fdecf46ab8572357d` after the reviewed source `6db8b28`
+passed local validation, independent review and all hosted PR checks. Sourcery
+also approved the PR. The merged frontend and workflow files match the tested
+source exactly.
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| PR frontend checks | Passed | [Run 41433799938](https://github.com/jothep/story-filler/actions/runs/41433799938): all-severity audits, lint/types/format, 229 lint regressions, 71 component tests, production build and two Pages checks |
+| Manual frontend image workflow | Passed without registry push | [Run 41433796697](https://github.com/jothep/story-filler/actions/runs/41433796697): the same frontend checks, image build and configured Trivy gate |
+| PR CodeQL analysis | Passed | Both actual analysis steps in [run 41433799805](https://github.com/jothep/story-filler/actions/runs/41433799805) |
+| PR credential history scan | Passed | [Run 41433800005](https://github.com/jothep/story-filler/actions/runs/41433800005); local changed-source and full-history scans also reported no findings |
+| GitHub Pages release | Passed | [Run 41434780731](https://github.com/jothep/story-filler/actions/runs/41434780731): checks repeated before deployment from `b7ae4cd` |
+| Main-branch security checks | Passed | [CodeQL 41434780750](https://github.com/jothep/story-filler/actions/runs/41434780750), including both analysis steps, and [history scan 41434780780](https://github.com/jothep/story-filler/actions/runs/41434780780) |
+| Public API reads | Passed | Story list, story 1 with eight paragraphs and 11 words, and configuration JSON |
+| Public frontend resources | Passed | Entry HTML, JavaScript, CSS and favicon returned HTTP 200; the served JavaScript contains this release's new root-element check |
+| Public browser | Passed | Menu navigation, story title/text/image and 11 vocabulary words rendered; direct refresh of the nested story route also loaded |
+
+No backend workflow was triggered by this batch. Backend operating-system
+findings remain for the next review; no database or cloud permissions changed.
+Local preview services and the dedicated review VM were stopped. Test containers
+were removed; the ten pre-existing anonymous volumes were retained unchanged.
+
 ## Frontend tooling migration 3 November 2026
 
 Reviewed on 2–3 November, starting from `191c4d2` on
