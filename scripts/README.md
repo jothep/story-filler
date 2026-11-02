@@ -216,10 +216,11 @@ the removal independently of the scanner.
 Review version updates and their checks together rather than rebuilding an old
 commit silently.
 
-The reusable [security checks](../.github/workflows/security-checks.yml) combine
-CodeQL with full fetched-history Gitleaks checks. The
-[source workflow](../.github/workflows/codeql-analysis.yml) exposes `Security Gate`
+The reusable [source workflow](../.github/workflows/codeql-analysis.yml) combines
+CodeQL with full fetched-history Gitleaks checks and exposes `Security Gate`
 for every pull request to `main` and every `main` push, without path filters.
+Release and maintenance workflows call that same workflow. Its original
+`analyze` job identifier is retained for analysis continuity.
 Repository required-check settings must separately enforce that status.
 
 [Scheduled maintenance](../.github/workflows/security-maintenance.yml) runs at

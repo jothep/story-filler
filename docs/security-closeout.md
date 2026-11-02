@@ -27,7 +27,7 @@ recorded in the final section before claiming completion.
 | [#16](https://github.com/jothep/story-filler/security/code-scanning/16) | MEDIUM · `py/log-injection` | `backend/core/views.py:111`, missing ID | Public ID remains integer-constrained; the warning itself accepted an unescaped alternate-call value. | Use the escaped ID in the warning; malformed values stay on one line and the response remains 404. |
 | [#17](https://github.com/jothep/story-filler/security/code-scanning/17) | MEDIUM · `py/log-injection` | `backend/core/views.py:116`, failed ID | Public ID remains integer-constrained. The log message and exception traceback are separate outputs. | Escape the message's ID while preserving `exc_info`, traceback diagnostics and the existing safe 500 response. |
 | [#18](https://github.com/jothep/story-filler/security/code-scanning/18) | MEDIUM · `py/log-injection` | `backend/core/views.py:139`, config IP | Server metadata has the same provenance limit as #12; the log sink lacked explicit escaping. | Escape IP fields; configuration-request logging covered alongside list/detail logging. |
-| [#19](https://github.com/jothep/story-filler/security/code-scanning/19) | MEDIUM · `js/file-access-to-http` | `frontend/scripts/check-pages-fallback.mjs:81` | Generated HTML supplies asset paths to an intentional local HTTP check. The original string concatenation warrants a destination-boundary review, but exfiltration was not demonstrated: Node fetch rejects credential-bearing URLs used in the proposed origin-switch construction. | Validate project paths at each request, construct a fixed loopback origin and reject redirects. Real local HTTP tests cover valid assets, malformed/external/credential-bearing paths and redirected destinations. |
+| [#19](https://github.com/jothep/story-filler/security/code-scanning/19) | MEDIUM · `js/file-access-to-http` | `frontend/scripts/check-pages-fallback.mjs:81` | Generated HTML supplies asset paths to an intentional local HTTP check. The original string concatenation warrants a destination-boundary review, but exfiltration was not demonstrated: Node 24 fetch rejects credential-bearing URLs used in the proposed origin-switch construction. | Validate project paths at each request, construct a fixed loopback origin and reject redirects. Real local HTTP tests cover valid assets, malformed/external/credential-bearing paths and redirected destinations. |
 
 The historical demo's **index view had an additional, unreported stored-HTML
 problem**: question text from the database was concatenated into an HTML response.
@@ -54,12 +54,14 @@ substitute for the final scan.
 ## Merge and publication policy
 
 The [source workflow](../.github/workflows/codeql-analysis.yml) runs for all pull
-requests to `main` and all `main` pushes, without path filters. Its reusable
-[security checks](../.github/workflows/security-checks.yml) analyze Python and
-JavaScript/TypeScript with `security-extended` and scan all fetched Git history
-with Gitleaks. A final `Security Gate` job uses `if: always()` and requires the
-reusable checks to succeed, so failed or skipped dependencies do not become a
-successful aggregate check.
+requests to `main` and all `main` pushes, without path filters, and is reusable
+by release and maintenance workflows. It analyzes Python and JavaScript/TypeScript
+with `security-extended` and scans all fetched Git history with Gitleaks. The
+original workflow file and `analyze` job identifier are retained to preserve the
+baseline's analysis identity; actual alert closure still requires remote
+verification. A final `Security Gate` job uses `if: always()` and requires both
+the analysis matrix and credential scan to succeed, so failed or skipped
+dependencies do not become a successful aggregate check.
 
 The [SARIF gate](../scripts/check_codeql_results.py) runs only after the official
 analyzer succeeds and writes a fresh runner-temporary report. It requires exactly
@@ -112,7 +114,7 @@ media, secrets and cloud deployment are outside this local validation.
 
 | Evidence | Status to record before final closeout |
 | --- | --- |
-| Final local test, lint, formatting and image results | Pending consolidated counts and final candidate commit; focused regressions are implemented. |
+| Local test, lint, formatting and image results | 505 automated tests passed: 40 PostgreSQL Django, 156 maintenance, four demo, 229 lint/type contracts, 71 component and five Pages HTTP tests. Seven recovery integration scenarios passed. Formatting, lint/types, actionlint, build, history scan and complete dependency/image audits passed. Final hosted results are recorded separately below. |
 | Pull request and exact analyzed commit | Pending URL and commit. |
 | Fresh Python and JavaScript CodeQL reports | Pending successful remote runs, retained report links and zero-result gate output. |
 | Alert state after analysis | Pending read-back of all 11 baseline alerts; do not infer `fixed` from a passing local test. |
