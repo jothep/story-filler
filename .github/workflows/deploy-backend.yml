@@ -116,6 +116,15 @@ jobs:
           python scripts/check_dependency_audit.py \
             backend/requirements-dev.txt "$RUNNER_TEMP/development-audit.json"
 
+      - name: Audit locked image-build dependencies
+        shell: bash
+        run: |
+          python -m pip_audit --strict --require-hashes --disable-pip \
+            -r backend/requirements-build.txt --format json \
+            | tee "$RUNNER_TEMP/build-audit.json"
+          python scripts/check_dependency_audit.py \
+            backend/requirements-build.txt "$RUNNER_TEMP/build-audit.json"
+
       - name: Check Python formatting and style
         run: |
           black --check backend scripts
@@ -145,9 +154,9 @@ jobs:
         run: python -m unittest discover -s scripts -p '*_test.py'
 
   build-scan:
-    name: Build, scan and publish the candidate image
+    name: Verify the candidate image; publish from main
     needs: test
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.test.outputs.release == 'true'
+    if: github.event_name == 'pull_request' || (github.ref == 'refs/heads/main' && needs.test.outputs.release == 'true')
     runs-on: ubuntu-latest
     outputs:
       image: ${{ steps.publish.outputs.image }}
@@ -173,45 +182,62 @@ jobs:
             --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
             --tag "$IMAGE_TAG" backend
 
-      - name: Test the built runtime image without network access
+      - name: Verify the runtime and isolated PostgreSQL integration
         env:
           IMAGE_TAG: ${{ steps.image.outputs.tag }}
         run: |
-          docker run --rm --interactive --network none --pull=never \
-            --env DATABASE_URL='sqlite:///:memory:' --env USE_GCS=false \
-            --entrypoint python "$IMAGE_TAG" - <<'PY'
-          import os
-          import secrets
-          import subprocess
+          postgres_image=$(PYTHONPATH=scripts python -c 'from local_recovery import POSTGRES_IMAGE; print(POSTGRES_IMAGE)')
+          docker pull "$postgres_image"
+          python scripts/backend_integration.py \
+            --docker-host unix:///var/run/docker.sock --image "$IMAGE_TAG"
 
-          os.environ['SECRET_KEY'] = secrets.token_urlsafe(64)
-          subprocess.run(['python', 'manage.py', 'test'], check=True)
-          from gunicorn.workers.ggevent import GeventWorker
+      - name: Record the complete image scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.76.1
+          image-ref: ${{ steps.image.outputs.tag }}
+          scanners: vuln
+          format: json
+          output: backend-image-scan.json
+          list-all-pkgs: true
+          ignore-unfixed: false
+          severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+          exit-code: '0'
 
-          print('Gunicorn gevent worker imports successfully.')
-          PY
+      - name: Save the full package and vulnerability report
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: backend-image-scan-${{ github.run_attempt }}
+          path: backend-image-scan.json
+          if-no-files-found: error
+          retention-days: 30
 
       # This job has no Google credentials until after the local image scan passes.
       - name: Scan the built image
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           version: v0.76.1
+          skip-setup-trivy: true
           image-ref: ${{ steps.image.outputs.tag }}
+          scanners: vuln,secret
           format: table
           exit-code: '1'
           severity: HIGH,CRITICAL
           ignore-unfixed: true
 
       - name: Authenticate for registry push
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
         with:
           credentials_json: ${{ secrets.GCP_CREDENTIALS }}
 
       - name: Set up Cloud SDK
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
 
       - name: Push the scanned image and record its digest
         id: publish
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         env:
           IMAGE_TAG: ${{ steps.image.outputs.tag }}
           IMAGE_REPOSITORY: ${{ steps.image.outputs.repository }}

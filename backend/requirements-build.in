@@ -1,0 +1,5 @@
+# Tools used only to build the two Alpine-native dependencies.
+# Runtime dependency versions remain controlled by requirements.txt.
+-c requirements.txt
+setuptools==84.2.1
+wheel==0.48.0

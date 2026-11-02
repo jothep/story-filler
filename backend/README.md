@@ -37,6 +37,7 @@ only `backend/requirements.txt`.
 | `requirements.txt` | Generated runtime lock, including transitive dependencies and hashes |
 | `requirements-dev.in` | Development tools, constrained to the runtime lock |
 | `requirements-dev.txt` | Generated full development and CI environment |
+| `requirements-build.in` / `.txt` | Input and hash lock for tools used only in the Alpine wheel-build stage |
 
 Edit the `.in` files when changing dependency policy. Regenerate the `.txt`
 files; do not edit individual generated versions or hashes by hand. Commit each
@@ -46,7 +47,8 @@ Django stays on the 5.2 LTS series. Other direct dependencies have explicit uppe
 bounds so a feature-series upgrade can be reviewed. Pip, Black, Flake8, Pylint,
 pip-tools and pip-audit are development dependencies. The production image uses
 pip during its build, then removes the installer and its `ensurepip` bootstrap
-bundle. Updating the application means rebuilding its locked image.
+bundle. Alpine-specific compilation runs in a separate stage; its build lock
+contains setuptools, wheel and packaging, not application dependencies. Updating the application means rebuilding its locked image.
 
 Gunicorn is installed with its `gevent` extra because the selected worker also
 needs `packaging` at runtime. Keeping `gevent` as an explicit input sets its
@@ -55,35 +57,78 @@ development tools can otherwise supply missing dependencies and hide an error.
 
 ## Refreshing the locks
 
-Generate locks with **CPython 3.13 on Linux amd64**, matching CI and the production
-image. When working on another platform, use a temporary Linux container or a
-Linux development environment for this step. The lock files contain hashes for
-published distributions, but dependency markers are resolved for the environment
-that runs pip-tools.
+Generate locks with **CPython 3.13 on Linux amd64**. Use two environments:
+the pinned Alpine base from the Dockerfile for runtime and image-build locks,
+and a glibc-based Linux development environment for the development lock.
 
-Use the pip-tools version from the development lock. If bootstrapping a separate
-lock-generation environment, the toolchain used for this update is
-`pip==26.2.2` and `pip-tools==7.6.2`.
-
-Generate the runtime lock first, then the development lock:
+In a temporary Alpine container, copy the checkout into the working directory.
+Install only the lock-generation tools from the existing development lock;
+the full development environment requires wheels unavailable on Alpine:
 
 ```sh
-python -m piptools compile --upgrade --generate-hashes --allow-unsafe \
-  --strip-extras --no-emit-index-url --no-emit-trusted-host \
-  --pip-args='--only-binary=:all:' \
+python -m venv /tmp/lock-env
+. /tmp/lock-env/bin/activate
+python - <<'PYTOOLS'
+from pathlib import Path
+from scripts.check_dependency_audit import LOCK_ENTRY, logical_lines
+
+tools = {
+    "pip", "pip-tools", "build", "click", "packaging",
+    "pyproject-hooks", "setuptools", "wheel",
+}
+entries = {}
+for _, line in logical_lines(Path("backend/requirements-dev.txt").read_text()):
+    match = LOCK_ENTRY.fullmatch(line)
+    if match and match["name"] in tools:
+        entries[match["name"]] = line
+if entries.keys() != tools:
+    raise SystemExit("Required lock-generation tools are missing from the lock.")
+Path("/tmp/lock-tools.txt").write_text("\n".join(entries.values()) + "\n")
+PYTOOLS
+python -m pip install --require-hashes --only-binary=:all: -r /tmp/lock-tools.txt
+python -m pip check
+```
+
+In that Alpine environment, generate the runtime lock first, then the image-build
+lock. The tools above resolve source metadata without build isolation; native
+compilation happens later in the Dockerfile's builder stage.
+
+```sh
+python -m piptools compile --generate-hashes --allow-unsafe --strip-extras \
+  --no-emit-index-url --no-emit-trusted-host --no-emit-options --no-reuse-hashes \
+  --pip-args='--no-build-isolation' \
   --output-file backend/requirements.txt backend/requirements.in
 
-python -m piptools compile --upgrade --generate-hashes --allow-unsafe \
-  --strip-extras --no-emit-index-url --no-emit-trusted-host \
+python -m piptools compile --generate-hashes --allow-unsafe --strip-extras \
+  --no-emit-index-url --no-emit-trusted-host --no-emit-options \
   --pip-args='--only-binary=:all:' \
+  --output-file backend/requirements-build.txt backend/requirements-build.in
+```
+
+Then use the updated runtime lock in a **separate Linux glibc environment**.
+Install the existing development lock into a fresh virtual environment and
+regenerate it there:
+
+```sh
+python3.13 -m venv .venv
+. .venv/bin/activate
+python -m pip install --require-hashes --only-binary=:all: -r backend/requirements-dev.txt
+python -m piptools compile --generate-hashes --allow-unsafe --strip-extras \
+  --no-emit-index-url --no-emit-trusted-host --pip-args='--only-binary=:all:' \
   --output-file backend/requirements-dev.txt backend/requirements-dev.in
 ```
 
-`--allow-unsafe` includes installer packages such as pip and setuptools in the
-lock when required; it does not bypass hash verification. `--only-binary` keeps
-installation on published wheels and fails if a supported wheel is missing.
-Review the resulting version changes before installing them into a fresh test
-environment.
+These commands preserve existing pins where possible. Add `--upgrade` deliberately
+when reviewing version updates. `--allow-unsafe` includes installer packages when
+required; it does not bypass hash verification.
+
+The runtime lock includes published wheel and source hashes so it remains usable
+on both glibc and musl. Installation policy remains explicit: local development
+and CI use `--only-binary=:all:`. The Docker builder permits source only for
+`google-crc32c` and `zope-interface`, the two packages without compatible musllinux
+wheels. It disables build isolation, installs the build-tool hash lock first,
+and verifies source hashes before compilation. Other source fallbacks fail.
+Do not insert global `--no-binary` options into the shared runtime lock.
 
 ## Validation
 
@@ -93,6 +138,7 @@ Install the development lock into a fresh virtual environment, then run:
 python -m pip check
 python -m pip_audit --strict --require-hashes --disable-pip -r backend/requirements.txt
 python -m pip_audit --strict --require-hashes --disable-pip -r backend/requirements-dev.txt
+python -m pip_audit --strict --require-hashes --disable-pip -r backend/requirements-build.txt
 
 SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(48))')" \
 DATABASE_URL='sqlite:///:memory:' USE_GCS=false \
@@ -178,40 +224,34 @@ above 7.0. The plugin and its tests are development tools, not runtime dependenc
 docker build --platform linux/amd64 -f backend/dockerfile -t story-filler-backend:local backend
 ```
 
-The Python 3.13 slim base is pinned to a multi-platform image digest. Review and
-update that digest regularly to receive Python and operating-system fixes, then
-rebuild, run the tests and scan the new image. A dependency-lock refresh alone
-does not update the base image.
+The official Python 3.13.18 Alpine 3.24 base is pinned to a multi-platform digest.
+Build and test `linux/amd64`, the deployment target. Refresh the base and stable
+Alpine packages together, then repeat native-library, PostgreSQL, HTTP and image
+scans. A lock refresh alone does not update the operating system.
 
-The build also pins the current Debian time-zone update explicitly. Review that
-version when refreshing the base; if it is no longer available from the Debian
-repository, choose and test the newer update for the same Debian release.
+The first stage compiles the two required native extensions with fixed build-tool
+versions, `build-base` and `crc32c-dev`. The final stage installs only the 37
+runtime packages and the CRC32C shared library. It retains package metadata,
+CA certificates, SQLite and Python runtime libraries. Compilers, headers,
+setuptools, wheel, pip and ensurepip are absent from the final image.
 
-After creating the `app` account, the build removes `adduser`, `passwd` and
-`mount`. Account setup is complete, and the service does not mount filesystems.
-APT also removes their unused dependencies and checks the remaining dependency
-graph. The account itself, Debian's essential packages, package metadata, CA
-certificates and Python runtime libraries remain available. Image changes need
-native-library checks and an actual Gunicorn/PostgreSQL HTTP check as well as
-Django tests, because APT cannot check `/usr/local` Python wheels.
+The runtime account stays at UID 100/GID 101 to preserve existing local volume
+ownership. Static files are collected as that account with a temporary build-only
+key and SQLite settings. The default Gunicorn command, three gevent workers,
+port 8000 and configurable local/GCS storage are unchanged.
 
-The 2 November 2026 review removed seven OS packages and reduced package-level
-scan findings from 185 to 176. The 85 distinct advisories, including nine HIGH
-advisories, remained unchanged: several binary packages share one source-package
-finding. Debian trixie's stable repositories had no package updates fixing those
-findings at review time; some fixes were already available upstream or in the
-development distribution.
-Keep the complete scan results and reassess vendor updates; removing an unused
-package does not establish that a shared advisory has been fixed elsewhere in
-the image. See [dependency findings](../docs/dependency-findings.md) for remaining
-items and [verification records](../docs/verification.md) for the checks.
+The base change addresses eight of the earlier nine HIGH advisory groups through
+updated or removed components. SQLite remains affected by CVE-2026-119373 even
+though the Alpine feed does not report it. Keep that issue separate from a clean
+Trivy result. The [advisory review](../docs/dependency-findings.md) records the
+comparison, the rejected Distroless candidate and the remaining update path.
 
-The image installs the runtime lock with required hashes and binary wheels only,
-then verifies that the configured gevent worker can be imported. It does not
-install compilers or development tools. Static files are collected
-with a temporary build-only key and SQLite configuration, without production
-credentials. The service runs as the non-root `app` user with Gunicorn's gevent
-worker, as before.
+Run the persistent [image verification](../scripts/README.md#built-image-verification)
+after building. It checks the exact dependency set, native features, 31 Django
+tests and storage configuration offline, then runs the unmodified image against
+a temporary PostgreSQL database and verifies API/static responses and shutdown.
+CI runs this before merge without cloud credentials; only reviewed `main`
+releases can authenticate and publish.
 
 Gunicorn's optional control socket is disabled. Cloud Run manages the process;
 the container does not need a separate local control interface or a writable
