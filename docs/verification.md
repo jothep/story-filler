@@ -4,6 +4,42 @@ Legacy deployment reviewed on **27 September 2026**; repository migration begun 
 
 New-repository checks are listed first. The later pre-migration sections retain evidence from the former private `jothep/maori-story-fill` repository and do not verify subsequent changes. See the [migration record](repository-migration.md) for migration scope and the [public aggregate snapshot](evidence/README.md) for historical activity counts.
 
+## Published backend base-image replacement 3 November 2026
+
+[PR #3](https://github.com/jothep/story-filler/pull/3) was merged as
+`8ef92114802332e9239e7e250db333d8a37a3bcc`. Its files exactly match reviewed head
+`56683c03f8f5ce1f36133ef13ff956ee4d9da617`. Local validation completed 469
+automated tests, seven recovery scenarios and real final-image PostgreSQL/HTTP
+checks before release.
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Final PR backend pipeline | Passed | [Run 41514246169](https://github.com/jothep/story-filler/actions/runs/41514246169): all three lock audits, style, 31 Django/136 script tests, image integration and full scan; authentication, push and deployment skipped |
+| Final PR security checks | Passed | Actual JavaScript/Python [CodeQL analysis 41514246245](https://github.com/jothep/story-filler/actions/runs/41514246245) and [history scan 41514246214](https://github.com/jothep/story-filler/actions/runs/41514246214) |
+| Independent review | Passed | Image/lock, workflow and runtime-script reviews; timing, cleanup and rerun findings corrected and regression-tested |
+| Third-party Sourcery review | Skipped on final head | Its weekly character allowance was exhausted. This is not a passing review; the earlier findings were addressed and independently checked |
+| Main release | Passed | [Run 41519045124](https://github.com/jothep/story-filler/actions/runs/41519045124): test, rebuild, integration, full report, scan gate, push, actual deployment, revision verification and API reads |
+| Main security checks | Passed | Actual JavaScript/Python [CodeQL analysis 41519244722](https://github.com/jothep/story-filler/actions/runs/41519244722), manually dispatched because the push path filter excludes this batch, and [history scan 41519045086](https://github.com/jothep/story-filler/actions/runs/41519045086) |
+| Published image report | Checked | Linux amd64; 32 Alpine packages and all 37 Python packages; zero scanner findings, with the separately tracked SQLite advisory still affected |
+| Independent online check | Passed | Source/revision/digest match; story list, story 1 with eight paragraphs and 11 words, and configuration JSON; static CSS and public picture/audio resources accessible |
+
+Cloud Run revision `maori-story-backend-00032-6tt` serves **100%** of traffic.
+Its source label is `8ef92114802332e9239e7e250db333d8a37a3bcc`, and its image is
+`us-central1-docker.pkg.dev/jaskojothep/maori-story/backend@sha256:616c69a700cb09abfb66771d4ddfc43ecef22d6b13e72d139122f415a66f1ba1`.
+The final release report still identifies `sqlite-libs` 3.53.4-r0. The known
+[CVE-2026-119373](dependency-findings.md#current-backend-alpine-runtime-3-november)
+remains tracked; no claim of a completely vulnerability-free runtime is made.
+
+The public audio object uses `application/octet-stream`; HTTP 200/206 and its
+M4A container header were verified. An initial probe assumed an audio-specific
+MIME type and an MP3 header, which did not match this existing M4A object. No
+storage metadata or content was changed. These checks cover read accessibility,
+not media upload or browser playback.
+
+No production data, migrations, IAM or frontend release changed. Local verification
+left the original container set and ten anonymous volumes unchanged, and the
+dedicated review VM was stopped.
+
 ## Backend base-image review 3 November 2026
 
 Starting from `a16507e`, this batch replaces the Debian slim runtime with pinned
