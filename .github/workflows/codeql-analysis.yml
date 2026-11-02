@@ -1,49 +1,32 @@
-name: "CodeQL Security Analysis"
+name: CodeQL Security Analysis
 
 on:
   push:
-    branches: [ main ]
-    paths:
-      - 'frontend/**/*.js'
-      - 'frontend/**/*.jsx'
-      - 'backend/**/*.py'
+    branches: [main]
   pull_request:
-    branches: [ main ]
-  schedule:
-    # Run weekly on Monday at 00:00 UTC
-    - cron: '0 0 * * 1'
+    branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
-  analyze:
-    name: Analyze Code
-    runs-on: ubuntu-latest
+  scans:
+    name: Source security
+    uses: ./.github/workflows/security-checks.yml
     permissions:
-      actions: read
       contents: read
+      actions: read
       security-events: write
 
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [ 'javascript', 'python' ]
-
+  gate:
+    name: Security Gate
+    if: always()
+    needs: scans
+    runs-on: ubuntu-latest
+    permissions: {}
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
-      with:
-        languages: ${{ matrix.language }}
-        # Optionally specify queries (security-extended for more checks)
-        queries: security-extended
-
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v3
-
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
-      continue-on-error: true  # Don't fail if upload is blocked
-      with:
-        category: "/language:${{matrix.language}}"
+      - name: Require successful security checks
+        env:
+          SCAN_RESULT: ${{ needs.scans.result }}
+        run: test "$SCAN_RESULT" = success

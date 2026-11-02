@@ -12,13 +12,6 @@ on:
       - '.github/workflows/verify-local-recovery.yml'
   pull_request:
     branches: [main]
-    paths:
-      - 'scripts/local_recovery*'
-      - 'scripts/recovery_*'
-      - 'scripts/restore_safety_test.py'
-      - 'scripts/*-volumes*.sh'
-      - 'backup.sh'
-      - '.github/workflows/verify-local-recovery.yml'
   workflow_dispatch:
 
 permissions:

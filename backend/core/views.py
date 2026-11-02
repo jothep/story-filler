@@ -9,6 +9,7 @@ from rest_framework.exceptions import APIException
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from .logging_utils import escape_log_value
 from .models import AppConfig, Story
 from .serializers import StoryListSerializer, StoryDetailSerializer, AppConfigSerializer
 
@@ -31,7 +32,7 @@ class StoryListAPIView(generics.ListAPIView):
         try:
             logger.info(
                 "Story list requested from %s",
-                request.META.get("REMOTE_ADDR", "unknown"),
+                escape_log_value(request.META.get("REMOTE_ADDR", "unknown")),
             )
             response = super().list(request, *args, **kwargs)
             logger.info(f"Story list returned {len(response.data)} stories")
@@ -86,13 +87,15 @@ class StoryDetailAPIView(generics.RetrieveAPIView):
         """
         Override retrieve method to add logging and error handling.
         """
-        story_id = kwargs.get("pk")
+        # The URL converter supplies an integer; escape at the logging boundary
+        # as well so alternate callers cannot insert control characters.
+        story_id = escape_log_value(kwargs.get("pk"))
 
         try:
             logger.info(
                 "Story detail requested: id=%s, ip=%s",
                 story_id,
-                request.META.get("REMOTE_ADDR", "unknown"),
+                escape_log_value(request.META.get("REMOTE_ADDR", "unknown")),
             )
 
             instance = self.get_object()
@@ -108,7 +111,7 @@ class StoryDetailAPIView(generics.RetrieveAPIView):
 
         except Http404:
             # Let 404 errors pass through naturally (DRF will handle the response)
-            logger.warning(f"Story not found: id={story_id}")
+            logger.warning("Story not found: id=%s", story_id)
             raise
         except (PermissionDenied, APIException):
             raise
@@ -136,7 +139,7 @@ class AppConfigAPIView(APIView):
         try:
             logger.info(
                 "App config requested from %s",
-                request.META.get("REMOTE_ADDR", "unknown"),
+                escape_log_value(request.META.get("REMOTE_ADDR", "unknown")),
             )
             config = AppConfig.objects.select_related("menu_bgm").first()
             data = (

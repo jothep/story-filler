@@ -13,8 +13,17 @@ permissions:
   contents: read
 
 jobs:
+  security:
+    name: Image publication security
+    uses: ./.github/workflows/security-checks.yml
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+
   build-and-scan:
     name: Build and Scan Frontend Docker Image
+    needs: security
     runs-on: ubuntu-latest
 
     steps:

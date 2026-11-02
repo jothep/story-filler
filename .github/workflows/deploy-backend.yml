@@ -15,16 +15,6 @@ on:
       - '!backend/.gitignore'
   pull_request:
     branches: [main]
-    paths:
-      - 'backend/**'
-      - '.github/workflows/deploy-backend.yml'
-      - 'scripts/**'
-      - 'terraform/**'
-      - 'pyproject.toml'
-      - '.flake8'
-      - '.pylintrc'
-      - '!backend/**/*.md'
-      - '!backend/.gitignore'
   workflow_dispatch:
 
 permissions:
@@ -37,6 +27,15 @@ env:
   SERVICE_NAME: maori-story-backend
 
 jobs:
+  security:
+    name: Release security
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    uses: ./.github/workflows/security-checks.yml
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+
   test:
     name: Test backend and maintenance scripts
     runs-on: ubuntu-latest
@@ -142,8 +141,8 @@ jobs:
 
       - name: Check Python formatting and style
         run: |
-          black --check backend scripts
-          flake8 backend scripts
+          black --check backend scripts demo/polls
+          flake8 backend scripts demo/polls
 
       - name: Analyze backend code with Django support
         working-directory: backend
@@ -169,13 +168,22 @@ jobs:
           python manage.py check
           python manage.py makemigrations --check --dry-run
 
+      - name: Check historical demo response safety without database access
+        run: python scripts/check_demo_security.py
+
       - name: Test maintenance and release checks without cloud access
         run: python -m unittest discover -s scripts -p '*_test.py'
 
   build-scan:
     name: Verify the candidate image; publish from main
-    needs: test
-    if: github.event_name == 'pull_request' || (github.ref == 'refs/heads/main' && needs.test.outputs.release == 'true')
+    needs: [test, security]
+    # PRs have their own required Security Gate. Main publication waits for a
+    # fresh scan of this exact commit before any registry credentials are used.
+    if: >-
+      !cancelled() && needs.test.result == 'success' &&
+      (github.event_name == 'pull_request' ||
+       (github.ref == 'refs/heads/main' && needs.security.result == 'success' &&
+        needs.test.outputs.release == 'true'))
     runs-on: ubuntu-latest
     outputs:
       image: ${{ steps.publish.outputs.image }}
@@ -242,7 +250,7 @@ jobs:
           format: table
           exit-code: '1'
           severity: HIGH,CRITICAL
-          ignore-unfixed: true
+          ignore-unfixed: false
 
       - name: Authenticate for registry push
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
@@ -283,7 +291,7 @@ jobs:
 
   deploy:
     name: Deploy and verify the selected revision
-    needs: build-scan
+    needs: [build-scan, security]
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     # The ancestry check also prevents stale releases; this lock does not imply FIFO.
