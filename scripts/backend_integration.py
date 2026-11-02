@@ -26,6 +26,43 @@ SCRIPTS = Path(__file__).resolve().parent
 LABEL = "org.story-filler.runtime-check"
 UNCERTAIN_CREATE_ATTEMPTS = 5
 
+DJANGO_CHECKS = r"""
+import os
+import re
+import subprocess
+import sys
+import django
+os.environ['DJANGO_SETTINGS_MODULE'] = 'maori_story_project.settings'
+django.setup()
+from django.db import connection
+assert connection.vendor == 'postgresql', 'Django tests require PostgreSQL'
+connection.ensure_connection()
+for arguments in (
+    ['test', '--noinput'], ['check'], ['makemigrations', '--check', '--dry-run'],
+):
+    # Fixed manage.py arguments, executed without a shell.
+    # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
+    result = subprocess.run(
+        [sys.executable, 'manage.py', *arguments], shell=False,
+        capture_output=True, timeout=120,
+    )
+    if result.returncode:
+        sys.stderr.buffer.write(result.stderr)
+        raise RuntimeError('Django ' + arguments[0] + ' failed against PostgreSQL')
+    detail = ' '.join(arguments)
+    if arguments[0] == 'test':
+        match = re.search(r'Ran (\d+) tests?', result.stderr.decode())
+        assert match is not None, 'Django did not report its test count'
+        detail += ' (' + match[1] + ' tests)'
+    print('PASS: Django ' + detail + ' against PostgreSQL')
+test_name = connection.settings_dict.get('TEST', {}).get('NAME')
+test_name = test_name or 'test_' + connection.settings_dict['NAME']
+with connection.cursor() as cursor:
+    cursor.execute('SELECT 1 FROM pg_database WHERE datname = %s', [test_name])
+    assert cursor.fetchone() is None, 'Django test database was not removed'
+connection.close()
+"""
+
 SEED = """
 import os
 import subprocess
@@ -332,6 +369,9 @@ class Verification:
             "--env",
             "DEBUG=false",
         ]
+        # Django creates and removes its own test database. Keep those test
+        # fixtures separate from the application database used by the HTTP probe.
+        self.run_python("django-tests", DJANGO_CHECKS, options)
         self.run_python("seed", SEED, options)
         backend = self.create("application", self.image, options)
         started = time.monotonic()

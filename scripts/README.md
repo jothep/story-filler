@@ -13,7 +13,8 @@ Retired-entry tests also replace operational commands; all four legacy backup
 and restore commands remain disabled.
 
 The Pylint configuration tests load Django's model metadata with a temporary
-signing key, in-memory SQLite and local storage. They accept valid model fields
+signing key, PostgreSQL settings and local storage. Its fixed loopback URL is
+not contacted; linting needs no running database. They accept valid model fields
 and managers, then verify that undefined names and missing model attributes fail
 even when the overall lint score exceeds the minimum. No production settings or
 database records are needed.
@@ -101,16 +102,19 @@ script rejects remote TCP sockets and does not pull images itself.
 `check_backend_runtime.py` runs inside the final image via stdin. It compares all
 installed package versions and the lock checksum with the reviewed source,
 checks UID 100/GID 101 and the absence of build tools, and exercises native
-extensions, SQLite, local storage and GCS configuration without cloud access.
+extensions, local storage and GCS configuration without cloud access. SQLite
+modules, shared libraries and APK records must all be absent.
 
 The integration script uses an internal network, temporary labelled containers
 and a PostgreSQL tmpfs. It publishes no ports and mounts no host files. A separate
-one-off container migrates and seeds synthetic data before the application's
-normal Gunicorn command starts. Resource IDs and ownership labels govern cleanup,
+test container runs all 31 Django tests against PostgreSQL, then system and
+migration checks. It confirms Django removed its test database. A different
+one-off container migrates and seeds the synthetic application database before
+the application's normal Gunicorn command starts. Resource IDs and ownership labels govern cleanup,
 including failure and interruption paths. Existing containers, volumes and
-production databases are not used. Seventeen offline regression tests cover ownership,
+production databases are not used. Twenty-one offline regression tests cover ownership,
 timeouts, late creation, repeated signals, worker readiness, safe diagnostics and
-dependency verification.
+dependency verification, SQLite absence and PostgreSQL test-database cleanup.
 
 ## Release ordering
 
@@ -174,8 +178,9 @@ limited to that policy and the vulnerability database available on that run.
 The full JSON scan, including all package records, severities and unfixed items,
 is saved as a 30-day workflow artifact before the gate. Strict dependency audits
 check the runtime, development and image-build locks and verify report coverage.
-The [advisory record](../docs/dependency-findings.md) also tracks the known SQLite
-issue missing from the Alpine feed; a clean scan does not clear that issue.
+The [advisory record](../docs/dependency-findings.md) records SQLite removal and
+the earlier finding missing from the Alpine feed. Runtime absence checks verify
+the removal independently of the scanner.
 Review version updates and their checks together rather than rebuilding an old
 commit silently.
 

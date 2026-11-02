@@ -139,18 +139,25 @@ python -m pip check
 python -m pip_audit --strict --require-hashes --disable-pip -r backend/requirements.txt
 python -m pip_audit --strict --require-hashes --disable-pip -r backend/requirements-dev.txt
 python -m pip_audit --strict --require-hashes --disable-pip -r backend/requirements-build.txt
-
-SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(48))')" \
-DATABASE_URL='sqlite:///:memory:' USE_GCS=false \
-python backend/manage.py test core
 ```
 
-The tests use an isolated SQLite database and do not validate production data or
-make Google Cloud Storage requests. Also build and test the Linux image: a
-successful macOS installation alone does not establish Linux compatibility.
-Use the repository's image scan to check the base operating system and binary
-libraries as well as Python packages. Report unresolved findings explicitly;
-do not delete package metadata or suppress findings simply to pass a scan.
+Run the complete Django suite with the built-image verification described below.
+It creates a PostgreSQL 16 instance, applies migrations to a fresh test database,
+and removes that database after the tests. It then seeds a separate synthetic
+application database for HTTP checks. No production data or cloud credentials
+are used. Local Compose, CI, image verification and recovery checks use the same
+pinned PostgreSQL image. This matches the production database engine; it does
+not reproduce Neon's hosting configuration, network latency or availability.
+
+For a focused host-side test, explicitly select a disposable local PostgreSQL
+database and a user allowed to create its test database. Do not reuse a production
+URL or rely on an existing `.env`. Run `python backend/manage.py test core --noinput`
+with that `DATABASE_URL`, a temporary `SECRET_KEY` and `USE_GCS=false`.
+
+Also build and test the Linux image: a successful macOS installation alone does
+not establish Linux compatibility. Use the image scan to check the base operating
+system and binary libraries as well as Python packages. Report unresolved findings
+explicitly; do not delete package metadata or suppress findings to pass a scan.
 
 The audit reads every entry from the complete, hashed locks. `--disable-pip`
 avoids a temporary pip environment omitting packages that it already installed
@@ -207,13 +214,15 @@ visible. Run it with local-only settings:
 (
   cd backend
   SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(48))')" \
-  DATABASE_URL='sqlite:///:memory:' USE_GCS=false USE_S3=false DEBUG=false \
+  DATABASE_URL='postgresql://lint:lint@127.0.0.1:1/lint?connect_timeout=1' USE_GCS=false USE_S3=false DEBUG=false \
   python -m pylint --rcfile=../.pylintrc \
     core maori_story_project manage.py change_admin_password.py
 )
 python -m unittest discover -s scripts -p 'pylint_config_test.py'
 ```
 
+This static check loads model metadata without opening a database connection.
+Its loopback URL selects PostgreSQL settings and does not require a server.
 The configuration tests accept valid Django model access and verify that real
 missing attributes and undefined names still fail, including in code scoring
 above 7.0. The plugin and its tests are development tools, not runtime dependencies.
@@ -229,29 +238,33 @@ Build and test `linux/amd64`, the deployment target. Refresh the base and stable
 Alpine packages together, then repeat native-library, PostgreSQL, HTTP and image
 scans. A lock refresh alone does not update the operating system.
 
-The first stage compiles the two required native extensions with fixed build-tool
-versions, `build-base` and `crc32c-dev`. The final stage installs only the 37
+The wheel-builder stage compiles the two required native extensions with fixed build-tool
+versions, `build-base` and `crc32c-dev`. The cleaned runtime stage installs only the 37
 runtime packages and the CRC32C shared library. It retains package metadata,
-CA certificates, SQLite and Python runtime libraries. Compilers, headers,
-setuptools, wheel, pip and ensurepip are absent from the final image.
+CA certificates and the required Python runtime libraries. SQLite, its Python
+standard-library package and its native extension are removed together. Compilers, headers,
+setuptools, wheel, pip and ensurepip are absent from the final image. The last
+stage copies this complete cleaned filesystem into an empty image, so removed
+SQLite files are absent from published layers as well as the running container.
+Alpine package metadata remains available for scanning and dependency checks.
 
 The runtime account stays at UID 100/GID 101 to preserve existing local volume
 ownership. Static files are collected as that account with a temporary build-only
-key and SQLite settings. The default Gunicorn command, three gevent workers,
+key and PostgreSQL settings. This build step runs with networking disabled and
+does not connect to a database. The default Gunicorn command, three gevent workers,
 port 8000 and configurable local/GCS storage are unchanged.
 
-The base change addresses eight of the earlier nine HIGH advisory groups through
-updated or removed components. SQLite remains affected by CVE-2026-119373 even
-though the Alpine feed does not report it. Keep that issue separate from a clean
-Trivy result. The [advisory review](../docs/dependency-findings.md) records the
-comparison, the rejected Distroless candidate and the remaining update path.
+The SQLite removal also removes the component affected by CVE-2026-119373.
+The [advisory review](../docs/dependency-findings.md) records package coverage
+and scans separately from the earlier base-image comparison.
 
 Run the persistent [image verification](../scripts/README.md#built-image-verification)
-after building. It checks the exact dependency set, native features, 31 Django
-tests and storage configuration offline, then runs the unmodified image against
-a temporary PostgreSQL database and verifies API/static responses and shutdown.
-CI runs this before merge without cloud credentials; only reviewed `main`
-releases can authenticate and publish.
+after building. It checks the exact dependency set, native features, SQLite
+absence and storage configuration offline. A separate stage runs all 31 Django
+tests, system and migration checks against temporary PostgreSQL. The unmodified
+image then serves synthetic data through its normal Gunicorn command, followed
+by API/static-response and shutdown checks. CI runs these before merge without
+cloud credentials; only reviewed `main` releases can authenticate and publish.
 
 Gunicorn's optional control socket is disabled. Cloud Run manages the process;
 the container does not need a separate local control interface or a writable

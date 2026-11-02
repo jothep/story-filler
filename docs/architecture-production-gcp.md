@@ -1,6 +1,8 @@
 # Current deployment architecture
 
 This page describes the implemented deployment and its verification limits.
+The [verification record](verification.md) lists the latest releases; the dated
+migration observations below retain their original scope.
 The project is a recent infrastructure practice case alongside the author's enterprise experience.
 
 **Pre-migration online baseline checks: 2026-09-27, former repository `jothep/maori-story-fill`.** The public frontend, API read endpoints and a sampled media object were reachable.
@@ -94,20 +96,22 @@ Terraform itself is not run by the application deployment workflow.
 
 | Workflow | Trigger | Required checks and behavior |
 | --- | --- | --- |
-| [Backend](../.github/workflows/deploy-backend.yml) | Relevant changes pushed to `main`, or manual dispatch | Django and offline smoke-check tests, image build, Trivy scan, push, Cloud Run update, then public API smoke check |
-| [Frontend](../.github/workflows/deploy-frontend.yml) | Relevant changes pushed to `main`, or manual dispatch | ESLint, tests, build, artifact upload, then Pages deployment |
+| [Backend](../.github/workflows/deploy-backend.yml) | Relevant pull requests, main pushes or manual dispatch | Locked-dependency audits, style/lint, PostgreSQL Django tests, final-image integration and Trivy scan; main releases then push, deploy by digest and verify the serving release |
+| [Frontend](../.github/workflows/deploy-frontend.yml) | Relevant pull requests, main pushes or manual dispatch | Oxlint, JavaScript type checks, formatting, npm audit, tests and build; main releases deploy to Pages |
 | [Credential scan](../.github/workflows/secret-scan.yml) | Main pushes, pull requests, manual dispatch | Independent Gitleaks workflow scans all fetched history with redacted findings |
 | [CodeQL](../.github/workflows/codeql-analysis.yml) | Relevant main pushes, pull requests, schedule, manual dispatch | JavaScript and Python analysis; the analysis step allows failure to continue |
 | [Frontend container](../.github/workflows/build-frontend-docker.yml) | Manual dispatch | Lint, tests, container build and scan; optional, separately configured Docker Hub push |
 
 The manual frontend container workflow defaults to no Docker Hub push. Its `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` inputs have not been migrated; publishing that optional image requires separate setup and is not part of the new repository's verified delivery path.
 
-Backend Flake8 and Pylint are advisory because their steps use `continue-on-error`.
-Backend tests use SQLite and therefore do not establish PostgreSQL integration behavior.
+Backend formatting, Flake8 and Django-aware Pylint are required checks.
+All Django tests run against isolated PostgreSQL, and the final non-root image
+serves synthetic data through its normal Gunicorn command during integration
+verification. These checks use no production Neon data or GCS credentials.
 Trivy blocks HIGH/CRITICAL findings **with available fixes**; unfixed findings are excluded from that gate.
 A successful scan is not a claim of zero vulnerabilities.
 
-The application test workflows currently have no pull-request trigger.
+Application checks run on relevant pull requests before publication.
 The backend now runs [a smoke check](../scripts/smoke-check.py) after updating the service.
 It validates HTTP/JSON responses, a non-empty story list, one story detail with paragraphs and a word bank, and the configuration endpoint, using bounded retries.
 The [backend run for `7d80196`](https://github.com/jothep/maori-story-fill/actions/runs/36299274042) passed 11 Django tests, six offline smoke-check tests, image build, Trivy scan, push, deployment and the public API smoke check.

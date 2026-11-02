@@ -1,11 +1,51 @@
 # Dependency advisory review
 
 Reviewed on **2–3 November 2026**: Debian cleanup, frontend tooling migration,
-then the backend base-image replacement from `a16507e`. This record separates
+then the backend base-image replacement from `a16507e` and SQLite removal from `eadaa41`. This record separates
 available fixes, compatibility limits and the findings retained after review.
 The [verification record](verification.md) contains the release and test results.
 
-## Current backend: Alpine runtime (3 November)
+## Current backend: SQLite removed (3 November)
+
+Production uses PostgreSQL. SQLite was an unused library inherited from the
+Python base image. The runtime now removes its Python package, `dbm.sqlite3`
+adapter and native extension, rebuilds the base's virtual dependency list from
+remaining Python binaries, and removes `sqlite-libs` through APK. No dependency
+is forced away and no package-manager record is edited or hidden.
+
+A final stage copies the complete cleaned filesystem into an empty image. This
+retains Alpine, Python, certificate files and package metadata while excluding
+the original layers containing SQLite. The published layer archive was inspected:
+neither layer contains the SQLite engine, extension or standard-library
+implementation. Other optional native modules, including the remaining `dbm`
+backends, still import; APK's offline dependency simulation succeeds.
+
+| Check | Previous Alpine image | PostgreSQL-only image |
+| --- | --- | --- |
+| OS packages identified | 32 | 31 |
+| Python runtime packages identified | 37 | 37, unchanged versions |
+| SQLite | 3.53.4-r0, affected by CVE-2026-119373 | Removed |
+| Full Trivy findings, all severities including unfixed | 0 reported | 0 reported |
+| Runtime/build/development lock audit | 37 / 3 / 80 packages | Exact coverage, zero known findings |
+
+Both images were scanned with Trivy 0.76.1 and database timestamp
+`2026-11-02T19:15:11.074748541Z` (database SHA-256
+`3173b347c0c0c5a9def8e6db2a1771957e56566a2439e8a41292c525f9d14171`).
+The SQLite finding is resolved by component removal, independently of the
+Alpine advisory feed's earlier omission. The gate still checks fixable
+HIGH/CRITICAL vulnerabilities and secrets; the full report records all severities.
+
+All 31 original Django tests now run against temporary PostgreSQL. Build-time
+static collection has networking disabled, and linting uses only PostgreSQL
+model settings without a connection. Tests and compilers are not added to the
+production dependency set. See the [verification record](verification.md) for
+local checks and release status. No currently known dependency finding remains
+from this review; future base and dependency updates still need fresh scans.
+
+## Earlier backend: Alpine runtime (3 November)
+
+This snapshot predates SQLite removal. Its retained finding below explains why
+the PostgreSQL-only runtime follow-up was needed.
 
 The runtime now uses the official Python 3.13.18 Alpine 3.24 image, pinned by
 multi-platform digest. Application dependency versions, Python minor version,

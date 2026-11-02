@@ -21,7 +21,7 @@ class PylintConfigurationTests(unittest.TestCase):
             environment = os.environ.copy()
             environment.update(
                 SECRET_KEY=secrets.token_urlsafe(48),
-                DATABASE_URL="sqlite:///:memory:",
+                DATABASE_URL="postgres://lint:lint@127.0.0.1:1/lint?connect_timeout=1",
                 USE_GCS="false",
                 USE_S3="false",
                 DEBUG="false",

@@ -20,10 +20,8 @@ from pathlib import Path
 import re
 import secrets
 import shutil
-import sqlite3
 import ssl
-import subprocess
-import sys
+import sysconfig
 import zlib
 
 
@@ -57,6 +55,33 @@ def check_packages(expected, lock_sha256):
     print(f"PASS: exactly {len(expected)} locked packages; no installer or build tools")
 
 
+def check_sqlite_absent():
+    """SQLite's Python modules, native library and package record must be gone."""
+    for name in ("sqlite3", "_sqlite3"):
+        require(
+            importlib.util.find_spec(name) is None, f"Unexpected SQLite module: {name}"
+        )
+    stdlib = Path(sysconfig.get_path("stdlib"))
+    require(not (stdlib / "sqlite3").exists(), "SQLite standard-library files remain")
+    require(
+        not list((stdlib / "lib-dynload").glob("_sqlite3*.so")),
+        "SQLite native Python extension remains",
+    )
+    for directory in ("/lib", "/usr/lib", "/usr/local/lib"):
+        require(
+            not list(Path(directory).glob("libsqlite3.so*")),
+            "SQLite shared library remains",
+        )
+    installed = Path("/lib/apk/db/installed").read_text().splitlines()
+    require(
+        not any(
+            line == "P:sqlite" or line.startswith("P:sqlite-") for line in installed
+        ),
+        "SQLite remains in the APK inventory",
+    )
+    print("PASS: SQLite modules, shared library and APK metadata are absent")
+
+
 def check_native_features():
     # Exercise the native modules used by the service, without relying on a
     # distribution-specific library directory or optional GUI components.
@@ -68,14 +93,6 @@ def check_native_features():
         )
     require(ctypes.sizeof(ctypes.c_void_p) > 0, "ctypes is unavailable")
     require(ssl.create_default_context().get_ca_certs(), "TLS trust store is empty")
-    with sqlite3.connect(":memory:") as database:
-        require(
-            database.execute("SELECT 42").fetchone() == (42,), "SQLite query failed"
-        )
-        fts5 = database.execute(
-            "SELECT sqlite_compileoption_used('ENABLE_FTS5')"
-        ).fetchone()[0]
-    print(f"Runtime SQLite {sqlite3.sqlite_version}; FTS5 enabled: {bool(fts5)}")
 
     import google_crc32c
     import psycopg2
@@ -95,10 +112,7 @@ def check_native_features():
         with Image.open(data) as image:
             image.load()
             require(image.size == (2, 2), f"Pillow {format_name} round trip failed")
-    print(
-        "PASS: native modules, TLS trust store, SQLite, Pillow, "
-        "libpq, gevent and CRC32C"
-    )
+    print("PASS: native modules, TLS trust store, Pillow, libpq, gevent and CRC32C")
     print("TLS check is offline; it does not test a remote TLS handshake.")
 
 
@@ -151,37 +165,17 @@ def main():
         "Runtime identity must remain app UID 100 / GID 101",
     )
     check_packages(json.loads(args.expected_packages_json), args.lock_sha256)
+    check_sqlite_absent()
     check_native_features()
     os.environ.update(
         SECRET_KEY=secrets.token_urlsafe(48),
-        DATABASE_URL="sqlite:///:memory:",
+        DATABASE_URL="postgres://runtime_check@127.0.0.1:1/runtime_check",
         USE_GCS="false",
         DEBUG="false",
         DJANGO_SETTINGS_MODULE="maori_story_project.settings",
     )
-    for arguments in (
-        ["test"],
-        ["check"],
-        ["makemigrations", "--check", "--dry-run"],
-    ):
-        # Audited: these three Django commands are fixed above, use this process's
-        # Python executable, and accept no caller input or shell syntax.
-        # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
-        result = subprocess.run(
-            [sys.executable, "manage.py", *arguments],
-            shell=False,
-            capture_output=True,
-            timeout=120,
-        )
-        require(
-            result.returncode == 0, f"Django {arguments[0]} failed in the runtime image"
-        )
-        detail = " ".join(arguments)
-        if arguments == ["test"]:
-            match = re.search(r"Ran (\d+) tests?", result.stderr.decode())
-            require(match is not None, "Django did not report its test count")
-            detail += f" ({match[1]} tests)"
-        print(f"PASS: Django {detail}")
+    # This URL selects the PostgreSQL configuration only. The offline probe
+    # cannot contact any database; database tests run in the integration stage.
     check_storage_configuration()
     print("PASS: final runtime image checks completed as a non-root user")
 
