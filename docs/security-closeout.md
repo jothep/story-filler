@@ -5,13 +5,13 @@ the associated merge, publication and recurring-check configuration. It does not
 replace the dated [dependency review](dependency-findings.md) or
 [verification record](verification.md).
 
-**Status: implementation and local review prepared; remote closeout pending.**
+**Status: merged, published and verified on 3 November 2026.**
 The baseline contained three HIGH and eight MEDIUM alerts, all open, with their
 latest recorded analysis at commit
 `8ef92114802332e9239e7e250db333d8a37a3bcc`. Locations below refer to that baseline,
 not the changed files. No alert is treated as closed solely because code or tests
-changed. Fresh CodeQL analysis and repository-side enforcement evidence must be
-recorded in the final section before claiming completion.
+changed. Fresh CodeQL analysis, repository-side enforcement and release evidence are
+recorded in the final section.
 
 ## Alert-by-alert assessment
 
@@ -137,8 +137,8 @@ image, deploy an application or receive cloud credentials.
 These scans detect newly reported issues in locked dependencies and images; they
 do not apply upgrades automatically. A passing run remains dated evidence of the
 selected scanners and advisory databases. A failing maintenance run requires
-triage and a reviewed change, followed by fresh checks. The schedule's first
-successful remote run still needs to be recorded below.
+triage and a reviewed change, followed by fresh checks. The first manually dispatched maintenance run passed; its retained reports are
+linked below. The configured weekly run uses the same workflow.
 
 ## Validation findings
 
@@ -153,24 +153,42 @@ had arrived. The test now controls that response explicitly, verifies no audio
 before configuration, then requires one audio object with the correct path after
 it resolves. Production playback behavior is unchanged.
 
-## Verification and remaining evidence
+## Verification and publication
 
-Local regressions cover plain-text demo responses, malformed logging fields,
-unchanged public API behavior, loopback request restrictions and positive/negative
-SARIF gate outcomes. Backend database checks must use isolated PostgreSQL and
-synthetic data; demo response tests prohibit database access. Production databases,
-media, secrets and cloud deployment are outside this local validation.
+[PR #5](https://github.com/jothep/story-filler/pull/5) merged reviewed head
+`352a294f612e3b2d612b27b9ba729c1df9f26301` as
+`6497dcecc604be9291735e722b755ef904e35c8e`. Their file trees match exactly.
+Independent review covered the code, negative cases, source reports, permissions
+and actual required-check results before merge.
 
-| Evidence | Status to record before final closeout |
+| Evidence | Verified result |
 | --- | --- |
-| Local test, lint, formatting and image results | 522 automated tests passed: 40 PostgreSQL Django, 172 maintenance, four demo, 229 lint/type contracts, 71 component and six Pages HTTP tests. Seven recovery integration scenarios passed. Formatting, lint/types, actionlint, build, history scan and complete dependency/image audits passed. Final hosted results are recorded separately below. |
-| Pull request and exact analyzed commit | Pending URL and commit. |
-| Fresh Python and JavaScript CodeQL reports | Pending successful remote runs, retained report links and zero-result gate output. |
-| Alert state after analysis | Pending read-back of all 11 baseline alerts; do not infer `fixed` from a passing local test. |
-| Required-check enforcement | Applied and read back: strict checks from GitHub Actions, administrator enforcement, PR-only changes, no force pushes/deletions and resolved conversations. PR #5 at `a18937f` was BLOCKED while its frontend and security checks failed. The final passing head remains to be recorded. |
-| Main-branch release dependencies | Pending remote run evidence tying successful checks to the published caller commit. |
-| Weekly/manual maintenance workflow | Pending first remote run and retained report links. |
+| Local regressions | **522 tests:** 40 PostgreSQL Django, 172 maintenance, four demo, 229 lint/type contracts, 71 component and six Pages HTTP tests. Seven recovery integration scenarios also passed. |
+| Style and build | Black, Flake8, Oxlint/types, Prettier, actionlint and production build passed. Pylint passed at 9.58/10 with no error/fatal diagnostics; existing nonblocking style suggestions remain. |
+| PR backend and image | [41537493832](https://github.com/jothep/story-filler/actions/runs/41537493832) passed; actual runtime/image checks executed. Cloud authentication, push and deploy were skipped for the PR. |
+| PR frontend and recovery | [Frontend 41537493969](https://github.com/jothep/story-filler/actions/runs/41537493969) and [recovery 41537493837](https://github.com/jothep/story-filler/actions/runs/41537493837) passed; source changes did not take the documentation shortcut. |
+| PR source checks | [41537493912](https://github.com/jothep/story-filler/actions/runs/41537493912) passed. These PR reports use diff-informed analysis. |
+| Additional full pre-merge scan | [41537493087](https://github.com/jothep/story-filler/actions/runs/41537493087) analyzed the same head outside a PR. Both original SARIF reports have zero results, successful execution and no incremental-mode marker. |
+| Main source checks | The backend and frontend release runs below each retained two full reports for `6497dce`: zero results, successful execution, default queries plus `security-extended`, 103 JavaScript and 50 Python rules. |
+| Original alert closure | All 11 numbered alerts in the table are `fixed`; every dismissal field is null. Paginated main-branch and repository-wide open-alert queries both returned zero. No alert or analysis was deleted to achieve this. |
+| Required-check enforcement | Five checks restricted to GitHub Actions, strict up-to-date policy, administrator enforcement, PR-only changes, no force pushes/deletions and resolved conversations. The failing `a18937f` was BLOCKED; the final head was CLEAN only after all five checks passed. |
+| Backend publication | [41537985637](https://github.com/jothep/story-filler/actions/runs/41537985637) passed source/history checks, tests, candidate-image integration, full report, vulnerability/secret gate, registry publication and revision/API verification. |
+| Frontend publication | [41537985736](https://github.com/jothep/story-filler/actions/runs/41537985736) passed and deployed `6497dce` to Pages. Independent HTTP reads returned 200 for the page and its JavaScript/CSS assets. |
+| First maintenance execution | [41538044774](https://github.com/jothep/story-filler/actions/runs/41538044774) passed every job. Exact Python lock coverage was 37 runtime, 80 development and three build packages; complete backend/frontend reports covered 68/71 packages, with zero vulnerabilities. Full and production npm audits and the image secret gates passed. |
+| Local resource cleanup | Container, volume and network sets match the baseline: zero containers, ten retained pre-existing volumes and three default networks. The dedicated test VM is stopped. |
 
-Earlier publication/test figures remain in the historical records. They are not
-reused as proof that this candidate, its new gates or its branch settings have
-passed.
+Cloud Run revision **`maori-story-backend-00034-frg`** serves 100% of traffic,
+with source label `6497dcecc604be9291735e722b755ef904e35c8e`. Its resolved image is:
+
+`us-central1-docker.pkg.dev/jaskojothep/maori-story/backend@sha256:c46c0fa27d586a423c6b143baffdeb7f527d3271a7dfba1c5b1ac4e532276900`.
+
+The published image's complete report covers 31 Alpine and 37 Python packages,
+with zero vulnerabilities at all severities, including unfixed items. Independent
+public API reads returned the story list, detail with eight paragraphs and 11
+words, and configuration JSON. These reads exercise the application/database
+path; they do not write or restore production data.
+
+No known CodeQL or dependency finding remains from this batch. Scheduled scans
+will surface later advisory changes; they do not patch or redeploy automatically.
+Sourcery's quota skip was not counted as independent review. Hosted recovery and
+automatic rollback remain separate engineering work, not claims of this release.

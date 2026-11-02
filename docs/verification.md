@@ -4,6 +4,26 @@ Legacy deployment reviewed on **27 September 2026**; repository migration begun 
 
 New-repository checks are listed first. The later pre-migration sections retain evidence from the former private `jothep/maori-story-fill` repository and do not verify subsequent changes. See the [migration record](repository-migration.md) for migration scope and the [public aggregate snapshot](evidence/README.md) for historical activity counts.
 
+## Published source-security closeout 3 November 2026
+
+[PR #5](https://github.com/jothep/story-filler/pull/5) published `6497dce` after
+522 automated tests, seven recovery scenarios, all five required PR checks and
+independent review. A separate non-PR full scan also passed before merge.
+
+All 11 original CodeQL alerts are now fixed without dismissals. Complete main
+reports, strict lock audits and both application-image reports have zero known
+findings. [Backend release 41537985637](https://github.com/jothep/story-filler/actions/runs/41537985637),
+[Pages release 41537985736](https://github.com/jothep/story-filler/actions/runs/41537985736)
+and [maintenance 41538044774](https://github.com/jothep/story-filler/actions/runs/41538044774)
+passed. Revision `maori-story-backend-00034-frg` serves 100% of traffic; source and
+image metadata match, and public API/page/asset reads succeeded.
+
+The [security closeout record](security-closeout.md) contains the per-alert
+assessment, exact image digest, original-report review, negative-gate evidence,
+required-check policy, documentation-only optimization and cleanup results.
+Earlier records below retain their original scope: a historical successful
+CodeQL job did not establish that the alert dashboard was clear.
+
 ## Published PostgreSQL-only runtime 3 November 2026
 
 [PR #4](https://github.com/jothep/story-filler/pull/4) was merged as
