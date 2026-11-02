@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Dependency and delivery review (2026-11-02)**: separated direct Python dependency inputs from generated runtime/development hash locks; standardized frontend tooling on Node 24 and locked installs; committed Terraform provider checksums. Production frontend containers now use Nginx, retaining their existing ports and URL paths. The backend image installs binary runtime dependencies without compilers or development tools.
+- **Release ordering (2026-11-02)**: separated backend checks, image build/scan/push, and deployment. Releases use the scanned image digest and check the currently serving source commit while holding a deployment lock. Old candidates are skipped; unknown or conflicting metadata stops delivery. Pull requests run without deployment credentials.
 - **Local safety review (2026-11-02)**: disabled both legacy volume-restore entry points before any operational command. Updated their historical guide and generated backup instructions; replacement backup/restore tooling remains a later task.
 
 - **Frontend Code Refactoring** (2026-04-30, commit 27bf86e, 273a2d6)
@@ -25,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Documentation: Created `docs/REFACTORING-2026-04-30.md` with metrics and migration guide
 
 ### Security
+- **Dependency and delivery review (2026-11-02)**: updated Python and JavaScript dependencies with current security fixes; pinned the changed workflows' Actions and container base images; added dependency audits in CI. Remaining moderate frontend development-tool findings and unfixed backend operating-system findings are recorded separately in the [verification record](docs/verification.md#local-dependency-and-delivery-review-2-november-2026). The backend runtime omits Python installation tools; frontend runtime images omit Node. Development tools stay outside both runtimes.
 - **Local safety review (2026-11-02)**: restored Django's add permission check for application configuration. Public API failures now return safe error messages; database and serialization failures no longer become successful empty responses. Known HTTP errors and valid optional data retain their existing behavior.
 
 - **[RESOLVED]** Fixed backend Python package vulnerabilities (2026-03-09, commit 0e3100c) ✅
@@ -62,6 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 10 packages updated via `npm audit fix`
 
 ### Added
+- **Release-order regression coverage (2026-11-02)**: 23 offline tests exercise real Git histories and simulated Cloud Run metadata, including stale releases, documentation-only newer commits, legacy image tags, digest formats, traffic policies and safe failures. See [release maintenance](scripts/README.md).
 - **Local safety review (2026-11-02)**: added 20 backend regression tests and seven offline restore-entry tests. The backend workflow now discovers all `scripts/*_test.py` tests when it runs. See the [verification record](docs/verification.md#local-safety-review-2-november-2026) for local results and deferred work.
 
 - **S3 Storage Support** (2026-03-09, commit 016eef3)

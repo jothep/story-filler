@@ -4,6 +4,39 @@ Legacy deployment reviewed on **27 September 2026**; repository migration begun 
 
 New-repository checks are listed first. The later pre-migration sections retain evidence from the former private `jothep/maori-story-fill` repository and do not verify subsequent changes. See the [migration record](repository-migration.md) for migration scope and the [public aggregate snapshot](evidence/README.md) for historical activity counts.
 
+## Local dependency and delivery review 2 November 2026
+
+The second review batch builds on local safety commit `321c80e`. It updates dependency locks, container packaging and delivery checks. It has not been deployed: the source changes were prepared and tested in an isolated copy, without production credentials, production database operations, IAM changes or cloud deployment calls.
+
+Python dependencies now have direct `.in` inputs and generated runtime/development `.txt` locks with hashes. The locks were resolved on Linux amd64 with CPython 3.13. The runtime uses Django 5.2.18, Django REST framework 3.18.3 and Pillow 13.0.0. Development tools are separate. The frontend keeps its existing application code and uses Node 24 with `npm ci`. Container base images and the Actions used in the three updated delivery workflows are pinned by digest or commit. Terraform keeps Google provider 5.45.2 and now commits its lock and Linux/macOS checksums.
+
+The backend workflow separates read-only tests, image build/test/scan/push, and deployment. It sends the scanned image digest to the deployment job. Under that job's concurrency lock, a helper compares the candidate with the actual serving source commit. It skips stale candidates, allows a release followed only by documentation commits, and rejects unknown origins, conflicting digests, divergent histories or unsupported traffic policies. After deployment, it checks the serving revision, source label and digest before the public API check. Terraform's lifecycle rule preserves the image and these two CI-owned `source_commit` label keys. The release-check tests use real temporary Git histories and a fake Cloud CLI; they are not a live Cloud Run rollout test.
+
+| Check | Result | Scope |
+| --- | --- | --- |
+| Backend dependencies and tests | Passed | 31 tests in fresh Python 3.13 environments and the Linux amd64 runtime image; system/migration checks passed; runtime and development locks passed strict hash audits with zero known package findings |
+| Frontend checks | Passed | Node 24.22.2; lint, six component tests and Vite production build |
+| Offline script tests | Passed | 36 tests: 23 release-order regressions plus 13 existing smoke/restore tests |
+| Frontend containers | Passed | Both Linux amd64 images built; HTML, nested routes, JavaScript MIME, missing-asset 404s and redirects; actual existing Compose proxy path to port 3000 checked |
+| Backend container | Passed | Default non-root user and image command; Gunicorn/gevent served expected story/configuration JSON with temporary SQLite; no startup errors or development/install tools |
+| Image security scans | Passed within stated policies | Trivy 0.76.1 with the 2 November vulnerability database; both frontend images reported zero findings; backend had zero Python-package findings and zero fixable HIGH/CRITICAL findings |
+| Production-style Compose configuration | Passed | Parsed with temporary inputs; redundant backend command removed so the image owns its runtime flags; full database/media deployment not repeated |
+| Workflow validation | Passed | actionlint for all five workflows; changed Actions pinned to verified official releases |
+| New release-helper style | Passed | Black 88 and Flake8 with the repository's 88-character/W503 policy; historical modules were not reformatted |
+| Terraform checks | Passed | `init -backend=false`, provider checksums for Linux amd64/macOS arm64, `fmt -check` and `validate`; no remote state, plan or apply |
+
+The first backend image test exposed a build-time file-ownership issue: collecting static assets as root created logs that the runtime user could not open. The Dockerfile now runs that step as `app`. Image scanning also found vulnerable libraries bundled inside pip even though the top-level dependency audit passed. The final image removes pip and its ensurepip bootstrap after installation and dependency checks. It retains the application packages; it does not hide package metadata or add unrelated top-level packages to mask bundled dependencies.
+
+Actual Gunicorn startup then exposed a dependency masked by the development environment. The runtime now declares the official `gunicorn[gevent]` extra, which includes the required `packaging` library. The Docker build checks that worker import after removing pip, and CI runs the backend tests inside the built image without network access before scanning or authenticating. Gunicorn's unused control socket is disabled, avoiding an attempted write to the system user's nonexistent home. A final run using the image's default command served both API endpoints without startup errors.
+
+### Remaining findings and scan policy
+
+- **Frontend production dependencies:** no known vulnerabilities in the audit snapshot. The full npm tree retains six moderate findings from one minimatch advisory in the ESLint chain. ESLint 9 is a temporary compatibility choice and needs a supported-version migration with compatible React rules. The [frontend guide](../frontend/README.md#remaining-development-dependency-findings) records the advisory and affected use. CI blocks any production finding and HIGH/CRITICAL findings across the full toolchain.
+- **Backend operating system:** the final scan retained 45 HIGH package/advisory records representing nine distinct advisories, with no Debian fix listed. It also reported 71 MEDIUM, 61 LOW and eight UNKNOWN records, and no CRITICAL findings. The existing backend policy continues to block fixable HIGH/CRITICAL findings; it does not mean that all operating-system advisories are resolved. Frontend image scanning blocks all HIGH/CRITICAL findings, including unfixed ones.
+- **Dependency freshness:** both Python locks are audited in CI. Fixed package versions and image digests must be deliberately updated; they do not obtain future patches automatically. The frontend images also apply available Alpine updates during a build, so separate builds are not guaranteed to be byte-identical.
+
+Application lifecycle fixes, complete repository formatting, the ESLint migration and replacement backup/restore tooling remain separate work. The disabled restore commands stay disabled. Current tests do not validate PostgreSQL/GCS integration, migration execution, gameplay/audio in a real browser, load capacity or automatic rollback.
+
 ## Local safety review 2 November 2026
 
 The first review batch updates the local source based on `12a466cbf2750042c0934d9b316e4e31040b3ded`. It restores application-configuration add permissions, returns safe API failures, and disables the two unsafe legacy volume-restore commands. Successful API payloads, nullable content, model definitions and storage settings remain unchanged. These are local checks, not a new hosted release.
@@ -23,7 +56,7 @@ The backend regressions were first run against the original code: 10 failed and 
 | Shell syntax | Passed | All tracked shell scripts; this does not execute backup, recovery or cloud operations |
 | Independent review | Passed | API compatibility, permission handling and restore refusal reviewed separately |
 
-The review baseline also found existing whole-repository formatting issues (28 frontend files and 12 backend files before this batch) and dependency advisories. Whole-repository formatting, dependency updates, frontend lifecycle defects and deployment-order protection remain later batches. The local pass above does not relabel those outstanding items as fixed. Backend workflow path filters still need broadening when testing is separated from deployment; changes limited to the restore scripts do not yet trigger that workflow automatically.
+The review baseline also found existing whole-repository formatting issues (28 frontend files and 12 backend files before this batch), dependency advisories and frontend lifecycle defects. Those were outside this first batch. Dependency maintenance, deployment ordering and backend workflow path coverage are addressed in the second batch above; whole-repository formatting and frontend lifecycle work remain separate.
 
 To repeat the relevant checks with dependencies installed in an isolated environment, run the backend suite from `backend/`:
 

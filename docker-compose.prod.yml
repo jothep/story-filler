@@ -31,7 +31,7 @@ services:
       dockerfile: dockerfile
     container_name: maori-backend
     restart: unless-stopped
-    command: gunicorn maori_story_project.wsgi:application --bind 0.0.0.0:8000 --workers 3 --worker-class gevent
+    # Use the image's Gunicorn command so runtime flags have one source.
     environment:
       - DATABASE_URL=postgresql://dbuser:${DB_PASSWORD:?Set DB_PASSWORD}@db:5432/maori_story
       - SECRET_KEY=${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY}

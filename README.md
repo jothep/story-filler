@@ -53,7 +53,8 @@ The Kubernetes work demonstrates practical concerns around state, network routin
 | Move database and media outside the application container | Container replacement does not require carrying local content between instances | [Storage configuration](backend/maori_story_project/settings.py); restore procedures have not been demonstrated |
 | Give Terraform and application delivery different responsibilities | Terraform maintains service configuration; CI selects the application image | [Terraform lifecycle rule](terraform/main.tf), [backend workflow](.github/workflows/deploy-backend.yml); the image field is excluded from Terraform drift reconciliation |
 | Publish the frontend independently | Static hosting removes a continuously running frontend service | [Pages workflow](.github/workflows/deploy-frontend.yml); the API URL is a build-time setting |
-| Use a multi-stage, non-root backend image and SHA-tagged releases | Separate build tools from runtime and associate a release with source | [Dockerfile](backend/dockerfile); a SHA tag is not a digest-pinning or provenance guarantee |
+| Use a non-root backend image with locked runtime dependencies | Keep development tools out of the image and verify downloaded package hashes | [Dockerfile](backend/dockerfile), [dependency maintenance](backend/README.md); the base image is pinned by digest |
+| Deploy the scanned image by digest, in source-history order | Prevent an older workflow from replacing a newer serving release | [Backend workflow](.github/workflows/deploy-backend.yml), [release checks](scripts/cloud_run_release.py); the lock covers this workflow's deployment and verification |
 | Verify the release and keep credentials out of source | Make publication and delivery checks explicit | [Secret scan](.github/workflows/secret-scan.yml), [API smoke check](scripts/smoke-check.py); see dated execution status below |
 
 ## What has actually been demonstrated
@@ -68,7 +69,16 @@ The [verification record](docs/verification.md) separates **implemented**, **dep
 - **CI authentication:** the backend workflow retains the existing service-account JSON key method through the `GCP_CREDENTIALS` GitHub Actions secret. The owner configured that secret manually, and authentication succeeded in the new backend release; this migration does not change the authentication model.
 - **Not demonstrated:** sustained availability or latency targets, load capacity, automatic rollback, database restore drills, a complete observability system, or a reproducible billing total of zero.
 
-Backend tests use SQLite, not Neon. Frontend tests mock HTTP and audio. Backend lint and CodeQL analysis are currently advisory; Trivy blocks fixable HIGH/CRITICAL findings. The secret scan is a separate workflow, not a dependency of the deployment job. These checks do not establish that the system has no vulnerabilities.
+Backend tests use SQLite, not Neon. Frontend tests mock HTTP and audio. Backend lint and CodeQL analysis remain advisory; the backend Trivy gate blocks fixable HIGH/CRITICAL findings. Frontend production dependencies must pass `npm audit`; the full frontend toolchain blocks HIGH/CRITICAL findings and currently retains moderate ESLint-chain advisories. The secret scan is a separate workflow, not a dependency of deployment. Dated results and remaining work are in the [verification record](docs/verification.md).
+
+## Dependency and delivery maintenance
+
+- **Backend:** edit direct dependencies in `backend/requirements.in` and `backend/requirements-dev.in`, then regenerate their hash-locked `.txt` files. The production image installs only the runtime lock. See the [backend guide](backend/README.md) for the Python 3.13 commands.
+- **Frontend:** use Node 24 and `npm ci`. Review `package.json` and `package-lock.json` together. Nginx serves the optional local production containers; the hosted frontend still uses GitHub Pages. See the [frontend guide](frontend/README.md).
+- **Terraform:** commit the provider lock file; keep state and private inputs ignored. [Local validation](terraform/README.md#provider-versions-and-local-validation) disables the remote backend.
+- **Delivery:** pull requests run checks without deployment credentials. Main-branch backend releases build and scan once, push a uniquely tagged image, and pass its digest to the deployment job. Before updating Cloud Run, that job compares the candidate with the currently serving source commit. Unknown or conflicting release metadata stops automatic deployment. [Release maintenance](scripts/README.md) describes the checks and recovery from a refused release.
+
+Package locks, image digests and pinned workflow actions make selected inputs reviewable. Registry availability, hosted runner updates and explicit operating-system package updates still affect a rebuild. Update pins deliberately and repeat tests and security checks; a passed scan is dated evidence.
 
 ## Read the story
 

@@ -1,13 +1,16 @@
 name: Build Frontend Docker Image (Manual)
 
 on:
-  workflow_dispatch:  # 仅手动触发
+  workflow_dispatch:
     inputs:
       push_to_registry:
-        description: 'Push image to Docker Hub'
+        description: 'Push the verified main-branch image to Docker Hub'
         required: false
         type: boolean
         default: false
+
+permissions:
+  contents: read
 
 jobs:
   build-and-scan:
@@ -15,53 +18,71 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 1. Checkout code
-        uses: actions/checkout@v4
+      - name: Check the optional registry push
+        if: inputs.push_to_registry && github.ref != 'refs/heads/main'
+        run: |
+          echo 'Registry push is allowed only from main. Disable push to check another branch.' >&2
+          exit 1
 
-      - name: 2. Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: '20'
-          cache: 'npm'
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: 3. Install dependencies
-        working-directory: ./frontend
+      - name: Install locked dependencies
+        working-directory: frontend
         run: npm ci
 
-      - name: 4. Run Linter
-        working-directory: ./frontend
+      - name: Audit production dependencies
+        working-directory: frontend
+        run: npm audit --omit=dev
+
+      - name: Audit development and build dependencies
+        working-directory: frontend
+        run: npm audit --audit-level=high
+
+      - name: Run ESLint
+        working-directory: frontend
         run: npm run lint
 
-      - name: 5. Run Tests
-        working-directory: ./frontend
+      - name: Run component tests
+        working-directory: frontend
         run: npm test -- run
 
-      - name: 6. Build Docker image
-        working-directory: ./frontend
-        run: |
-          docker build -f Dockerfile.nginx -t maori-story-frontend:local .
+      - name: Build Docker image
+        working-directory: frontend
+        run: docker build --pull -f Dockerfile.nginx -t maori-story-frontend:local .
 
-      - name: 7. Scan Docker image for vulnerabilities
-        uses: aquasecurity/trivy-action@master
+      - name: Scan runtime image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
+          version: v0.76.1
           image-ref: maori-story-frontend:local
-          format: 'table'
+          format: table
           exit-code: '1'
-          severity: 'HIGH,CRITICAL'
-          ignore-unfixed: true
+          severity: HIGH,CRITICAL
+          ignore-unfixed: false
 
-      - name: 8. Login to Docker Hub (if push enabled)
-        if: ${{ inputs.push_to_registry }}
-        uses: docker/login-action@v3
+      - name: Log in to Docker Hub
+        if: inputs.push_to_registry && github.ref == 'refs/heads/main'
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: 9. Tag and Push to Docker Hub (if push enabled)
-        if: ${{ inputs.push_to_registry }}
+      - name: Push the verified main-branch image
+        if: inputs.push_to_registry && github.ref == 'refs/heads/main'
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         run: |
-          docker tag maori-story-frontend:local ${{ secrets.DOCKERHUB_USERNAME }}/maori-story-frontend:latest
-          docker tag maori-story-frontend:local ${{ secrets.DOCKERHUB_USERNAME }}/maori-story-frontend:${{ github.sha }}
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/maori-story-frontend:latest
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/maori-story-frontend:${{ github.sha }}
+          docker tag maori-story-frontend:local "$DOCKERHUB_USERNAME/maori-story-frontend:latest"
+          docker tag maori-story-frontend:local "$DOCKERHUB_USERNAME/maori-story-frontend:${{ github.sha }}"
+          docker push "$DOCKERHUB_USERNAME/maori-story-frontend:latest"
+          docker push "$DOCKERHUB_USERNAME/maori-story-frontend:${{ github.sha }}"

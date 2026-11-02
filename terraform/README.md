@@ -7,7 +7,7 @@ This configuration manages four resource types for the current GCP deployment:
 - the Cloud Run service, including its runtime environment and 0–1 instance limit;
 - public invocation permission for the application.
 
-The [current architecture](../docs/architecture-production-gcp.md) documents the responsibility split: Terraform owns service configuration; GitHub Actions updates the image. `ignore_changes` on the image field prevents an infrastructure apply from reverting that release selection.
+The [current architecture](../docs/architecture-production-gcp.md) documents the responsibility split: Terraform owns service configuration; GitHub Actions updates the image. `ignore_changes` preserves the image selection and the `source_commit` label on the service and revision template. CI uses that label to verify release ordering. Other configuration and labels remain managed normally; this does not ignore the whole label map.
 
 ## Prerequisites outside this configuration
 
@@ -30,9 +30,23 @@ Terraform's `sensitive` marking hides selected display output; it does not remov
 3. For a completely new environment, create the registry before pushing an image. A narrowly targeted apply of `google_artifact_registry_repository.maori_story` can be used for this one-time bootstrap; routine updates should use a full reviewed plan.
 4. Build and push the initial backend image to that registry. The Cloud Run resource references `backend:latest`, so that image must exist before the initial service creation.
 5. Review a full `terraform plan`, then apply it. Ensure the runtime identity has the media permissions established outside this configuration.
-6. Configure GitHub's backend and Pages workflows and run their delivery checks. Later backend releases use commit-SHA image tags.
+6. Configure GitHub's backend and Pages workflows and run their delivery checks. Later backend releases are built with source-commit tags and deployed by image digest.
 
 Do not import, recreate or apply against the existing project merely to demonstrate these commands. Inspect the existing state and ownership first.
+
+## Provider versions and local validation
+
+Commit `.terraform.lock.hcl` with the configuration. It records Google provider 5.45.2 and verified package checksums, including Linux AMD64 and macOS ARM64. The existing `~> 5.0` constraint is unchanged. A routine `terraform init` uses the selected version; provider upgrades require a separate review of the lock-file diff and plan.
+
+For syntax and provider-schema checks in a fresh copy without production inputs:
+
+```bash
+terraform init -backend=false -input=false -lockfile=readonly
+terraform fmt -check
+terraform validate
+```
+
+These commands do not read remote state or apply changes. When deliberately changing provider versions, regenerate the lock with `terraform init -backend=false -upgrade`, then run `terraform providers lock -platform=linux_amd64 -platform=darwin_arm64` and review the resulting diff. Keep `.terraform/`, state, plans and private variable files out of version control.
 
 ## Verification and cost boundaries
 

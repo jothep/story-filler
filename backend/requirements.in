@@ -1,0 +1,14 @@
+# Direct runtime dependencies. Edit this file, then regenerate requirements.txt.
+# Keep Django on its 5.2 LTS series; review feature-series upgrades separately.
+django>=5.2.18,<5.3
+djangorestframework>=3.18.3,<3.19
+django-cors-headers>=4.9.0,<5
+django-environ>=0.14.0,<0.15
+django-storages[google]>=1.14.6,<1.15
+
+# Application server, PostgreSQL client, static files and image handling.
+gunicorn[gevent]>=26.2.0,<27
+gevent>=26.9.0,<27
+psycopg2-binary>=2.9.13,<3
+whitenoise>=6.12.0,<7
+pillow>=13.0.0,<14

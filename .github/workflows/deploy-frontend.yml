@@ -1,72 +1,90 @@
-name: Deploy Frontend to GitHub Pages
+name: Validate and Deploy Frontend
 
 on:
+  pull_request:
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deploy-frontend.yml'
   push:
     branches: [main]
     paths:
       - 'frontend/**'
       - '.github/workflows/deploy-frontend.yml'
-  workflow_dispatch:  # 允许手动触发
+  workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: "pages"
+  group: frontend-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
   build:
-    name: Build and Test Frontend
+    name: Check and Build Frontend
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
 
     steps:
-      - name: 1. Checkout code
-        uses: actions/checkout@v4
-
-      - name: 2. Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: '20'
-          cache: 'npm'
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: 3. Install dependencies
-        run: |
-          cd frontend
-          npm ci
+      - name: Install locked dependencies
+        run: npm ci
 
-      - name: 4. Run Linter (ESLint)
-        run: |
-          cd frontend
-          npm run lint
+      - name: Audit production dependencies
+        run: npm audit --omit=dev
 
-      - name: 5. Run Tests
-        run: |
-          cd frontend
-          npm test -- run
+      - name: Audit development and build dependencies
+        # Known moderate ESLint-chain findings remain visible; high/critical fail.
+        run: npm audit --audit-level=high
 
-      - name: 6. Create production env file
-        run: |
-          cd frontend
-          echo "VITE_API_URL=${{ secrets.CLOUD_RUN_URL }}" > .env.production
+      - name: Run ESLint
+        run: npm run lint
 
-      - name: 7. Build
+      - name: Run component tests
+        run: npm test -- run
+
+      - name: Build without deployment configuration
+        if: github.event_name == 'pull_request' || github.ref != 'refs/heads/main'
+        run: npm run build
+
+      - name: Build for GitHub Pages
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          VITE_API_URL: ${{ secrets.CLOUD_RUN_URL }}
         run: |
-          cd frontend
+          if [ -z "$VITE_API_URL" ]; then
+            echo 'CLOUD_RUN_URL must be configured for a Pages deployment.' >&2
+            exit 1
+          fi
           npm run build
 
-      - name: 8. Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
-          path: ./frontend/dist
+          path: frontend/dist
 
   deploy:
     name: Deploy to GitHub Pages
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
 
     environment:
       name: github-pages
@@ -75,4 +93,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

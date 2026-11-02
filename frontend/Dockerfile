@@ -1,5 +1,5 @@
-# --- stage 1 ---
-FROM node:24-bookworm-slim AS builder
+# Build with the same supported Node major used by development and CI.
+FROM node:24-bookworm-slim@sha256:c86ecead9e55a5210ac1727de38a4ca840bf03dcaf34dc9749addbf383b1920c AS builder
 
 WORKDIR /app
 
@@ -9,21 +9,17 @@ RUN npm ci
 
 COPY . .
 
-# RUN npm run lint
-# RUN npm test -- run
-
 RUN npm run build
 
-# --- stage 2 ---
-FROM node:24-bookworm-slim
+# Compose removes /story-filler/ before forwarding requests to port 3000.
+# Only static assets enter the runtime image; Node and npm are build tools.
+FROM nginx:stable-alpine@sha256:0e52bd054126cdc040b1276c0af347aeb02a41b9cfe305d6094767ac30e97949
 
-WORKDIR /app
+RUN apk upgrade --no-cache
 
-# Install latest serve version and clean cache to get updated dependencies
-RUN npm cache clean --force && npm install -g serve@latest
-
-COPY --from=builder /app/dist/ .
+COPY nginx.root.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/dist/ /usr/share/nginx/html/
 
 EXPOSE 3000
 
-CMD ["serve", "-s", ".", "-l", "tcp://0.0.0.0:3000"]
+CMD ["nginx", "-g", "daemon off;"]

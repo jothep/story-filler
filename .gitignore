@@ -239,8 +239,7 @@ override.tf.json
 *_override.tf
 *_override.tf.json
 
-# Terraform lock file (optional, some teams commit this)
-.terraform.lock.hcl
+# Commit .terraform.lock.hcl so provider versions and checksums are reviewed.
 
 # ----------------------
 # AWS / SSH Keys

@@ -116,8 +116,11 @@ resource "google_cloud_run_v2_service" "backend" {
   }
 
   lifecycle {
+    # CI owns the deployed image and its source commit metadata.
     ignore_changes = [
       template[0].containers[0].image,
+      labels["source_commit"],
+      template[0].labels["source_commit"],
     ]
   }
 }
