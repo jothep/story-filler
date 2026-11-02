@@ -57,12 +57,12 @@ substitute for the final scan.
 ## Merge and publication policy
 
 The [source workflow](../.github/workflows/codeql-analysis.yml) runs for all pull
-requests to `main` and all `main` pushes, without path filters, and is reusable
+requests to `main`, without path filters, and is reusable
 by release and maintenance workflows. It analyzes Python and JavaScript/TypeScript
 with `security-extended` and scans all fetched Git history with Gitleaks. The
-original workflow file and `analyze` job identifier are retained to preserve the
-baseline's analysis identity; actual alert closure still requires remote
-verification. A final `Security Gate` job uses `if: always()` and requires both
+original workflow file, `analyze` job identifier and language categories are
+retained. Actual alert closure is verified from the main-branch release analyses;
+a successful PR scan alone does not establish it. A final `Security Gate` job uses `if: always()` and requires both
 the analysis matrix and credential scan to succeed, so failed or skipped
 dependencies do not become a successful aggregate check.
 
@@ -100,6 +100,29 @@ and exposed secrets. Complete vulnerability reports retain all severities and
 package records. Dependency audits retain their existing strict coverage and
 all-severity policies. There is no new security ignore file, lowered severity
 threshold or silent allowance for these source alerts.
+
+## Keeping the checks proportionate
+
+A required job still starts for every PR. For a strictly confirmed documentation-only
+PR, image rebuilding and the Docker recovery exercise are skipped inside their
+jobs; the status checks do not disappear or remain pending. The scope check allows
+only root Markdown files and Markdown under `docs/`. Source files, workflows,
+locks, application documentation and unknown paths keep the full checks. Renames
+include both old and new paths. Invalid metadata or a failed comparison fails the
+job; only an explicit `docs_only=true` permits the cheaper path.
+
+The frontend checks, backend unit/style/dependency checks and source/history
+checks remain active for documentation PRs. Main publication and manual/scheduled
+validation always use the full path. The redundant standalone main-push CodeQL
+trigger was removed. Each actual application publication keeps its own fresh scan;
+when both apps publish, that small duplication avoids introducing cross-workflow
+polling, cached scan decisions or another publication trust boundary.
+
+A finding blocks automatic publication for assessment; it does not establish
+exploitability. A future confirmed false positive needs a documented source/sink
+and reachability review, a narrow rationale and independent review of any precise
+gate exception. Broad query exclusions and unexplained dismissals are not the
+remedy. No exception is needed for this batch's final source changes.
 
 ## Recurring maintenance
 
@@ -140,7 +163,7 @@ media, secrets and cloud deployment are outside this local validation.
 
 | Evidence | Status to record before final closeout |
 | --- | --- |
-| Local test, lint, formatting and image results | 506 automated tests passed: 40 PostgreSQL Django, 156 maintenance, four demo, 229 lint/type contracts, 71 component and six Pages HTTP tests. Seven recovery integration scenarios passed. Formatting, lint/types, actionlint, build, history scan and complete dependency/image audits passed. Final hosted results are recorded separately below. |
+| Local test, lint, formatting and image results | 522 automated tests passed: 40 PostgreSQL Django, 172 maintenance, four demo, 229 lint/type contracts, 71 component and six Pages HTTP tests. Seven recovery integration scenarios passed. Formatting, lint/types, actionlint, build, history scan and complete dependency/image audits passed. Final hosted results are recorded separately below. |
 | Pull request and exact analyzed commit | Pending URL and commit. |
 | Fresh Python and JavaScript CodeQL reports | Pending successful remote runs, retained report links and zero-result gate output. |
 | Alert state after analysis | Pending read-back of all 11 baseline alerts; do not infer `fixed` from a passing local test. |

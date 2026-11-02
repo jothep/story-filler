@@ -26,22 +26,31 @@ jobs:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
 
+      - name: Identify a documentation-only pull request
+        id: scope
+        run: python3 scripts/check_docs_only.py
+
       - name: Set up Python
+        if: steps.scope.outputs.docs_only != 'true'
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.13'
 
       - name: Test archive validation and operational safeguards
+        if: steps.scope.outputs.docs_only != 'true'
         run: |
           python -m unittest discover -s scripts -p '*recovery*_test.py'
           python -m unittest discover -s scripts -p 'restore_safety_test.py'
 
       - name: Load the pinned PostgreSQL test image
+        if: steps.scope.outputs.docs_only != 'true'
         run: |
           image="$(PYTHONPATH=scripts python -c 'from local_recovery import POSTGRES_IMAGE; print(POSTGRES_IMAGE)')"
           docker --host unix:///var/run/docker.sock pull "$image"
 
       - name: Exercise backup, restore and failure paths
+        if: steps.scope.outputs.docs_only != 'true'
         run: python scripts/recovery_integration.py --docker-host unix:///var/run/docker.sock

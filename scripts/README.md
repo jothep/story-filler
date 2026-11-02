@@ -65,6 +65,20 @@ maintenance suite above.
 tests. It uses PostgreSQL settings and Django `SimpleTestCase`, which rejects
 database access; stored question text comes from a synthetic mocked query.
 
+## Documentation-only pull requests
+
+`check_docs_only.py` reads GitHub's PR event and compares the complete change with
+`git diff --no-renames`. Only root Markdown and Markdown below `docs/` qualify.
+It writes `docs_only=true` only after a successful, nonempty comparison; unknown
+paths keep full validation, malformed metadata fails, and non-PR events always
+require full validation. Its tests use real Git history, including code-to-docs
+renames and base-branch changes.
+
+Image and recovery jobs still start and report status on every PR. Their costly
+steps skip only for that explicit true value. The other tests and source/history
+checks remain active. This avoids pending required checks from path-filtered
+workflows without rebuilding containers for a prose-only change.
+
 ## Local backup and recovery
 
 `local_recovery.py` coordinates explicit local Docker operations;
@@ -218,8 +232,8 @@ commit silently.
 
 The reusable [source workflow](../.github/workflows/codeql-analysis.yml) combines
 CodeQL with full fetched-history Gitleaks checks and exposes `Security Gate`
-for every pull request to `main` and every `main` push, without path filters.
-Release and maintenance workflows call that same workflow. Its original
+for every pull request to `main`, without path filters. Release and maintenance
+workflows call the same checks; there is no additional standalone main-push scan. Its original
 `analyze` job identifier is retained for analysis continuity.
 Repository required-check settings must separately enforce that status.
 

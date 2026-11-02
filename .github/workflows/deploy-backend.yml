@@ -192,9 +192,15 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
 
+      - name: Identify a documentation-only pull request
+        id: scope
+        run: python3 scripts/check_docs_only.py
+
       - name: Name the candidate image
+        if: steps.scope.outputs.docs_only != 'true'
         id: image
         run: |
           repository="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${ARTIFACT_REGISTRY}/backend"
@@ -202,6 +208,7 @@ jobs:
           printf 'repository=%s\ntag=%s\n' "$repository" "$tag" >> "$GITHUB_OUTPUT"
 
       - name: Build once
+        if: steps.scope.outputs.docs_only != 'true'
         env:
           IMAGE_TAG: ${{ steps.image.outputs.tag }}
         run: |
@@ -210,6 +217,7 @@ jobs:
             --tag "$IMAGE_TAG" backend
 
       - name: Verify the runtime and isolated PostgreSQL integration
+        if: steps.scope.outputs.docs_only != 'true'
         env:
           IMAGE_TAG: ${{ steps.image.outputs.tag }}
         run: |
@@ -219,6 +227,7 @@ jobs:
             --docker-host unix:///var/run/docker.sock --image "$IMAGE_TAG"
 
       - name: Record the complete image scan
+        if: steps.scope.outputs.docs_only != 'true'
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           version: v0.76.1
@@ -232,6 +241,7 @@ jobs:
           exit-code: '0'
 
       - name: Save the full package and vulnerability report
+        if: steps.scope.outputs.docs_only != 'true'
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
         with:
           name: backend-image-scan-${{ github.run_attempt }}
@@ -241,6 +251,7 @@ jobs:
 
       # This job has no Google credentials until after the local image scan passes.
       - name: Scan the built image
+        if: steps.scope.outputs.docs_only != 'true'
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           version: v0.76.1
@@ -253,18 +264,24 @@ jobs:
           ignore-unfixed: false
 
       - name: Authenticate for registry push
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: >-
+          steps.scope.outputs.docs_only != 'true' &&
+          github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
         with:
           credentials_json: ${{ secrets.GCP_CREDENTIALS }}
 
       - name: Set up Cloud SDK
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: >-
+          steps.scope.outputs.docs_only != 'true' &&
+          github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
 
       - name: Push the scanned image and record its digest
         id: publish
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: >-
+          steps.scope.outputs.docs_only != 'true' &&
+          github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         env:
           IMAGE_TAG: ${{ steps.image.outputs.tag }}
           IMAGE_REPOSITORY: ${{ steps.image.outputs.repository }}
