@@ -42,6 +42,21 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       release: ${{ steps.scope.outputs.release }}
+    # Synthetic data only; Django creates and removes its own test database.
+    services:
+      postgres:
+        image: postgres:16-alpine@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab
+        env:
+          POSTGRES_USER: backend_test
+          POSTGRES_PASSWORD: local-test-only
+          POSTGRES_DB: backend_test
+        ports:
+          - 5432/tcp
+        options: >-
+          --health-cmd "pg_isready -h 127.0.0.1 -U backend_test -d backend_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
     steps:
       - name: Checkout source and history
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -133,7 +148,7 @@ jobs:
       - name: Analyze backend code with Django support
         working-directory: backend
         env:
-          DATABASE_URL: 'sqlite:///:memory:'
+          DATABASE_URL: 'postgresql://lint:lint@127.0.0.1:1/lint?connect_timeout=1'
           USE_GCS: 'false'
           USE_S3: 'false'
           DEBUG: 'false'
@@ -141,14 +156,18 @@ jobs:
           export SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(64))')"
           python -m pylint --rcfile=../.pylintrc core maori_story_project manage.py change_admin_password.py
 
-      - name: Test the backend
+      - name: Test the backend with PostgreSQL
         working-directory: backend
         env:
-          DATABASE_URL: 'sqlite:///:memory:'
+          DATABASE_URL: "postgresql://backend_test:local-test-only@127.0.0.1:${{ job.services.postgres.ports['5432'] }}/backend_test"
           USE_GCS: 'false'
           USE_S3: 'false'
           DEBUG: 'false'
-        run: SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(64))')" python manage.py test
+        run: |
+          export SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(64))')"
+          python manage.py test --noinput
+          python manage.py check
+          python manage.py makemigrations --check --dry-run
 
       - name: Test maintenance and release checks without cloud access
         run: python -m unittest discover -s scripts -p '*_test.py'

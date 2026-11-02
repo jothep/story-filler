@@ -12,13 +12,34 @@ RUN python -m pip install --no-cache-dir --require-hashes --only-binary=:all: \
         --only-binary=:all: --no-binary=google-crc32c,zope-interface \
         --no-deps --no-build-isolation -r requirements.txt --wheel-dir /wheels
 
-FROM python:3.13.18-alpine3.24@sha256:7984cf56ceaddebe4fefeb75d64000b9f45d8b77b11a09b24524da6cdc3af0c8
+FROM python:3.13.18-alpine3.24@sha256:7984cf56ceaddebe4fefeb75d64000b9f45d8b77b11a09b24524da6cdc3af0c8 AS clean-runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
 WORKDIR /app
+
+# Production uses PostgreSQL. Remove the optional SQLite Python modules, then
+# rebuild the official base's virtual runtime dependency package from the
+# remaining Python binaries. APK removes SQLite normally and retains other
+# required libraries. Do this before adding wheels with private shared libraries.
+RUN set -eu; \
+    set -o pipefail; \
+    rm -rf /usr/local/lib/python3.13/sqlite3; \
+    rm -f /usr/local/lib/python3.13/dbm/sqlite3.py; \
+    rm -f /usr/local/lib/python3.13/lib-dynload/_sqlite3*.so; \
+    python_runtime_dependencies="$( \
+        find /usr/local -type f -not -name '*tkinter*' \
+            -exec scanelf --needed --nobanner --format '%n#p' '{}' + \
+            | tr ',' '\n' \
+            | sort -u \
+            | awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
+    )"; \
+    test -n "$python_runtime_dependencies"; \
+    apk add --no-network --virtual .python-runtime $python_runtime_dependencies; \
+    apk del --no-network .python-rundeps sqlite-libs; \
+    python -c 'import importlib.util; assert all(importlib.util.find_spec(name) is None for name in ("sqlite3", "_sqlite3", "dbm.sqlite3"))'
 
 # Preserve the existing runtime IDs. CRC32C remains a runtime library; its
 # headers and the compiler are deliberately absent from this final stage.
@@ -45,11 +66,25 @@ USER app
 
 # Generate static assets without cloud credentials or a database connection.
 # Run as app so generated log and static files retain the runtime ownership.
-RUN SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(64))')" \
-    DATABASE_URL="sqlite:///:memory:" \
+RUN --network=none SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(64))')" \
+    DATABASE_URL="postgresql://build@127.0.0.1:5432/build" \
     USE_GCS=false \
     python manage.py collectstatic --noinput
 
+# Copy the complete cleaned filesystem, including package metadata. Starting
+# from scratch keeps SQLite out of the published layers, not just hidden by
+# deletion markers over the original Python base layers.
+FROM scratch
+COPY --from=clean-runtime / /
+
+ENV PATH=/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+    LANG=C.UTF-8 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+WORKDIR /app
+USER app
 EXPOSE 8000
 
 CMD ["gunicorn", "--workers", "3", "--worker-class", "gevent", \

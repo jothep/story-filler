@@ -4,6 +4,36 @@ Legacy deployment reviewed on **27 September 2026**; repository migration begun 
 
 New-repository checks are listed first. The later pre-migration sections retain evidence from the former private `jothep/maori-story-fill` repository and do not verify subsequent changes. See the [migration record](repository-migration.md) for migration scope and the [public aggregate snapshot](evidence/README.md) for historical activity counts.
 
+## PostgreSQL-only runtime review 3 November 2026
+
+Starting from `eadaa41`, this batch removes SQLite from the final runtime and its
+published filesystem layers. All application dependency versions, UID 100/GID 101
+and the default Gunicorn command are preserved. Tests use temporary PostgreSQL;
+build and static analysis need no database connection. Independent reviews of the
+Dockerfile, integration scripts, CI configuration and documentation found no
+blocking issue after the changes below were checked.
+
+| Check | Result | Scope |
+| --- | --- | --- |
+| Existing Django suite | 31 passed | Real PostgreSQL in the final non-root Linux amd64 image; all original tests retained |
+| Database checks | Passed | PostgreSQL vendor/connection, complete test migrations, system check, no pending migrations, test database removed |
+| Maintenance suite | 140 passed | Original 136 plus four SQLite-removal/PostgreSQL verification contracts |
+| Frontend regression | 302 passed | 229 lint/type contracts, 71 component tests, two Pages tests; clean locked install, formatting, build and full/production audits passed |
+| Recovery integration | Seven scenarios passed | Synthetic PostgreSQL/media recovery, corruption, active writer, overflow, timeout, restore failure and original-data preservation |
+| Dependency audits | Passed | Exact 37 runtime, 80 development and three build entries; zero known findings |
+| SQLite absence | Passed | No Python package, native extension, shared library or APK record; all published image filesystem layers also inspected |
+| Package/native checks | Passed | APK dependency simulation; exact 37 runtime versions, no installer/compilers/dev tools, TLS trust store, compression, Pillow, libpq, gevent, CRC32C, zope and remaining dbm backends |
+| Built-image service | Passed | Fresh synthetic PostgreSQL data; unchanged Gunicorn command, three workers, API JSON, POST 405, static CSS contents/type, missing-resource 404 and SIGTERM exit |
+| Complete image scan | Zero known findings | 31 Alpine and 37 Python packages; all severities/unfixed included, plus the original vulnerability/secret gate |
+| Style/configuration | Passed | Black, Flake8, Pylint 9.52/10, actionlint, both Compose configurations and redacted working-tree secret scan |
+
+The local tests do not contact Neon or change production data. PostgreSQL 16 is
+pinned consistently for Compose, CI, final-image and recovery verification. This
+matches the production engine, not every property of the hosted environment.
+The existing API error tests still simulate database exceptions; this batch does
+not add a live production-outage or failover test. Older records below describe
+their original SQLite-based checks and remain historical evidence.
+
 ## Published backend base-image replacement 3 November 2026
 
 [PR #3](https://github.com/jothep/story-filler/pull/3) was merged as
@@ -27,7 +57,7 @@ Cloud Run revision `maori-story-backend-00032-6tt` serves **100%** of traffic.
 Its source label is `8ef92114802332e9239e7e250db333d8a37a3bcc`, and its image is
 `us-central1-docker.pkg.dev/jaskojothep/maori-story/backend@sha256:616c69a700cb09abfb66771d4ddfc43ecef22d6b13e72d139122f415a66f1ba1`.
 The final release report still identifies `sqlite-libs` 3.53.4-r0. The known
-[CVE-2026-119373](dependency-findings.md#current-backend-alpine-runtime-3-november)
+[CVE-2026-119373](dependency-findings.md#earlier-backend-alpine-runtime-3-november)
 remains tracked; no claim of a completely vulnerability-free runtime is made.
 
 The public audio object uses `application/octet-stream`; HTTP 200/206 and its

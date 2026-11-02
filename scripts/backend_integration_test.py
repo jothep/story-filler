@@ -6,8 +6,10 @@ import signal
 import subprocess
 import sys
 import unittest
+from contextlib import ExitStack
+from types import SimpleNamespace
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import backend_integration as integration
 import check_backend_runtime as runtime
@@ -242,6 +244,106 @@ class RuntimeContracts(unittest.TestCase):
             RuntimeError, "^synthetic timeout did not complete$"
         ):
             check.command([], "synthetic timeout", timeout=0.05)
+
+    def test_sqlite_absence_accepts_removed_modules_library_and_metadata(self):
+        with (
+            patch.object(runtime.importlib.util, "find_spec", return_value=None),
+            patch.object(Path, "exists", return_value=False),
+            patch.object(Path, "glob", return_value=[]),
+            patch.object(Path, "read_text", return_value="P:libpq\nP:python3\n"),
+            patch("builtins.print"),
+        ):
+            runtime.check_sqlite_absent()
+
+    def test_sqlite_components_must_be_removed_not_just_hidden(self):
+        cases = (
+            ("module", {"spec": object()}),
+            ("stdlib", {"exists": True}),
+            ("native extension", {"glob": "_sqlite3*.so"}),
+            ("shared library", {"glob": "libsqlite3.so*"}),
+            ("metadata", {"metadata": "P:sqlite-libs\nV:3.53.4\n"}),
+        )
+        for name, changes in cases:
+            with self.subTest(component=name), ExitStack() as stack:
+                stack.enter_context(
+                    patch.object(
+                        runtime.importlib.util,
+                        "find_spec",
+                        return_value=changes.get("spec"),
+                    )
+                )
+                stack.enter_context(
+                    patch.object(
+                        Path, "exists", return_value=changes.get("exists", False)
+                    )
+                )
+                stack.enter_context(
+                    patch.object(
+                        Path,
+                        "glob",
+                        autospec=True,
+                        side_effect=lambda _path, pattern: (
+                            [Path("sqlite-component")]
+                            if pattern == changes.get("glob")
+                            else []
+                        ),
+                    )
+                )
+                stack.enter_context(
+                    patch.object(
+                        Path,
+                        "read_text",
+                        return_value=changes.get("metadata", "P:libpq\n"),
+                    )
+                )
+                with self.assertRaisesRegex(RuntimeError, "SQLite"):
+                    runtime.check_sqlite_absent()
+
+    def test_database_checks_reject_sqlite_before_starting_django_tests(self):
+        connection = SimpleNamespace(vendor="sqlite", ensure_connection=Mock())
+        with (
+            patch.dict(
+                sys.modules,
+                {
+                    "django": SimpleNamespace(setup=Mock()),
+                    "django.db": SimpleNamespace(connection=connection),
+                },
+            ),
+            patch.object(subprocess, "run") as command,
+            patch.dict(integration.os.environ),
+        ):
+            with self.assertRaisesRegex(AssertionError, "require PostgreSQL"):
+                exec(integration.DJANGO_CHECKS, {})
+            command.assert_not_called()
+            connection.ensure_connection.assert_not_called()
+
+    def test_database_checks_detect_an_unremoved_django_test_database(self):
+        connection = MagicMock()
+        connection.vendor = "postgresql"
+        connection.settings_dict = {"NAME": "runtime_test", "TEST": {"NAME": None}}
+        cursor = connection.cursor.return_value.__enter__.return_value
+        cursor.fetchone.return_value = (1,)
+        with (
+            patch.dict(
+                sys.modules,
+                {
+                    "django": SimpleNamespace(setup=Mock()),
+                    "django.db": SimpleNamespace(connection=connection),
+                },
+            ),
+            patch.object(
+                subprocess, "run", return_value=result(stderr=b"Ran 31 tests")
+            ) as command,
+            patch.dict(integration.os.environ),
+            patch("builtins.print"),
+        ):
+            with self.assertRaisesRegex(AssertionError, "was not removed"):
+                exec(integration.DJANGO_CHECKS, {})
+        self.assertEqual(command.call_count, 3)
+        connection.ensure_connection.assert_called_once()
+        cursor.execute.assert_called_once_with(
+            "SELECT 1 FROM pg_database WHERE datname = %s", ["test_runtime_test"]
+        )
 
     def test_wrong_runtime_lock_rejected(self):
         with patch.object(Path, "read_bytes", return_value=b"reviewed-lock"):
