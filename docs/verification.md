@@ -4,6 +4,37 @@ Legacy deployment reviewed on **27 September 2026**; repository migration begun 
 
 New-repository checks are listed first. The later pre-migration sections retain evidence from the former private `jothep/maori-story-fill` repository and do not verify subsequent changes. See the [migration record](repository-migration.md) for migration scope and the [public aggregate snapshot](evidence/README.md) for historical activity counts.
 
+## Published PostgreSQL-only runtime 3 November 2026
+
+[PR #4](https://github.com/jothep/story-filler/pull/4) was merged as
+`c8df3b56b6f79bced27980f32b3534c41a46e511`. Its files exactly match reviewed head
+`a6c932f97ff0e3915c2a4fed4b2c062aacbc9317`. Local verification completed 473
+automated tests and seven recovery scenarios before release, with all 31 original
+Django tests running against real PostgreSQL in the final image.
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| PR backend pipeline | Passed | [Run 41524115332](https://github.com/jothep/story-filler/actions/runs/41524115332): PostgreSQL tests, all lock audits, style, maintenance tests, image integration and scan; deployment skipped for the PR |
+| PR security checks | Passed | Actual JavaScript/Python [CodeQL analysis 41524115362](https://github.com/jothep/story-filler/actions/runs/41524115362) and [history scan 41524115350](https://github.com/jothep/story-filler/actions/runs/41524115350) |
+| Main release | Passed | [Run 41524625751](https://github.com/jothep/story-filler/actions/runs/41524625751): tests, rebuild, image integration, scan, registry push, actual deployment, revision verification and public API reads |
+| Main credential scan | Passed | [Run 41524625857](https://github.com/jothep/story-filler/actions/runs/41524625857) |
+| Published image report | Checked | Linux amd64; 31 Alpine and 37 Python packages; zero findings at all severities including unfixed items; SQLite absent |
+| Independent online check | Passed | Serving source/revision/digest match; story list, detail with eight paragraphs and 11 words, configuration JSON, static CSS and sampled public picture/audio reads |
+
+Cloud Run revision `maori-story-backend-00033-94b` serves **100%** of traffic.
+Its source label is `c8df3b56b6f79bced27980f32b3534c41a46e511`, and its image is
+`us-central1-docker.pkg.dev/jaskojothep/maori-story/backend@sha256:8e3c208f63d463c25381cd81a49c5fa6634538d0bc52a6ea1761e3d1c3ccdd0f`.
+SQLite CVE-2026-119373 is addressed by removing the affected component rather
+than relying on the Alpine feed's earlier omission. No currently known
+dependency finding remains from this review.
+
+The independent reviews described below completed before merge. Sourcery's
+quota-based skip was not counted as a passing review. No production data,
+schema, credentials, IAM or frontend release changed. All temporary Docker
+containers/networks were removed, the ten original volumes were preserved,
+and the dedicated local review VM was stopped. Earlier release records below
+retain their original SQLite status and test scope.
+
 ## PostgreSQL-only runtime review 3 November 2026
 
 Starting from `eadaa41`, this batch removes SQLite from the final runtime and its

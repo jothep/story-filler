@@ -238,13 +238,14 @@ Build and test `linux/amd64`, the deployment target. Refresh the base and stable
 Alpine packages together, then repeat native-library, PostgreSQL, HTTP and image
 scans. A lock refresh alone does not update the operating system.
 
-The wheel-builder stage compiles the two required native extensions with fixed build-tool
-versions, `build-base` and `crc32c-dev`. The cleaned runtime stage installs only the 37
-runtime packages and the CRC32C shared library. It retains package metadata,
+The wheel-builder stage compiles the two required native extensions with fixed
+build-tool versions, `build-base` and `crc32c-dev`. The cleaned runtime stage
+installs only the 37 runtime packages and the CRC32C shared library. It retains package metadata,
 CA certificates and the required Python runtime libraries. SQLite, its Python
-standard-library package and its native extension are removed together. Compilers, headers,
-setuptools, wheel, pip and ensurepip are absent from the final image. The last
-stage copies this complete cleaned filesystem into an empty image, so removed
+standard-library package and its native extension are removed together. Compilers,
+CRC32C development headers, setuptools, wheel, pip and ensurepip are absent from
+the final image. The last stage copies this complete cleaned filesystem into
+an empty image, so removed
 SQLite files are absent from published layers as well as the running container.
 Alpine package metadata remains available for scanning and dependency checks.
 
