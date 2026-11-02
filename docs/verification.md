@@ -4,19 +4,37 @@ Legacy deployment reviewed on **27 September 2026**; repository migration begun 
 
 New-repository checks are listed first. The later pre-migration sections retain evidence from the former private `jothep/maori-story-fill` repository and do not verify subsequent changes. See the [migration record](repository-migration.md) for migration scope and the [public aggregate snapshot](evidence/README.md) for historical activity counts.
 
+## Published recovery tooling 2 November 2026
+
+The fifth batch was merged into `main` at `4f4efdd2c9cd43d3d1f2c006bbef9d8e019a470e` after independent review and a fresh run of all 210 automated tests and seven real Docker recovery scenarios. The final repository check covered tracked files, the full reachable credential scan, documentation links and examples, workflow syntax and deployment scope.
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Recovery CI | Passed | [Run 41410711730](https://github.com/jothep/story-filler/actions/runs/41410711730): 51 recovery tests, seven legacy-entry tests and the seven real PostgreSQL/media scenarios on Linux |
+| Backend CI | Passed | [Run 41410711732](https://github.com/jothep/story-filler/actions/runs/41410711732): runtime/development dependency audits, formatting, Flake8, Django-aware Pylint, 31 Django tests and 99 script tests |
+| Application deployment scope | Verified | Image build/push and Cloud Run deployment jobs were skipped; no frontend workflow was triggered by the tools-only change |
+| Credential history scan | Passed | [Run 41410711694](https://github.com/jothep/story-filler/actions/runs/41410711694); separate local full-history scan also passed |
+| CodeQL analysis | Completed successfully | [Run 41410854093](https://github.com/jothep/story-filler/actions/runs/41410854093), explicitly dispatched because the existing push filter covers application directories; advisory analysis |
+| Serving backend | Ready | Revision `maori-story-backend-00030-ldj`, source `8a394f8`, remained on 100% of traffic |
+| Public API reads | Passed | Story list, story 1 with eight paragraphs and 11 words, and configuration JSON; no data mutation |
+
+All five planned review batches are published. The operator commands remain local tools: this release did not run a production backup, restore, data cutover, database migration or IAM change. The dedicated local test VM is stopped. Its ten previously recorded, unattributed anonymous volumes were retained; the final integration run changed neither the container set nor the volume set.
+
+The remaining dependency findings are recorded under [scan policy](#remaining-findings-and-scan-policy). Hosted Neon/GCS recovery and full application cutover are separate future exercises, not completion requirements for the local recovery tooling. Earlier dated sections retain the scope and status observed at the time of each batch.
+
 ## Local backup and recovery review 2 November 2026
 
-The fifth batch starts from published commit `a830ec9` on `codex/batch-5-recovery`. It is local and has not been deployed. It replaces the unsafe local backup procedures with PostgreSQL 16 logical exports and recovery into new Docker resources. It does not operate Neon/GCS, replace a running application's data or change cloud permissions.
+The fifth batch was prepared from published commit `a830ec9` on `codex/batch-5-recovery` and independently reviewed at `4f4efdd`. It replaces the unsafe local backup procedures with PostgreSQL 16 logical exports and recovery into new Docker resources. It does not operate Neon/GCS, replace a running application's data or change cloud permissions.
 
 `local_recovery.py` provides backup, verification and restore commands with explicit local Docker targets. Backup checks Compose ownership, the stopped backend's actual media mount, database/tool versions and active media writers. The operator also confirms that external writers have been stopped. It uses `pg_dump` rather than copying live PostgreSQL data files, and writes a private output directory with a completion manifest last. Existing output and old backups are never overwritten or pruned.
 
-`recovery_archive.py` validates the versioned manifest, hashes, sizes and media archive without extracting it. It rejects escaping or conflicting paths, links, special files, sparse members, duplicate metadata keys, truncated records and excessive sizes. Restore first makes a private snapshot and validates that snapshot and the dump directory. Only then does it allocate new, randomly named and labelled resources. The database has no network or published port. Media are normalized and read back for hash comparison. Successful recovery retains the isolated database and two named volumes for inspection; the application is not switched to them.
+`recovery_archive.py` validates the versioned manifest, hashes, sizes and media archive without extracting it. It rejects escaping or conflicting paths, links, special files, sparse members, duplicate manifest keys, truncated records and excessive sizes. Restore first makes a private snapshot and validates that snapshot and the dump directory. Only then does it allocate new, randomly named and labelled resources. The database has no network or published port. Media are normalized and read back for hash comparison. Successful recovery retains the isolated database and two named volumes for inspection; the application is not switched to them.
 
 All four historical shell entry points now refuse execution. The operator guide was rewritten to remove unsafe historical deletion commands and unverified success claims. The new workflow uses the pinned official PostgreSQL 16 image and no cloud credentials.
 
 | Check | Result | Scope |
 | --- | --- | --- |
-| Automated suite | 210 passed | 31 backend tests and 99 script/configuration tests; the unchanged frontend's 62 component tests, 16 lint examples and two Pages tests also passed during this turn's fourth-batch review |
+| Automated suite | 210 passed | 31 backend tests, 99 script/configuration tests, 62 frontend component tests, 16 lint examples and two Pages tests; all repeated during the fifth-batch release review |
 | Recovery unit tests | 51 passed | 27 operational safeguards and 24 archive-validation tests; included in the 99 script tests above |
 | Retired commands | Passed | Seven tests exercise 32 calls across all four old entry points; no operational command is reached |
 | Linux standard-library tests | 58 passed | Recovery tests plus retired-entry tests in a fixed Python 3.13 image, with no network or host-directory mounts |
@@ -25,7 +43,7 @@ All four historical shell entry points now refuse execution. The operator guide 
 | Real database failure | Passed | A valid dump using a source-only tablespace passes archive checks but fails at `pg_restore`; only that attempt's new resources are removed |
 | Helper failure cleanup | Passed | Real output-limit and two-second timeout failures stop and remove the helper and its anonymous volume; previously existing resources remain unchanged |
 | Complete resource comparison | Passed | All container IDs and volume names match before and after the final seven-scenario integration run; no new resources remain |
-| Changed-file credential scan | No findings | Gitleaks checked all 18 changed/new text files with redaction enabled |
+| Credential scans | No findings | Gitleaks checked all 18 changed/new text files and the full reachable Git history with redaction enabled |
 | Style and workflow checks | Passed | Black and Flake8 across backend and Python scripts, Django-aware Pylint, syntax checks for tracked shell scripts, and actionlint for all six workflows |
 | Independent review | Passed | Archive validation, operational ownership, cleanup and CI wiring were cross-reviewed; identified cleanup defects were fixed and retested |
 
@@ -35,7 +53,7 @@ The final integration run was repeated after those fixes. Ten anonymous volumes 
 
 A checksum establishes integrity, not trust. Only dumps from a trusted local database are supported, and database/media consistency depends on the documented stopped-writer window. Tests use synthetic records and local volumes; they do not demonstrate a hosted restore, point-in-time recovery, application cutover or recovery-time objective. The supported scope and exact commands are in the [operator guide](../VOLUME_BACKUP_GUIDE.md).
 
-Next: independently review and publish this batch, then perform the final repository/release check. The existing ESLint compatibility issue remains tracked separately; the fifth batch does not change application dependencies or resolve those upstream advisories.
+The independent release review repeated all 210 tests and the seven real Docker scenarios. Documentation links, CLI examples and workflow scope were also checked. The existing ESLint compatibility issue remains tracked separately; the fifth batch does not change application dependencies or resolve those upstream advisories.
 
 ## Hosted maintenance release 2 November 2026
 
@@ -300,4 +318,4 @@ The new repository retains the service-account JSON key authentication method us
 
 ## Planned, not claimed as delivered
 
-Workload Identity Federation, Secret Manager integration, application-test PR gates, automated rollback, a database/media restore exercise, measured SLOs, load testing and billing evidence are possible next steps. There is no need to implement all of them to explain the existing architecture honestly.
+Workload Identity Federation, Secret Manager integration, automated rollback, hosted Neon/GCS recovery, full application recovery and cutover, measured SLOs, load testing and billing evidence are possible next steps. Application-test PR checks and local PostgreSQL/media recovery tests are implemented and verified in the maintenance batches above.

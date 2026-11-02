@@ -33,7 +33,7 @@ The [production architecture](docs/architecture-production-gcp.md) explains the 
 
 ## Local engineering practice
 
-The [local backup and recovery guide](VOLUME_BACKUP_GUIDE.md) describes the fifth review batch's PostgreSQL logical backup and media archive workflow. It validates a backup before restoring into new, isolated Docker resources for inspection. The four legacy backup/restore entry points remain disabled. This workflow does not switch the running application to restored data or operate the current Cloud Run, Neon and GCS deployment. See the [verification record](docs/verification.md) for the batch's local status and checks.
+The [local backup and recovery guide](VOLUME_BACKUP_GUIDE.md) describes PostgreSQL logical backups and media archives. The tool validates a backup before restoring into new, isolated Docker resources for inspection. The four legacy backup/restore entry points remain disabled. This workflow does not switch the running application to restored data or operate the current Cloud Run, Neon and GCS deployment. See the [verification record](docs/verification.md) for local and CI results.
 
 These environments serve different purposes. The [local platform lab](docs/local-platform-lab.md) links their implementation, startup order and verification limits.
 
@@ -41,7 +41,7 @@ These environments serve different purposes. The [local platform lab](docs/local
 | --- | --- | --- |
 | Development Compose | Source mounts and hot reload, service discovery, a shared Nginx entry point, separate database/media volumes, database readiness before application startup | Configuration reviewed; full container startup not revalidated in this review |
 | Local Kubernetes | Deployments and Services, a PostgreSQL StatefulSet/PVC, media persistence, separate migration/admin Jobs, Secret references and a diagnostic Pod | Manifests in `Infra/` and the original migration account; cluster execution not repeated here |
-| Production-style Compose | A multi-container, single-host packaging option with Gunicorn, static serving and a reverse proxy | An alternative implementation, not the current hosted service; HTTPS and recovery are not demonstrated |
+| Production-style Compose | A multi-container, single-host packaging option with Gunicorn, static serving and a reverse proxy | An alternative implementation, not the current hosted service; HTTPS and a complete application recovery/cutover have not been exercised |
 | Earlier demo | A separate Django/MUI prototype with a story-list/full-text API, before the main application's paragraph and word-bank design | Preserved in `demo/`; its Compose file runs only PostgreSQL, and it is not a miniature copy of current production |
 
 The Kubernetes work demonstrates practical concerns around state, network routing and operational tasks. The later managed-service deployment shows how the operating model changed for a small public workload; both stages are part of this case study.
@@ -50,7 +50,7 @@ The Kubernetes work demonstrates practical concerns around state, network routin
 
 | Decision | Why it matters | Source and limitation |
 | --- | --- | --- |
-| Move database and media outside the application container | Container replacement does not require carrying local content between instances | [Storage configuration](backend/maori_story_project/settings.py); restore procedures have not been demonstrated |
+| Move database and media outside the application container | Container replacement does not require carrying local content between instances | [Storage configuration](backend/maori_story_project/settings.py); hosted Neon/GCS recovery has not been exercised |
 | Give Terraform and application delivery different responsibilities | Terraform maintains service configuration; CI selects the application image | [Terraform lifecycle rule](terraform/main.tf), [backend workflow](.github/workflows/deploy-backend.yml); the image field is excluded from Terraform drift reconciliation |
 | Publish the frontend independently | Static hosting removes a continuously running frontend service | [Pages workflow](.github/workflows/deploy-frontend.yml); the API URL is a build-time setting |
 | Use a non-root backend image with locked runtime dependencies | Keep development tools out of the image and verify downloaded package hashes | [Dockerfile](backend/dockerfile), [dependency maintenance](backend/README.md); the base image is pinned by digest |
@@ -61,16 +61,16 @@ The Kubernetes work demonstrates practical concerns around state, network routin
 
 The [verification record](docs/verification.md) separates **implemented**, **deployment verified**, and **planned** work.
 
-- **Review batches published, 2 November 2026:** [frontend run 41404713288](https://github.com/jothep/story-filler/actions/runs/41404713288) and [backend run 41404713244](https://github.com/jothep/story-filler/actions/runs/41404713244) publish the fourth maintenance batch on top of the safety, dependency and frontend lifecycle fixes. The final pre-release suite passed 159 tests, with separate browser and container checks. The [verification record](docs/verification.md) gives exact commits, scope and remaining findings.
+- **Five review batches published, 2 November 2026:** safety, dependency/delivery, frontend lifecycle, formatting/lint and local recovery changes are merged into `main`. The final review passed 210 automated tests and seven real Docker recovery scenarios. [Recovery run 41410711730](https://github.com/jothep/story-filler/actions/runs/41410711730) and [backend checks 41410711732](https://github.com/jothep/story-filler/actions/runs/41410711732) passed for the fifth batch. The hosted application remains the fourth-batch release from [frontend run 41404713288](https://github.com/jothep/story-filler/actions/runs/41404713288) and [backend run 41404713244](https://github.com/jothep/story-filler/actions/runs/41404713244); the tools-only fifth batch skipped application deployment. The [verification record](docs/verification.md) gives exact commits, scope and remaining findings.
 - **New frontend deployment verified, 28 September 2026:** [Pages run 36363233923](https://github.com/jothep/story-filler/actions/runs/36363233923) deployed `1713b97` at `/story-filler/`. Chrome loaded the menu and story 1 text/image; full gameplay and audio playback were not checked. New-repository credential scans and CodeQL workflow runs also completed; see the [verification record](docs/verification.md#new-repository-28-september-2026).
 - **New backend deployment verified, 28 September 2026:** [run 36363802780, attempt 2](https://github.com/jothep/story-filler/actions/runs/36363802780/attempts/2) passed tests, image scanning, deployment and API smoke verification. At that verification, revision `maori-story-backend-00028-gdm` served image `1713b97` with 100% traffic; runtime configuration and identity were preserved.
 - **Pre-migration deployment verified, 27 September 2026:** the public frontend rendered a story; story/configuration APIs, sampled GCS media, and administrator login worked. The updated frontend and backend pipelines subsequently completed deployment, including the backend's image scan and public API smoke check.
 - **Implemented:** Terraform configuration, Kubernetes manifests, backend and frontend delivery workflows, basic automated tests, image scanning, and CodeQL configuration.
 - **Publication migration:** credentials were rotated and reachable Git history was cleaned. The former repository remains private because old commit content was still retrievable there. This new repository starts from the cleaned baseline; old Actions runs and aggregate counts are historical evidence, not new-repository runs. The owner made the new repository public on **28 September 2026**; the former repository remains private. See the [migration record](docs/repository-migration.md) for completed checks and their scope.
 - **CI authentication:** the backend workflow retains the existing service-account JSON key method through the `GCP_CREDENTIALS` GitHub Actions secret. The owner configured that secret manually, and authentication succeeded in the new backend release; this migration does not change the authentication model.
-- **Not demonstrated:** sustained availability or latency targets, load capacity, automatic rollback, database restore drills, a complete observability system, or a reproducible billing total of zero.
+- **Not demonstrated:** sustained availability or latency targets, load capacity, automatic rollback, hosted Neon/GCS recovery or full application cutover, a complete observability system, or a reproducible billing total of zero.
 
-Backend tests use SQLite, not Neon. Frontend tests mock HTTP and audio. In the fourth maintenance batch, formatting and backend lint become required checks, with Django-aware analysis and regression tests for the lint configuration. CodeQL analysis remains advisory; the backend Trivy gate blocks fixable HIGH/CRITICAL findings. Frontend production dependencies must pass `npm audit`; the full frontend toolchain blocks HIGH/CRITICAL findings and currently retains moderate ESLint-chain advisories. The secret scan is a separate workflow, not a dependency of deployment. Dated results and remaining work are in the [verification record](docs/verification.md).
+Backend application tests use SQLite, not Neon; recovery integration tests use real PostgreSQL 16 with synthetic records. Frontend tests mock HTTP and audio. Formatting and backend lint are required checks, with Django-aware analysis and regression tests for the lint configuration. CodeQL analysis remains advisory; the backend Trivy gate blocks fixable HIGH/CRITICAL findings. Frontend production dependencies must pass `npm audit`; the full frontend toolchain blocks HIGH/CRITICAL findings and currently retains moderate ESLint-chain advisories. The secret scan is a separate workflow, not a dependency of deployment. Dated results and remaining work are in the [verification record](docs/verification.md).
 
 ## Dependency and delivery maintenance
 
@@ -117,7 +117,7 @@ Enter credentials interactively, then use `/admin/`. Production credentials and 
 | [`Infra/`](Infra/) | Earlier Kubernetes manifests and operational Jobs |
 | [`demo/`](demo/) | Separate earlier Django/MUI prototype |
 | [`.github/workflows/`](.github/workflows/) | Delivery and security workflows |
-| [`scripts/`](scripts/) | Private local configuration generation and public API verification |
+| [`scripts/`](scripts/) | Local configuration, isolated recovery, release checks and public API verification |
 | [`docs/engineering-case-study.md`](docs/engineering-case-study.md) | Decisions, alternatives, and evidence for portfolio review |
 
 For security scope and reporting, see [SECURITY.md](SECURITY.md).
