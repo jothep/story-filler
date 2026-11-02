@@ -4,9 +4,17 @@ Legacy deployment reviewed on **27 September 2026**; repository migration begun 
 
 New-repository checks are listed first. The later pre-migration sections retain evidence from the former private `jothep/maori-story-fill` repository and do not verify subsequent changes. See the [migration record](repository-migration.md) for migration scope and the [public aggregate snapshot](evidence/README.md) for historical activity counts.
 
+## Hosted maintenance release 2 November 2026
+
+The fourth batch was independently reviewed and all 159 automated tests passed again before `8a394f8b0277a13d52991be70cc6ae5c5961ad46` was merged into `main`. [Frontend run 41404713288](https://github.com/jothep/story-filler/actions/runs/41404713288) and [backend run 41404713244](https://github.com/jothep/story-filler/actions/runs/41404713244) both completed successfully. The new formatting and Django-aware Pylint gates passed in CI, along with both Python dependency audits, runtime-image tests and the existing image scan policy. [CodeQL](https://github.com/jothep/story-filler/actions/runs/41404713355) and [credential history scanning](https://github.com/jothep/story-filler/actions/runs/41404713510) also completed successfully.
+
+Independent read-only checks confirmed that revision `maori-story-backend-00030-ldj` serves 100% of traffic, with source label `8a394f8` and image digest `sha256:f273c68de6fb25f830cf8095c24c445036d7762e24381bc67e4b54ba24d55503`. The story list, story detail and configuration APIs passed. A direct browser visit to `/story-filler/story/1` displayed the title, image, paragraph text and 11 vocabulary words. No database migration, restore or IAM change was performed. The earlier moderate development-tool and unfixed operating-system findings remain subject to their documented policies.
+
+The fifth batch, local backup and isolated recovery tooling, is being prepared separately and is not part of this release.
+
 ## Local maintenance review 2 November 2026
 
-The fourth batch starts from published commit `4488d20` on `codex/batch-4-maintenance`. It is local and has not been deployed. It makes the maintained application easier to read and turns its formatting and backend lint checks into required CI steps. The historical `demo/` application and generated Django migrations are outside this formatting change.
+The fourth batch starts from published commit `4488d20` on `codex/batch-4-maintenance`. Its subsequent hosted release is recorded above. It makes the maintained application easier to read and turns its formatting and backend lint checks into required CI steps. The historical `demo/` application and generated Django migrations are outside this formatting change.
 
 The frontend now has consistent Prettier formatting, fewer redundant comments and no unused component backup files or starter React icon. Its error boundary uses Vite's development flag for diagnostic visibility, with two component tests. ESLint separates browser code, Node tooling and tests. The 19 existing React rules stay enabled for application code, and Rules of Hooks/effect-dependency checks are added. Sixteen positive and negative examples verify the actual lint configuration.
 
@@ -30,7 +38,7 @@ The frontend dependency review still reports six moderate development-tool findi
 
 Runtime dependency and container definitions are unchanged, so this batch does not claim a new image security scan or repeat the earlier browser gameplay exercise. The existing backend operating-system findings remain tracked below. All test data is temporary; production databases, cloud permissions and runtime credentials were not changed. The dedicated Linux review containers and VM were stopped after verification.
 
-Before publishing this batch, review its source and CI changes together. The next functional work is a separately tested replacement for the disabled local backup/restore workflow, beginning with disposable data and failure cases. The existing restore commands remain disabled until that work passes its own review. A supported ESLint/React-plugin migration remains tracked independently of that recovery work.
+The source and CI changes were reviewed together before publication. The next functional work is a separately tested replacement for the disabled local backup/restore workflow, beginning with disposable data and failure cases. The existing restore commands remain disabled until that work passes its own review. A supported ESLint/React-plugin migration remains tracked independently of that recovery work.
 
 ## Hosted frontend lifecycle release 2 November 2026
 
