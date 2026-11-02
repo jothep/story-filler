@@ -58,9 +58,10 @@ workflow's result.
 
 The backend workflow has three jobs:
 
-1. **Test:** install the development dependency lock, audit both Python dependency
-   locks, require Black/Flake8 and Django-aware Pylint, and run application and
-   maintenance tests. Pull requests receive no cloud secrets.
+1. **Test:** install the development dependency lock, audit the runtime,
+   development and image-build locks, require Black/Flake8 and Django-aware
+   Pylint, and run application and maintenance tests. Pull requests receive no
+   cloud secrets.
 2. **Build, test and scan:** build one image with a unique run tag on pull requests
    and application releases. Check its exact runtime dependency set, native
    libraries, storage configuration and Django tests offline. Then run its
@@ -107,8 +108,9 @@ and a PostgreSQL tmpfs. It publishes no ports and mounts no host files. A separa
 one-off container migrates and seeds synthetic data before the application's
 normal Gunicorn command starts. Resource IDs and ownership labels govern cleanup,
 including failure and interruption paths. Existing containers, volumes and
-production databases are not used. Nine offline regression tests cover ownership,
-timeouts, cleanup and dependency verification.
+production databases are not used. Seventeen offline regression tests cover ownership,
+timeouts, late creation, repeated signals, worker readiness, safe diagnostics and
+dependency verification.
 
 ## Release ordering
 

@@ -21,7 +21,7 @@ included.
 | Final Linux amd64 image | Passed | Runtime UID 100/GID 101; exact installed-package/lock match; no pip, ensurepip, compiler or development tools |
 | Native functionality | Passed | SQLite, compression libraries, TLS trust store, Pillow PNG/JPEG/WebP, libpq, gevent, native CRC32C and zope C extensions; GCS import/configuration and public URL generation without cloud access |
 | Django | 31 passed | Also system checks and no missing migrations; repeated inside the final image |
-| Maintenance/configuration | 128 passed | Includes nine new ownership, timeout, cleanup and runtime dependency verification contracts |
+| Maintenance/configuration | 136 passed | Includes 17 ownership, timeout, late-creation, signal, diagnostic and runtime dependency contracts |
 | Default runtime integration | Passed | Synthetic PostgreSQL; separate migrate/seed; unmodified Gunicorn CMD with three workers; story list/detail/configuration, POST rejection, exact static CSS and missing-asset 404; SIGTERM exit 0 |
 | Frontend regression | 302 passed | 229 lint/type regressions, 71 component tests and two Pages HTTP checks; production build, lint/types/format, production/full audits passed |
 | Recovery integration | Seven scenarios passed | Real synthetic PostgreSQL/media recovery and failure cleanup; original ten anonymous volumes retained |
@@ -29,7 +29,7 @@ included.
 | Release gate | Passed | Existing fixable HIGH/CRITICAL vulnerability gate and image secret scan retained |
 | Review and style | Passed | Independent image/lock, runtime-script and workflow reviews; Black, Flake8, Pylint, Prettier, actionlint and diff checks |
 
-The unique automated test total is **461**, plus the seven recovery scenarios and
+The unique automated test total is **469**, plus the seven recovery scenarios and
 final image integration checks. The final local image has manifest-list digest
 `sha256:13dcb0b97d6487fc5e821a1c0597b7ec08a0fbe1eeafdb640ee41ba68236b10b`.
 CI rebuilds and repeats the image checks before publishing its own digest.
@@ -43,6 +43,15 @@ updated or removed components. SQLite 3.53.4 with FTS5 remains affected and is
 tracked in the [advisory review](dependency-findings.md). A Distroless alternative
 passed functionality checks but introduced five additional interpreter HIGH
 advisories, so it was not selected.
+
+The first hosted review found timing and cleanup edges in the new test harness:
+worker readiness, late Docker creates, repeated termination signals during
+cleanup and report-name conflicts on reruns. These are covered by follow-up
+regressions. Error output is bounded and strips the synthetic test secrets.
+Two low-confidence subprocess audit notices were reviewed independently: commands
+use argument arrays, validated Docker inputs or fixed Django arguments, and
+`shell=False`. Only those two reviewed call sites carry the exact audit-rule
+annotation; the scanner and release gates remain enabled.
 
 Pull requests now build and verify the image without cloud credentials. Each run
 saves a complete package/vulnerability JSON report for 30 days, then applies the

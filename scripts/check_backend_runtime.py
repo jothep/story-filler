@@ -164,8 +164,14 @@ def main():
         ["check"],
         ["makemigrations", "--check", "--dry-run"],
     ):
+        # Audited: these three Django commands are fixed above, use this process's
+        # Python executable, and accept no caller input or shell syntax.
+        # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
         result = subprocess.run(
-            [sys.executable, "manage.py", *arguments], capture_output=True, timeout=120
+            [sys.executable, "manage.py", *arguments],
+            shell=False,
+            capture_output=True,
+            timeout=120,
         )
         require(
             result.returncode == 0, f"Django {arguments[0]} failed in the runtime image"

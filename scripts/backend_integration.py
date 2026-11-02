@@ -6,6 +6,7 @@ published ports. Uses no cloud credentials, external database, or existing data.
 """
 
 import argparse
+from contextlib import contextmanager
 import hashlib
 import json
 import os
@@ -23,6 +24,7 @@ from local_recovery import POSTGRES_IMAGE
 
 SCRIPTS = Path(__file__).resolve().parent
 LABEL = "org.story-filler.runtime-check"
+UNCERTAIN_CREATE_ATTEMPTS = 5
 
 SEED = """
 import os
@@ -78,13 +80,38 @@ except urllib.error.HTTPError as error:
     error.close()
 else:
     raise AssertionError('Missing static resource did not return 404')
+"""
+
+
+WORKER_CHECK = """
+from pathlib import Path
 assert b'gunicorn' in Path('/proc/1/cmdline').read_bytes()
 children = Path('/proc/1/task/1/children').read_text().split()
 assert len(children) == 3, 'Expected three Gunicorn workers'
 for pid in children:
     assert b'gunicorn' in Path('/proc', pid, 'cmdline').read_bytes()
+"""
+APPLICATION_READY = WORKER_CHECK + """
+import urllib.request
+urllib.request.urlopen('http://127.0.0.1:8000/api/stories/', timeout=3).close()
+"""
+HTTP_CHECK += WORKER_CHECK + """
 print('PASS: default Gunicorn command, three workers, read-only API and static assets')
 """
+
+
+@contextmanager
+def protect_cleanup():
+    """Finish bounded cleanup after interruption; restore the caller's handlers."""
+    signals = (signal.SIGTERM, signal.SIGINT)
+    previous = {number: signal.getsignal(number) for number in signals}
+    try:
+        for number in signals:
+            signal.signal(number, signal.SIG_IGN)
+        yield
+    finally:
+        for number, handler in previous.items():
+            signal.signal(number, handler)
 
 
 def require(condition, message):
@@ -113,6 +140,7 @@ class Verification:
         self.containers = {}
         self.network_created = False
         self.network_id = None
+        self.secret_values = []
         self.image = (
             self.command(
                 ["image", "inspect", "--format", "{{.Id}}", image], "image availability"
@@ -125,19 +153,33 @@ class Verification:
             "PostgreSQL image availability",
         )
 
+    def diagnostics(self, result):
+        # Only synthetic secrets are ever supplied to these containers. Replace
+        # their complete values before truncation, so a tail cannot reveal part.
+        text = result.stderr.decode("utf-8", errors="replace")
+        for secret in self.secret_values:
+            text = text.replace(secret, "[redacted]")
+        return f"exit {result.returncode}: {text[-1024:].strip()}"
+
     def command(self, arguments, stage, *, data=None, timeout=120, check=True):
         try:
+            # Fixed internal Docker commands; validated socket/image stay separate
+            # argv values. No shell interprets them, so shell quoting is incorrect.
+            # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
             result = subprocess.run(
                 [*self.prefix, *arguments],
                 input=data,
                 capture_output=True,
                 env=self.environment,
                 timeout=timeout,
+                shell=False,
             )
         except (OSError, subprocess.TimeoutExpired) as error:
             raise RuntimeError(f"{stage} did not complete") from error
         if check:
-            require(result.returncode == 0, f"{stage} failed")
+            require(
+                result.returncode == 0, f"{stage} failed ({self.diagnostics(result)})"
+            )
         return result
 
     def create(self, suffix, image, options, arguments=()):
@@ -188,18 +230,20 @@ class Verification:
 
     def wait_ready(self, container, arguments, stage):
         deadline = time.monotonic() + 60
+        last_failure = "no readiness response"
         while time.monotonic() < deadline:
             running = self.command(
                 ["inspect", "--format", "{{.State.Running}}", container], stage
             ).stdout.strip()
-            require(running == b"true", f"{stage}: container exited before readiness")
+            require(running == b"true", f"{stage}: container exited; {last_failure}")
             result = self.command(
                 ["exec", container, *arguments], stage, timeout=10, check=False
             )
             if result.returncode == 0:
                 return
+            last_failure = self.diagnostics(result)
             time.sleep(0.5)
-        raise RuntimeError(f"{stage}: readiness deadline exceeded")
+        raise RuntimeError(f"{stage}: readiness deadline exceeded ({last_failure})")
 
     def verify(self):
         lock = SCRIPTS.parent / "backend" / "requirements.txt"
@@ -237,6 +281,8 @@ class Verification:
         self.network_id = network.stdout.decode().strip()
         require(re.fullmatch(r"[a-f0-9]{64}", self.network_id), "Invalid network ID")
         password = secrets.token_urlsafe(32)
+        secret_key = secrets.token_urlsafe(48)
+        self.secret_values.extend([password, secret_key])
         database = self.create(
             "database",
             POSTGRES_IMAGE,
@@ -275,7 +321,7 @@ class Verification:
             "--network",
             self.network,
             "--env",
-            f"SECRET_KEY={secrets.token_urlsafe(48)}",
+            f"SECRET_KEY={secret_key}",
             "--env",
             (
                 f"DATABASE_URL=postgres://runtime_test:{password}"
@@ -295,8 +341,7 @@ class Verification:
             [
                 "python",
                 "-c",
-                "import urllib.request; urllib.request.urlopen("
-                '"http://127.0.0.1:8000/api/stories/", timeout=3).close()',
+                APPLICATION_READY,
             ],
             "application readiness",
         )
@@ -334,15 +379,19 @@ class Verification:
     def remove_owned(self, kind, name, identifier):
         label_field = ".Config.Labels" if kind == "container" else ".Labels"
         projection = '{"id":{{json .Id}},"labels":{{json ' + label_field + "}}}"
-        result = self.command(
-            [kind, "inspect", "--format", projection, name],
-            "cleanup ownership check",
-            check=False,
-        )
-        if result.returncode:
-            # A failed create may not have left a resource. Confirm absence via
-            # the daemon instead of treating every inspect error as absence.
+        attempts = UNCERTAIN_CREATE_ATTEMPTS if identifier is None else 1
+        for attempt in range(attempts):
+            result = self.command(
+                [kind, "inspect", "--format", projection, name],
+                "cleanup ownership check",
+                timeout=10,
+                check=False,
+            )
+            if result.returncode == 0:
+                break
             listing = ["ps", "--all"] if kind == "container" else ["network", "ls"]
+            if identifier is None:
+                listing += ["--filter", f"label={LABEL}={self.operation}"]
             names = (
                 self.command(
                     [
@@ -351,12 +400,23 @@ class Verification:
                         "{{.Names}}" if kind == "container" else "{{.Name}}",
                     ],
                     "cleanup inventory",
+                    timeout=10,
                 )
                 .stdout.decode()
                 .splitlines()
             )
-            require(name not in names, "Could not inspect a tracked resource")
-            return
+            if identifier is not None:
+                require(name not in names, "Could not inspect a tracked resource")
+                return
+            # A client timeout does not cancel a daemon create. Look again for a
+            # late result; even repeated absence cannot prove that it finished.
+            if attempt + 1 == attempts:
+                raise RuntimeError(
+                    f"Create outcome remains uncertain for {name}; "
+                    f"check Docker resources labelled {LABEL}={self.operation}. "
+                    "Cleanup is not confirmed."
+                )
+            time.sleep(1)
         metadata = json.loads(result.stdout)
         require(
             isinstance(metadata, dict)
@@ -370,7 +430,7 @@ class Verification:
         arguments = (
             ["rm", "--force", "--volumes"] if kind == "container" else ["network", "rm"]
         )
-        self.command([*arguments, metadata["id"]], "owned resource cleanup")
+        self.command([*arguments, metadata["id"]], "owned resource cleanup", timeout=30)
 
     def cleanup(self):
         resources = [
@@ -379,14 +439,15 @@ class Verification:
         ]
         if self.network_created:
             resources.append(("network", self.network, self.network_id))
-        failures = []
-        for resource in resources:
-            try:
-                self.remove_owned(*resource)
-            except (OSError, ValueError, RuntimeError) as error:
-                failures.append(str(error))
-        require(not failures, "; ".join(failures))
-        print("PASS: temporary containers and network removed")
+        with protect_cleanup():
+            failures = []
+            for resource in resources:
+                try:
+                    self.remove_owned(*resource)
+                except (OSError, ValueError, RuntimeError) as error:
+                    failures.append(str(error))
+            require(not failures, "; ".join(failures))
+            print("PASS: temporary containers and network removed")
 
 
 def main():

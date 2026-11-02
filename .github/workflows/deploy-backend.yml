@@ -207,7 +207,7 @@ jobs:
       - name: Save the full package and vulnerability report
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
         with:
-          name: backend-image-scan
+          name: backend-image-scan-${{ github.run_attempt }}
           path: backend-image-scan.json
           if-no-files-found: error
           retention-days: 30

@@ -57,17 +57,41 @@ development tools can otherwise supply missing dependencies and hide an error.
 
 ## Refreshing the locks
 
-Generate locks with **CPython 3.13 on Linux amd64**. For runtime and image-build
-locks, use the pinned Alpine base from the Dockerfile. Development CI uses Linux
-and published wheels. When working on another platform, use a temporary Linux
-container rather than resolving platform markers on macOS.
+Generate locks with **CPython 3.13 on Linux amd64**. Use two environments:
+the pinned Alpine base from the Dockerfile for runtime and image-build locks,
+and a glibc-based Linux development environment for the development lock.
 
-Use pip-tools 7.6.2 and pip 26.2.2 from the development lock. In the temporary
-Alpine environment, install the existing `requirements-build.txt` with required
-hashes and binary-only installation before generating locks. Install the compiler
-and CRC32C development package versions from the Dockerfile as well; source
-metadata is resolved without an untracked isolated build environment. Generate
-the runtime lock first, then the development and image-build locks:
+In a temporary Alpine container, copy the checkout into the working directory.
+Install only the lock-generation tools from the existing development lock;
+the full development environment requires wheels unavailable on Alpine:
+
+```sh
+python -m venv /tmp/lock-env
+. /tmp/lock-env/bin/activate
+python - <<'PYTOOLS'
+from pathlib import Path
+from scripts.check_dependency_audit import LOCK_ENTRY, logical_lines
+
+tools = {
+    "pip", "pip-tools", "build", "click", "packaging",
+    "pyproject-hooks", "setuptools", "wheel",
+}
+entries = {}
+for _, line in logical_lines(Path("backend/requirements-dev.txt").read_text()):
+    match = LOCK_ENTRY.fullmatch(line)
+    if match and match["name"] in tools:
+        entries[match["name"]] = line
+if entries.keys() != tools:
+    raise SystemExit("Required lock-generation tools are missing from the lock.")
+Path("/tmp/lock-tools.txt").write_text("\n".join(entries.values()) + "\n")
+PYTOOLS
+python -m pip install --require-hashes --only-binary=:all: -r /tmp/lock-tools.txt
+python -m pip check
+```
+
+In that Alpine environment, generate the runtime lock first, then the image-build
+lock. The tools above resolve source metadata without build isolation; native
+compilation happens later in the Dockerfile's builder stage.
 
 ```sh
 python -m piptools compile --generate-hashes --allow-unsafe --strip-extras \
@@ -76,13 +100,22 @@ python -m piptools compile --generate-hashes --allow-unsafe --strip-extras \
   --output-file backend/requirements.txt backend/requirements.in
 
 python -m piptools compile --generate-hashes --allow-unsafe --strip-extras \
-  --no-emit-index-url --no-emit-trusted-host --pip-args='--only-binary=:all:' \
-  --output-file backend/requirements-dev.txt backend/requirements-dev.in
-
-python -m piptools compile --generate-hashes --allow-unsafe --strip-extras \
   --no-emit-index-url --no-emit-trusted-host --no-emit-options \
   --pip-args='--only-binary=:all:' \
   --output-file backend/requirements-build.txt backend/requirements-build.in
+```
+
+Then use the updated runtime lock in a **separate Linux glibc environment**.
+Install the existing development lock into a fresh virtual environment and
+regenerate it there:
+
+```sh
+python3.13 -m venv .venv
+. .venv/bin/activate
+python -m pip install --require-hashes --only-binary=:all: -r backend/requirements-dev.txt
+python -m piptools compile --generate-hashes --allow-unsafe --strip-extras \
+  --no-emit-index-url --no-emit-trusted-host --pip-args='--only-binary=:all:' \
+  --output-file backend/requirements-dev.txt backend/requirements-dev.in
 ```
 
 These commands preserve existing pins where possible. Add `--upgrade` deliberately
