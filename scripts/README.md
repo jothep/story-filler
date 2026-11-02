@@ -61,11 +61,14 @@ The backend workflow has three jobs:
 1. **Test:** install the development dependency lock, audit both Python dependency
    locks, require Black/Flake8 and Django-aware Pylint, and run application and
    maintenance tests. Pull requests receive no cloud secrets.
-2. **Build, test and scan:** build one image with a unique run tag. Run the Django
-   tests and import Gunicorn's gevent worker in that image as its default app user,
-   with networking disabled, an in-memory SQLite database, and a temporary random
-   signing key. Scan the same local image, then authenticate and push it. The job
-   passes the pushed digest to deployment.
+2. **Build, test and scan:** build one image with a unique run tag on pull requests
+   and application releases. Check its exact runtime dependency set, native
+   libraries, storage configuration and Django tests offline. Then run its
+   unmodified default command against a new synthetic PostgreSQL database; check
+   the public API, static assets, three workers and graceful shutdown. Save the
+   complete vulnerability report and apply the existing release scan gate.
+   Only a `main` release authenticates and pushes the tested image, passing its
+   immutable digest to deployment.
 3. **Deploy:** hold the service's concurrency lock while checking release order,
    updating Cloud Run, verifying its serving revision, and checking the API.
 
@@ -79,6 +82,33 @@ When updating pinned GitHub Actions, check the repository's selected-actions
 allowlist before publishing. Include the exact commit SHA of each action and any
 actions called by its composite steps. Preserve the existing restrictions; do not
 add wildcard patterns or enable all actions to resolve a blocked workflow.
+
+## Built-image verification
+
+After building the Linux image, explicitly pull the pinned test database image
+and select your local Docker socket:
+
+```sh
+postgres_image=$(PYTHONPATH=scripts python -c 'from local_recovery import POSTGRES_IMAGE; print(POSTGRES_IMAGE)')
+docker pull "$postgres_image"
+python scripts/backend_integration.py \
+  --docker-host unix:///var/run/docker.sock --image story-filler-backend:local
+```
+
+On macOS, substitute the Unix socket of your local Docker environment. The
+script rejects remote TCP sockets and does not pull images itself.
+`check_backend_runtime.py` runs inside the final image via stdin. It compares all
+installed package versions and the lock checksum with the reviewed source,
+checks UID 100/GID 101 and the absence of build tools, and exercises native
+extensions, SQLite, local storage and GCS configuration without cloud access.
+
+The integration script uses an internal network, temporary labelled containers
+and a PostgreSQL tmpfs. It publishes no ports and mounts no host files. A separate
+one-off container migrates and seeds synthetic data before the application's
+normal Gunicorn command starts. Resource IDs and ownership labels govern cleanup,
+including failure and interruption paths. Existing containers, volumes and
+production databases are not used. Nine offline regression tests cover ownership,
+timeouts, cleanup and dependency verification.
 
 ## Release ordering
 
@@ -139,7 +169,11 @@ resolved image digest. See the official [label configuration][labels],
 The workflow pins the Trivy action and scanner version. It blocks fixable HIGH
 and CRITICAL image vulnerabilities (`ignore-unfixed: true`); a passing scan is
 limited to that policy and the vulnerability database available on that run.
-Separate strict, hash-checked dependency audits check both Python lock files.
+The full JSON scan, including all package records, severities and unfixed items,
+is saved as a 30-day workflow artifact before the gate. Strict dependency audits
+check the runtime, development and image-build locks and verify report coverage.
+The [advisory record](../docs/dependency-findings.md) also tracks the known SQLite
+issue missing from the Alpine feed; a clean scan does not clear that issue.
 Review version updates and their checks together rather than rebuilding an old
 commit silently.
 

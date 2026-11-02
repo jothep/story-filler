@@ -4,6 +4,51 @@ Legacy deployment reviewed on **27 September 2026**; repository migration begun 
 
 New-repository checks are listed first. The later pre-migration sections retain evidence from the former private `jothep/maori-story-fill` repository and do not verify subsequent changes. See the [migration record](repository-migration.md) for migration scope and the [public aggregate snapshot](evidence/README.md) for historical activity counts.
 
+## Backend base-image review 3 November 2026
+
+Starting from `a16507e`, this batch replaces the Debian slim runtime with pinned
+Python 3.13.18 on Alpine 3.24. It preserves all 37 application dependency versions,
+the non-root runtime identity and the existing Gunicorn command. Two native
+extensions are built in a separate stage with locked source hashes and build
+tools. No frontend code, production data, migrations or cloud IAM changes are
+included.
+
+| Check | Result | Scope |
+| --- | --- | --- |
+| Runtime lock | Passed | All 37 versions and all 714 previous artifact hashes retained; 37 published source hashes added through pip-tools and independently checked against PyPI |
+| Dependency audits | Passed | Exact coverage of 37 runtime, 80 development and three image-build packages; zero known Python package findings |
+| Wheel compatibility | Passed | All 37 packages still download with required hashes and wheel-only installation on Linux glibc amd64 and macOS arm64 |
+| Final Linux amd64 image | Passed | Runtime UID 100/GID 101; exact installed-package/lock match; no pip, ensurepip, compiler or development tools |
+| Native functionality | Passed | SQLite, compression libraries, TLS trust store, Pillow PNG/JPEG/WebP, libpq, gevent, native CRC32C and zope C extensions; GCS import/configuration and public URL generation without cloud access |
+| Django | 31 passed | Also system checks and no missing migrations; repeated inside the final image |
+| Maintenance/configuration | 128 passed | Includes nine new ownership, timeout, cleanup and runtime dependency verification contracts |
+| Default runtime integration | Passed | Synthetic PostgreSQL; separate migrate/seed; unmodified Gunicorn CMD with three workers; story list/detail/configuration, POST rejection, exact static CSS and missing-asset 404; SIGTERM exit 0 |
+| Frontend regression | 302 passed | 229 lint/type regressions, 71 component tests and two Pages HTTP checks; production build, lint/types/format, production/full audits passed |
+| Recovery integration | Seven scenarios passed | Real synthetic PostgreSQL/media recovery and failure cleanup; original ten anonymous volumes retained |
+| Full image scan | Zero scanner findings; one known issue retained | Trivy identifies all 32 OS and 37 Python packages. SQLite CVE-2026-119373 remains affected despite absence from the Alpine advisory feed |
+| Release gate | Passed | Existing fixable HIGH/CRITICAL vulnerability gate and image secret scan retained |
+| Review and style | Passed | Independent image/lock, runtime-script and workflow reviews; Black, Flake8, Pylint, Prettier, actionlint and diff checks |
+
+The unique automated test total is **461**, plus the seven recovery scenarios and
+final image integration checks. The final local image has manifest-list digest
+`sha256:13dcb0b97d6487fc5e821a1c0597b7ec08a0fbe1eeafdb640ee41ba68236b10b`.
+CI rebuilds and repeats the image checks before publishing its own digest.
+
+The same Trivy 0.76.1 database was used for the Debian baseline and candidates:
+updated `2026-11-02T07:17:05Z`, local SHA-256
+`9cf3518dfc47bd04da93073cbc893e428f8608fe57b2b04ad4893e82cf25c58d`.
+Baseline records were HIGH 41, MEDIUM 70, LOW 57 and UNKNOWN 8, covering 85
+advisories including nine HIGH. Eight of those HIGH advisories are addressed by
+updated or removed components. SQLite 3.53.4 with FTS5 remains affected and is
+tracked in the [advisory review](dependency-findings.md). A Distroless alternative
+passed functionality checks but introduced five additional interpreter HIGH
+advisories, so it was not selected.
+
+Pull requests now build and verify the image without cloud credentials. Each run
+saves a complete package/vulnerability JSON report for 30 days, then applies the
+existing gate. Only a main-branch application release can authenticate, push the
+scanned image and deploy its immutable digest.
+
 ## Published frontend tooling migration 3 November 2026
 
 [PR #2](https://github.com/jothep/story-filler/pull/2) was merged as
