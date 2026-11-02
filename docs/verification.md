@@ -4,6 +4,43 @@ Legacy deployment reviewed on **27 September 2026**; repository migration begun 
 
 New-repository checks are listed first. The later pre-migration sections retain evidence from the former private `jothep/maori-story-fill` repository and do not verify subsequent changes. See the [migration record](repository-migration.md) for migration scope and the [public aggregate snapshot](evidence/README.md) for historical activity counts.
 
+## Local safety review 2 November 2026
+
+The first review batch updates the local source based on `12a466cbf2750042c0934d9b316e4e31040b3ded`. It restores application-configuration add permissions, returns safe API failures, and disables the two unsafe legacy volume-restore commands. Successful API payloads, nullable content, model definitions and storage settings remain unchanged. These are local checks, not a new hosted release.
+
+The backend regressions were first run against the original code: 10 failed and 10 passed, exposing the intended permission, error-disclosure and false-success defects. Fake operational commands also confirmed that the original restore scripts could reach service-stop or deletion operations before restoration succeeded. No real recovery operation was executed.
+
+| Check | Result | Scope |
+| --- | --- | --- |
+| Backend tests | 31 passed | 11 existing tests plus 20 regressions; temporary SQLite database and local storage |
+| Public API compatibility | Passed | Existing list/detail/config shapes, optional media, unlinked words, missing configuration, configured music, read-only methods and known HTTP errors |
+| Safe failure behavior | Passed | Database/serialization failures return JSON errors without simulated internal details; server logs retain exceptions |
+| Offline maintenance tests | 13 passed | Six existing smoke-check tests plus seven restore-entry tests |
+| Restore refusal | Passed | 16 calls across the two scripts; arguments, confirmation input and environment variables cannot start operational commands |
+| Frontend tests, lint and build | Passed | Six component tests; frontend source and dependencies unchanged |
+| Django system and migration checks | Passed | No system-check errors; no model changes requiring migration |
+| Changed Python modules | Passed | Black and explicit Flake8 settings for views, serializers and the two new test modules; the admin change is limited to permission checking |
+| Shell syntax | Passed | All tracked shell scripts; this does not execute backup, recovery or cloud operations |
+| Independent review | Passed | API compatibility, permission handling and restore refusal reviewed separately |
+
+The review baseline also found existing whole-repository formatting issues (28 frontend files and 12 backend files before this batch) and dependency advisories. Whole-repository formatting, dependency updates, frontend lifecycle defects and deployment-order protection remain later batches. The local pass above does not relabel those outstanding items as fixed. Backend workflow path filters still need broadening when testing is separated from deployment; changes limited to the restore scripts do not yet trigger that workflow automatically.
+
+To repeat the relevant checks with dependencies installed in an isolated environment, run the backend suite from `backend/`:
+
+```bash
+SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(48))')" \
+  DATABASE_URL='sqlite:///:memory:' USE_GCS=false DEBUG=false \
+  python manage.py test
+```
+
+From the repository root, run the offline script tests:
+
+```bash
+python -m unittest discover -s scripts -p '*_test.py'
+```
+
+From `frontend/`, run `npm run lint`, `npm run test -- --run` and `npm run build`. The focused Python style checks use Black and `flake8 --max-line-length=88 --ignore=W503` on the changed views/serializers and new test modules; the current Flake8 installation does not read the repository's `[tool.flake8]` table without an additional integration.
+
 ## New repository: 28 September 2026
 
 These results apply to `jothep/story-filler` at released revision `1713b97ea6264c50c3321ed3fdd164b594cff5ed`, a 190-commit history comprising the 189-commit cleaned baseline and one migration commit. Subsequent documentation commits are not a new application release; the commit and file/blob counts below describe the checked snapshot. The owner made the new repository public on **28 September 2026**. An unauthenticated GitHub repository API request returned HTTP 200 with `private: false`; the former repository remains private.

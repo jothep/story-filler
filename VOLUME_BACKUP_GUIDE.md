@@ -1,19 +1,20 @@
 > **Historical implementation note — September 2026 review:** This document retains an earlier design, estimate, procedure or plan. It is not the current deployment specification, and its performance, cost, security and recovery claims have not all been revalidated. Use the [architecture index](docs/ARCHITECTURE.md) and [dated verification record](docs/verification.md) for current scope and evidence.
 
-# Docker Volume 备份迁移指南
+# Docker Volume 备份迁移历史记录
 
-使用Docker Volume备份是最简单、最完整的迁移方式 - 它会完整复制整个数据库和媒体文件。
+**2026-11-02：旧恢复入口已停用。** `scripts/restore-volumes.sh` 与
+`scripts/restore-volumes-ec2.sh` 会返回非零退出状态，不会停止服务、删除文件或修改卷。
+原实现存在备份路径处理错误，以及在确认备份有效之前删除目标数据的问题。
 
-## 为什么用Volume备份？
+下面的命令和输出保留用于理解旧 Compose/EC2 实现，不能作为当前可执行的恢复步骤。
+普通 `tar` 复制运行中的 PostgreSQL 数据目录不能保证一致性；原备份脚本也尚未完成修复。
+后续将先修复备份来源和格式，再用隔离数据库及合成数据验证恢复流程。
+不要从 Git 历史取回旧脚本用于实际数据恢复。
 
-| 对比 | Volume备份 | pg_dump + 媒体打包 |
-|------|-----------|------------------|
-| **操作** | 一键备份/恢复 | 需要分别操作数据库和文件 |
-| **完整性** | 100%完整 | 需要确保两者同步 |
-| **速度** | 快（直接复制） | 慢（需要dump和restore） |
-| **简单度** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ |
+当前托管应用使用 Cloud Run、Neon 和 GCS；此处的本地卷流程不适用于它们。
+第一批修复的检查范围见[验证记录](docs/verification.md#local-safety-review-2-november-2026)。
 
----
+## 以下为历史流程
 
 ## 步骤1：本地创建测试数据
 

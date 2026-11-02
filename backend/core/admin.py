@@ -145,8 +145,8 @@ class AppConfigAdmin(admin.ModelAdmin):
         return 'audio/mpeg'  # default
 
     def has_add_permission(self, request):
-        # Only allow one config instance
-        return not AppConfig.objects.exists()
+        # Creating the singleton still requires the normal model permission.
+        return super().has_add_permission(request) and not AppConfig.objects.exists()
 
     def has_delete_permission(self, request, obj=None):
         # Don't allow deletion of the config

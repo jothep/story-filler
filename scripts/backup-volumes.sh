@@ -43,8 +43,9 @@ Volumes:
 - postgres_dev_data → postgres_data.tar.gz ($POSTGRES_SIZE)
 - media_dev_data → media_data.tar.gz ($MEDIA_SIZE)
 
-恢复方法:
-./scripts/restore-volumes.sh $BACKUP_DIR
+恢复状态:
+旧卷恢复入口已停用；当前没有经过验证的替代恢复流程。
+请参阅 VOLUME_BACKUP_GUIDE.md，不要用旧脚本覆盖现有数据。
 EOF
 
 echo ""

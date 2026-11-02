@@ -62,8 +62,8 @@ jobs:
         env:
           DATABASE_URL: 'sqlite:///:memory:'
 
-      - name: Test public API smoke-check validation (offline)
-        run: python -m unittest discover -s scripts -p 'smoke_check_test.py'
+      - name: Test maintenance scripts (offline)
+        run: python -m unittest discover -s scripts -p '*_test.py'
 
       # ==================== Docker Build & Push ====================
       - name: 7. Authenticate to Google Cloud
