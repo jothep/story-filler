@@ -2,14 +2,45 @@
 // Renders playback controls for the selected word, pulling the
 // `selectedWord` from the `WordInteractionContext` to play
 // both its Māori and English audio.
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useWordInteraction } from '../context/WordInteractionContext';
 
 function WordAudio() {
   const { selectedWord } = useWordInteraction();
-  const playAudio = (audioSrc) => {
-    if (audioSrc) {
-      const audio = new Audio(audioSrc);
-      audio.play();
+  const audioRef = useRef(null);
+  const [audioError, setAudioError] = useState(null);
+
+  const stopAudio = useCallback(() => {
+    const audio = audioRef.current;
+    audioRef.current = null;
+    if (audio) {
+      audio.onerror = null;
+      audio.pause();
+    }
+  }, []);
+
+  useEffect(() => {
+    setAudioError(null);
+    return stopAudio;
+  }, [selectedWord, stopAudio]);
+
+  const playAudio = async (audioSrc) => {
+    if (!audioSrc) return;
+    stopAudio();
+    setAudioError(null);
+    const audio = new Audio(audioSrc);
+    audioRef.current = audio;
+
+    const reportFailure = () => {
+      if (audioRef.current !== audio) return;
+      stopAudio();
+      setAudioError('Unable to play this recording. Please try again.');
+    };
+    audio.onerror = reportFailure;
+    try {
+      await audio.play();
+    } catch {
+      reportFailure();
     }
   };
 
@@ -25,13 +56,13 @@ function WordAudio() {
         padding: '0.5rem 1rem',
       }}
     >
-      
       {selectedWord ? (
         <>
           <div>
             <button
               type="button"
-              className="nes-btn is-primary"
+              className={`nes-btn ${selectedWord.maori_audio ? 'is-primary' : 'is-disabled'}`}
+              disabled={!selectedWord.maori_audio}
               style={{ marginRight: '1rem' }}
               onClick={() => playAudio(selectedWord.maori_audio)}
             >
@@ -43,7 +74,8 @@ function WordAudio() {
           <div>
             <button
               type="button"
-              className="nes-btn is-primary"
+              className={`nes-btn ${selectedWord.english_audio ? 'is-primary' : 'is-disabled'}`}
+              disabled={!selectedWord.english_audio}
               style={{ marginRight: '1rem' }}
               onClick={() => playAudio(selectedWord.english_audio)}
             >
@@ -58,6 +90,7 @@ function WordAudio() {
             <button
               type="button"
               className="nes-btn is-disabled"
+              disabled
               style={{ marginRight: '1rem' }}
             >
               play
@@ -68,6 +101,7 @@ function WordAudio() {
             <button
               type="button"
               className="nes-btn is-disabled"
+              disabled
               style={{ marginRight: '1rem' }}
             >
               play
@@ -76,6 +110,7 @@ function WordAudio() {
           </div>
         </>
       )}
+      {audioError && <p role="status">{audioError}</p>}
     </div>
   );
 }

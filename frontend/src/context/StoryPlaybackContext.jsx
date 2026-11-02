@@ -1,138 +1,145 @@
-// src/context/StoryPlaybackContext.jsx
-// Defines a React Context (`StoryPlaybackProvider`) that encapsulates all state
-// and logic for story playback, including BGM, paragraph navigation, and
-// paragraph audio. Exports `useStoryPlayback` to consume this state.
-import { createContext, useState, useContext, useRef, useEffect } from 'react';
+import {
+  createContext,
+  useCallback,
+  useState,
+  useContext,
+  useRef,
+  useEffect,
+} from 'react';
 import PropTypes from 'prop-types';
-
 
 const StoryPlaybackContext = createContext();
 
 export const useStoryPlayback = () => {
   const context = useContext(StoryPlaybackContext);
   if (context === undefined) {
-    throw new Error('useStoryPlayback must be used within a StoryPlaybackProvider');
+    throw new Error(
+      'useStoryPlayback must be used within a StoryPlaybackProvider'
+    );
   }
   return context;
 };
 
+function stopAudio(audioRef) {
+  const audio = audioRef.current;
+  audioRef.current = null;
+  if (audio) {
+    audio.onerror = null;
+    audio.pause();
+  }
+}
+
 export function StoryPlaybackProvider({ story, children }) {
-  const [isMusicPlaying, setIsMusicPlaying] = useState(true);
+  const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+  const [currentParagraphIndex, setCurrentParagraphIndex] = useState(0);
   const bgmAudioRef = useRef(null);
   const paragraphAudioRef = useRef(null);
-  const [currentParagraphIndex, setCurrentParagraphIndex] = useState(0);
+  const musicRequestedRef = useRef(false);
+  const musicRequestRef = useRef(0);
+
+  const startBackgroundMusic = useCallback(async (audio) => {
+    const request = ++musicRequestRef.current;
+    musicRequestedRef.current = true;
+    try {
+      await audio.play();
+      if (
+        bgmAudioRef.current === audio &&
+        musicRequestRef.current === request
+      ) {
+        setIsMusicPlaying(true);
+      }
+    } catch {
+      if (
+        bgmAudioRef.current === audio &&
+        musicRequestRef.current === request
+      ) {
+        musicRequestedRef.current = false;
+        setIsMusicPlaying(false);
+      }
+    }
+  }, []);
 
   useEffect(() => {
-    if (!story || !story.background_music_url) {
-      return;
-    }
+    setIsMusicPlaying(false);
+    if (!story?.background_music_url) return;
+
     const audio = new Audio(story.background_music_url);
     audio.loop = true;
     audio.volume = 0.3;
     bgmAudioRef.current = audio;
-
-    if (isMusicPlaying) {
-      audio.play().catch((e) => console.warn('BGM 自动播放被阻止:', e));
-    }
-    return () => {
+    audio.onerror = () => {
+      if (bgmAudioRef.current !== audio) return;
+      musicRequestRef.current += 1;
+      musicRequestedRef.current = false;
       audio.pause();
-      bgmAudioRef.current = null;
+      setIsMusicPlaying(false);
     };
-  }, [story]); 
+    startBackgroundMusic(audio);
+
+    return () => {
+      musicRequestRef.current += 1;
+      musicRequestedRef.current = false;
+      stopAudio(bgmAudioRef);
+    };
+  }, [story, startBackgroundMusic]);
+
+  useEffect(() => {
+    setCurrentParagraphIndex(0);
+    return () => stopAudio(paragraphAudioRef);
+  }, [story]);
 
   const handleToggleMusic = () => {
     const audio = bgmAudioRef.current;
     if (!audio) return;
-    const newMusicState = !isMusicPlaying;
-    setIsMusicPlaying(newMusicState);
-    newMusicState ? audio.play() : audio.pause();
-  }; 
+    if (musicRequestedRef.current) {
+      // Invalidate a pending play as well as stopping established playback.
+      musicRequestRef.current += 1;
+      musicRequestedRef.current = false;
+      audio.pause();
+      setIsMusicPlaying(false);
+    } else {
+      startBackgroundMusic(audio);
+    }
+  };
 
   const handleNextParagraph = () => {
-    if (paragraphAudioRef.current) paragraphAudioRef.current.pause();
-    if (story && story.paragraphs) {
-      setCurrentParagraphIndex((prev) =>
-        Math.min(prev + 1, story.paragraphs.length - 1)
-      );
-    }
-  }; 
+    stopAudio(paragraphAudioRef);
+    const lastIndex = Math.max((story?.paragraphs?.length ?? 0) - 1, 0);
+    setCurrentParagraphIndex((previous) => Math.min(previous + 1, lastIndex));
+  };
 
   const handlePrevParagraph = () => {
-    if (paragraphAudioRef.current) paragraphAudioRef.current.pause();
-    setCurrentParagraphIndex((prev) => Math.max(prev - 1, 0));
-  }; 
+    stopAudio(paragraphAudioRef);
+    setCurrentParagraphIndex((previous) => Math.max(previous - 1, 0));
+  };
 
-  const handlePlayParagraphAudio = (audioUrl) => {
-    if (!audioUrl) {
-      console.warn('No audio URL provided');
-      return;
-    }
-
-    console.log('Attempting to play audio:', audioUrl);
-
-    // Stop any currently playing paragraph audio
-    if (paragraphAudioRef.current) {
-      paragraphAudioRef.current.pause();
-      paragraphAudioRef.current.currentTime = 0;
-      paragraphAudioRef.current = null;
-    }
+  const handlePlayParagraphAudio = async (audioUrl) => {
+    if (!audioUrl) return;
+    stopAudio(paragraphAudioRef);
 
     const audio = new Audio(audioUrl);
-    paragraphAudioRef.current = audio;
-
-    // Set audio properties for better iOS compatibility
     audio.preload = 'auto';
     audio.crossOrigin = 'anonymous';
+    paragraphAudioRef.current = audio;
 
-    // Error handling
-    audio.addEventListener('error', (e) => {
-      console.error('Audio error:', {
-        error: e,
-        audioUrl: audioUrl,
-        errorCode: audio.error?.code,
-        errorMessage: audio.error?.message
-      });
+    const reportFailure = () => {
+      if (paragraphAudioRef.current !== audio) return;
+      stopAudio(paragraphAudioRef);
+      alert('Unable to play this audio. Please try again.');
+    };
+    audio.onerror = reportFailure;
 
-      let errorMsg = 'Unable to play audio. ';
-      if (audio.error?.code === 4) {
-        errorMsg += 'Audio format not supported. Please convert to MP3.';
-      } else if (audio.error?.code === 2) {
-        errorMsg += 'Network error loading audio.';
-      } else {
-        errorMsg += 'Please check your internet connection.';
-      }
-      alert(errorMsg);
-    }, { once: true });
-
-    // iOS/iPad Safari requires explicit user interaction
-    // Try to play immediately (works if triggered by user action)
-    const playPromise = audio.play();
-
-    if (playPromise !== undefined) {
-      playPromise
-        .then(() => {
-          console.log('Audio playing successfully');
-        })
-        .catch((e) => {
-          console.error('Failed to play paragraph audio:', e);
-          // If autoplay fails, try loading first then playing
-          audio.load();
-          audio.addEventListener('canplaythrough', () => {
-            audio.play().catch((err) => {
-              console.error('Still failed after load:', err);
-              alert('Audio playback failed. File format may not be supported on this device.');
-            });
-          }, { once: true });
-        });
+    try {
+      // Keep playback within the user's action; retries also use this button.
+      await audio.play();
+    } catch {
+      reportFailure();
     }
-  }; 
+  };
 
-  const currentParagraph = (story && story.paragraphs && story.paragraphs.length > 0)
-    ? story.paragraphs[currentParagraphIndex]
-    : null;
-
+  const currentParagraph = story?.paragraphs?.[currentParagraphIndex] ?? null;
   const value = {
-    story, 
+    story,
     isMusicPlaying,
     currentParagraph,
     currentParagraphIndex,
@@ -155,8 +162,4 @@ StoryPlaybackProvider.propTypes = {
     paragraphs: PropTypes.array,
   }),
   children: PropTypes.node.isRequired,
-};
-
-StoryPlaybackProvider.defaultProps = {
-  story: null,
 };

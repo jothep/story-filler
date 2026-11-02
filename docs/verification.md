@@ -4,6 +4,32 @@ Legacy deployment reviewed on **27 September 2026**; repository migration begun 
 
 New-repository checks are listed first. The later pre-migration sections retain evidence from the former private `jothep/maori-story-fill` repository and do not verify subsequent changes. See the [migration record](repository-migration.md) for migration scope and the [public aggregate snapshot](evidence/README.md) for historical activity counts.
 
+## Local frontend lifecycle review 2 November 2026
+
+This third batch starts from the published review code and its release record at `80046e5`. It is prepared on `codex/batch-3-frontend` and has not been published. It changes frontend behavior and adds regression coverage; it does not change database models, production data, credentials or cloud permissions.
+
+- **Incomplete story content:** a blank without its linked word is shown as unavailable and cannot receive drops. Text and paragraph navigation remain usable. Completion checks the actual answers across every paragraph rather than counting arbitrary entries in the answer map.
+- **Request ownership:** switching routes, retrying or unmounting cancels the old request. A separate identity check ignores late results from transports that still finish. Route changes hide old content and errors on the first render, before effects start the next request.
+- **Audio ownership:** narration, selected-word recordings and background music stop when their owner changes or unmounts. Late callbacks cannot restart old narration or change the new playback state. Rejected playback leaves controls in the stopped state and allows a manual retry. Menu configuration requests and hint timers are cleaned up.
+- **Drag cancellation:** cancellation and unmount clear the overlay and page-level dragging state without recording an answer. Normal completed drops still use the existing answer validation.
+- **Pages deep links:** each build generates `404.html` from the entry page so React Router can open the original story path. The custom error document retains HTTP 404; JavaScript and CSS use the project base path and load normally. This behavior is checked before CI uploads the Pages artifact.
+
+The targeted regression tests were run against the old implementation before each fix. They reproduced missing-word crashes, incorrect completion, stale requests and errors, abandoned drag state, and late or rejected audio operations. Additional tests check normal paths and route changes before effects run.
+
+| Check | Result | Scope |
+| --- | --- | --- |
+| Frontend unit/component tests | 60 passed | Six existing tests plus 54 new tests across content, answer completion, drag lifecycle, API behavior, request races and audio ownership |
+| Backend tests | 31 passed | Temporary SQLite and local storage in an isolated checkout; no production writes |
+| Maintenance/release script tests | 45 passed | Includes the published legacy revision compatibility regressions |
+| Frontend lint and changed-file formatting | Passed | Full frontend ESLint; Prettier for changed source, tests and audio fixtures |
+| Production build and Pages fallback | Passed | Node 24; two additional Node tests check generated HTML, absolute asset paths, deep-link 404 responses with and without a query, successful asset responses and missing-asset 404s |
+| Linux frontend containers | Passed | Both existing Dockerfiles built for Linux amd64; isolated runtime HTTP checks passed for HTML, story routes, generated fallback, three entry resources and missing-asset 404s. The build contained no local fixture API URL. Host port forwarding was not part of this check |
+| Browser with synthetic local data | Passed | Missing word and readable next paragraph; unavailable recordings disabled; server error followed by successful retry; real pointer drag, correct answer and completion-page navigation; direct story URL and refresh through a Pages-style 404 server |
+| Changed-file credential scan | No findings | Gitleaks scanned all 24 changed/new text files with redaction enabled; pattern detection is not proof of absence |
+| Independent review | Passed | Request ownership, incomplete-content handling and drag changes reviewed by another agent; audio ownership reviewed separately |
+
+The two image builds reused unchanged dependency and operating-system layers, so the prior Trivy findings were not rescanned. Temporary containers, the dedicated review VM and local test servers were stopped after verification. The browser scenario uses a local read-only fixture, not the production database. Audio regressions use controlled media events and promises; they do not assess recording quality or every browser's autoplay and codec behavior. No audio library or UI framework was added. Full repository formatting, migration of the remaining ESLint development dependencies, and replacement backup/restore tooling remain later batches.
+
 ## Hosted release 2 November 2026
 
 The first two review batches were merged into `main` at `43ba793fc8c5c505dfcd905d2315a4fd3d6cf7c7`. The frontend was published from that commit. The backend was published from `8af5dd842e00bedaf107ec7bf5688e15f02059d0`, which adds the legacy Cloud Run metadata compatibility fix described below. The subsequent frontend lifecycle work remains a separate local branch.
@@ -55,7 +81,7 @@ Actual Gunicorn startup then exposed a dependency masked by the development envi
 - **Backend operating system:** the final scan retained 45 HIGH package/advisory records representing nine distinct advisories, with no Debian fix listed. It also reported 71 MEDIUM, 61 LOW and eight UNKNOWN records, and no CRITICAL findings. The existing backend policy continues to block fixable HIGH/CRITICAL findings; it does not mean that all operating-system advisories are resolved. Frontend image scanning blocks all HIGH/CRITICAL findings, including unfixed ones.
 - **Dependency freshness:** both Python locks are audited in CI. Fixed package versions and image digests must be deliberately updated; they do not obtain future patches automatically. The frontend images also apply available Alpine updates during a build, so separate builds are not guaranteed to be byte-identical.
 
-Application lifecycle fixes, complete repository formatting, the ESLint migration and replacement backup/restore tooling remain separate work. The disabled restore commands stay disabled. Current tests do not validate PostgreSQL/GCS integration, migration execution, gameplay/audio in a real browser, load capacity or automatic rollback.
+The frontend lifecycle fixes are covered by the separate local batch above. Complete repository formatting, the ESLint migration and replacement backup/restore tooling remain later work. The disabled restore commands stay disabled. Current tests do not validate PostgreSQL/GCS integration, migration execution, gameplay/audio in a real browser, load capacity or automatic rollback.
 
 ## Local safety review 2 November 2026
 

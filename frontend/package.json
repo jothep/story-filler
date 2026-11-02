@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/create-pages-fallback.mjs",
     "preview": "vite preview",
     "test": "vitest",
+    "test:pages": "node --test scripts/check-pages-fallback.mjs",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "format:check": "prettier --check .",
     "format:write": "prettier --write ."

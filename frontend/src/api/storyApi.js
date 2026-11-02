@@ -1,93 +1,71 @@
-//api/storyApi.js
-// Defines asynchronous functions for fetching story data from the API.
-// Provides `getAllStories` to fetch the list and `getStoryById` to fetch a single story.
-
 import { getApiUrl } from '../config/api';
 
 /**
- * Parse error response from API
+ * Read the API's user-facing error while preserving request cancellation.
  * @param {Response} response - Fetch response object
  * @returns {Promise<string>} User-friendly error message
  */
 async function parseErrorResponse(response) {
   try {
     const data = await response.json();
-    // Check if API returned a structured error
     if (data.error) {
       return data.detail || data.error;
     }
     return data.message || `Server error (${response.status})`;
-  } catch {
-    // Failed to parse JSON, return generic message
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw err;
+    }
     return `Server error (${response.status}: ${response.statusText})`;
   }
 }
 
-/**
- * Fetch all stories from the API
- * @returns {Promise<Array>} Array of story objects
- * @throws {Error} With user-friendly error message
- */
-export const getAllStories = async () => {
-  const API_URL = getApiUrl('/api/stories/');
-
+async function fetchStoryData(path, { signal, notFoundMessage } = {}) {
   try {
-    const response = await fetch(API_URL);
+    const response = await fetch(getApiUrl(path), { signal });
 
     if (!response.ok) {
+      if (response.status === 404 && notFoundMessage) {
+        throw new Error(notFoundMessage);
+      }
       const errorMessage = await parseErrorResponse(response);
       throw new Error(errorMessage);
     }
 
-    const data = await response.json();
-    return data;
-
+    return await response.json();
   } catch (err) {
-    console.error('[storyApi] Fetch Error for all stories:', err);
-
-    // Re-throw with user-friendly message
-    if (err.message.includes('Failed to fetch')) {
-      throw new Error('Unable to connect to the server. Please check your internet connection.');
+    if (err.name === 'AbortError' || signal?.aborted) {
+      throw err;
     }
+    console.error(`[storyApi] Fetch error for ${path}:`, err);
 
+    if (err.message.includes('Failed to fetch')) {
+      throw new Error(
+        'Unable to connect to the server. Please check your internet connection.'
+      );
+    }
     throw err;
   }
-};
+}
+
+/**
+ * Fetch the story list. Existing callers can omit the options argument.
+ * @param {{signal?: AbortSignal}} options - Optional cancellation signal
+ * @returns {Promise<Array>} Array of story objects
+ */
+export const getAllStories = ({ signal } = {}) =>
+  fetchStoryData('/api/stories/', { signal });
 
 /**
  * Fetch a single story by ID from the API
  * @param {string|number} storyId - Story ID
+ * @param {{signal?: AbortSignal}} options - Optional cancellation signal
  * @returns {Promise<Object>} Story object
  * @throws {Error} With user-friendly error message
  */
-export const getStoryById = async (storyId) => {
-  const API_URL = getApiUrl(`/api/stories/${storyId}/`);
-
-  try {
-    const response = await fetch(API_URL);
-
-    if (!response.ok) {
-      const errorMessage = await parseErrorResponse(response);
-
-      // Special handling for 404
-      if (response.status === 404) {
-        throw new Error(`Story not found. It may have been removed or the link is incorrect.`);
-      }
-
-      throw new Error(errorMessage);
-    }
-
-    const data = await response.json();
-    return data;
-
-  } catch (err) {
-    console.error(`[storyApi] Fetch Error for story ${storyId}:`, err);
-
-    // Re-throw with user-friendly message
-    if (err.message.includes('Failed to fetch')) {
-      throw new Error('Unable to connect to the server. Please check your internet connection.');
-    }
-
-    throw err;
-  }
-};
+export const getStoryById = (storyId, { signal } = {}) =>
+  fetchStoryData(`/api/stories/${storyId}/`, {
+    signal,
+    notFoundMessage:
+      'Story not found. It may have been removed or the link is incorrect.',
+  });

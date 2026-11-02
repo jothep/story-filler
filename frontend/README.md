@@ -28,9 +28,10 @@ npm audit --audit-level=high
 npm run lint
 npm test -- run
 npm run build
+npm run test:pages
 ```
 
-The six component tests mock HTTP and audio. A build verifies asset generation; it does not prove a deployment or complete browser gameplay.
+The unit and component tests cover content, answer validation, request ownership and audio lifecycle, using controlled HTTP and media behavior. The separate Pages checks inspect the generated files and their HTTP responses. Neither suite substitutes for browser gameplay checks; the latest local results and browser scope are recorded in [verification](../docs/verification.md#local-frontend-lifecycle-review-2-november-2026).
 
 ## Dependency maintenance
 
@@ -47,7 +48,7 @@ The 2 November 2026 update retained the current React application and lint rules
 
 Unused `vite-plugin-eslint` and `eslint-plugin-react-refresh` dependencies were removed. ESLint runs as its own required check. Compatible transitive updates are recorded in `package-lock.json`; use `npm ci` to install that selection.
 
-On Node 24.22.2, lint, all six tests and the production build passed. The npm audit snapshot changed from 25 affected packages (2 critical, 10 high, 11 moderate and 2 low) to 6 moderate findings. The production dependency audit reported no known vulnerabilities. These are dated results, so both audit commands run again in CI.
+The dependency review used Node 24.22.2 and passed lint, the component tests and the production build. The npm audit snapshot changed from 25 affected packages (2 critical, 10 high, 11 moderate and 2 low) to 6 moderate findings. The production dependency audit reported no known vulnerabilities. These are dated results, so both audit commands run again in CI.
 
 ### Remaining development dependency findings
 
@@ -61,11 +62,13 @@ For later dependency changes, update package and lock files together, run the ch
 
 ## Serving the build
 
-- GitHub Pages publishes `dist` at `https://jothep.github.io/story-filler/`. Navigation from the menu uses React Router. Directly opening or refreshing a nested story URL on Pages still needs a hosting fallback; this repository does not add one.
+- GitHub Pages publishes `dist` at `https://jothep.github.io/story-filler/`. Each build copies `index.html` to `404.html`, so opening or refreshing a nested story URL loads the same app and React Router handles the original path. The HTML retains Pages' HTTP 404 status; this is a client-side navigation fallback, not a server rewrite. Asset URLs remain absolute under `/story-filler/`, and missing assets still return 404. See GitHub's [custom 404 page documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-custom-404-page-for-your-github-pages-site).
 - `Dockerfile` uses Nginx on port 3000. Production-style Compose keeps the same URL contract: its outer Nginx strips `/story-filler/` before proxying to this internal service. `nginx.root.conf` serves the resulting root paths and supplies the SPA fallback. Missing build assets return 404.
 - `Dockerfile.nginx` serves the build under `/usr/share/nginx/html/story-filler/` on port 80, using `nginx.conf` for the prefix and SPA fallback. The manual image workflow uses this file; Docker Hub push is optional, defaults off and requires separately configured credentials that were not migrated. Historical Kubernetes image tags are retained in `Infra/`; rebuild and select a matching new image before reproducing the lab.
 
 Both production images copy only the built static assets into their Nginx runtime stage. Node, npm, test tools and the previous globally installed `serve` package are absent from that stage. Development uses `Dockerfile.dev` and Vite on port 5173.
+
+After building, `npm run test:pages` checks the fallback against the generated entry page and uses a local Pages-style server to check deep links, their JavaScript and CSS resources, and missing-asset responses. This runs in CI before the Pages artifact is uploaded. Vite preview alone does not reproduce Pages' missing-path response.
 
 The Dockerfiles pin official base-image digests. The lock file and digests fix the selected npm dependencies and base images. Runtime stages also apply available Alpine package updates at build time, so builds are not byte-for-byte reproducible across dates. When refreshing image digests, rebuild and scan the resulting runtime images as well as running the npm checks; npm audit does not cover operating-system packages.
 

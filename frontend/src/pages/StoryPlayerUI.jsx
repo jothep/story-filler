@@ -3,7 +3,7 @@
 // (like StoryContent, WordList, etc.). It consumes playback and interaction
 // logic from contexts and specifically manages the `DragOverlay` display
 // for dnd-kit by wrapping the context's drag handlers.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -51,21 +51,16 @@ WordOverlay.propTypes = {
 };
 
 function StoryPlayerUI() {
-  const {
-    story,
-    isMusicPlaying,
-    handleToggleMusic,
-    currentParagraph,
-    currentParagraphIndex,
-    handleNextParagraph,
-    handlePrevParagraph,
-    handlePlayParagraphAudio,
-  } = useStoryPlayback();
-  
+  const { story, isMusicPlaying, handleToggleMusic } = useStoryPlayback();
+
   const { handleDragStart: originalDragStart, handleDragEnd: originalDragEnd } =
     useWordInteraction();
 
   const [activeWord, setActiveWord] = useState(null);
+
+  useEffect(() => {
+    return () => document.body.classList.remove('dragging');
+  }, []);
 
   // Configure sensors for both mouse and touch
   const mouseSensor = useSensor(MouseSensor, {
@@ -96,11 +91,14 @@ function StoryPlayerUI() {
     }
   };
 
+  const clearDragState = () => {
+    document.body.classList.remove('dragging');
+    setActiveWord(null);
+  };
 
   const handleDragEnd = (event) => {
-    document.body.classList.remove('dragging');
+    clearDragState();
     originalDragEnd(event);
-    setActiveWord(null);
   };
 
   const paragraphsExist = story.paragraphs && story.paragraphs.length > 0;
@@ -110,11 +108,11 @@ function StoryPlayerUI() {
       sensors={sensors}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
+      onDragCancel={clearDragState}
       modifiers={[restrictToWindowEdges]}
     >
       <div className="game-screen">
-
-        <div className="layout-nav"> 
+        <div className="layout-nav">
           <div
             className="nes-container is-dark"
             style={{
@@ -165,43 +163,38 @@ function StoryPlayerUI() {
           </div>
         </div>
 
-        <div className="layout-pic"> {/* */}
+        <div className="layout-pic">
           <StoryPicture />
         </div>
 
-        <div className="layout-list"> {/* */}
+        <div className="layout-list">
           <WordList words={story.words_in_bank} />
         </div>
 
-        <div className="layout-text"> {/* */}
+        <div className="layout-text">
           {paragraphsExist ? (
-            <StoryContent
-              paragraph={currentParagraph}
-              paragraphNumber={currentParagraphIndex + 1}
-              totalParagraphs={story.paragraphs.length}
-              onNext={handleNextParagraph}
-              onPrev={handlePrevParagraph}
-              onPlayAudio={handlePlayParagraphAudio}
-            />
+            <StoryContent />
           ) : (
-            <div className="nes-container is-dark" style={{ height: '100%', padding: '1rem' }}>
+            <div
+              className="nes-container is-dark"
+              style={{ height: '100%', padding: '1rem' }}
+            >
               <p>This story has no paragraphs yet.</p>
             </div>
           )}
         </div>
 
-        <div className="layout-w-pic"> {/* */}
-          <WordPic /> 
-        </div>
-        
-        <div className="layout-w-audio"> {/* */}
-          <WordAudio />
-        </div>
-        
-        <div className="layout-tips"> {/* */}
-          <TriggerTips /> 
+        <div className="layout-w-pic">
+          <WordPic />
         </div>
 
+        <div className="layout-w-audio">
+          <WordAudio />
+        </div>
+
+        <div className="layout-tips">
+          <TriggerTips />
+        </div>
       </div>
 
       {activeWord && (

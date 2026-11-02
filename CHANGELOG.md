@@ -104,6 +104,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Migration**: Kubernetes deployments must update port configuration
 
 ### Fixed
+- **GitHub Pages deep links (2026-11-02, local)**: generate a custom error document that loads the application at the original story URL, including direct opens and refreshes. Two build/HTTP tests check the fallback and resource responses before the Pages artifact is uploaded.
+- **Frontend lifecycle review (2026-11-02, local)**: missing linked words remain readable without becoming drop targets or allowing false completion. Route changes, retries and unmounts cancel obsolete requests and ignore late results. Audio stops with its owning content; blocked or failed playback can be retried without stale callbacks changing the new state. Cancelling a drag clears its overlay and page state.
+- **Frontend regression coverage (2026-11-02, local)**: 54 new tests cover valid and incomplete stories, answer completion across paragraphs, drag cancellation, HTTP errors, overlapping requests, route changes before effects run, unmounts, StrictMode and audio lifecycle events.
 - **Legacy Cloud Run release metadata (2026-11-02)**: identify the old source commit when Cloud Run resolves a revision image tag into a digest. The service template must be fully reconciled and bound to the revision serving all traffic. Added nine regression tests for successful transitions and unsafe or incomplete metadata.
 
 - **Hardcoded BGM path removed** (2026-03-09, commit 1f9967a)
