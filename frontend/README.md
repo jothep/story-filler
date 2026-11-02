@@ -75,7 +75,17 @@ Full audit fails CI for high or critical findings; production audit fails for an
 
 [ESLint 9 reached end of life on 6 August 2026](https://eslint.org/version-support/). Version 9.39.5 remains a temporary compatibility choice. On 2 November 2026, the latest `eslint-plugin-react` release, 7.37.5, still declared ESLint support only through version 9. Its [ESLint 10 compatibility issue](https://github.com/jsx-eslint/eslint-plugin-react/issues/3977) remained open. Moving to another React lint plugin would require a separate rule-by-rule review because its recommended preset does not preserve all these checks.
 
-The same review found no compatible minimatch patch that resolves the advisory: its affected range remains every version below 11.0.1. ESLint 9 and the React plugin require the 3.x range; ESLint 10.14.0 still requires the 10.x range. Updating ESLint alone therefore does not remove this finding. This maintenance change preserves the lock file and the six reported moderate findings; it does not force a minimatch major-version override or bypass peer dependencies. Recheck both the upstream React compatibility issue and the advisory before the next dependency update.
+The follow-up review on the same date tested the available upgrades in separate temporary installations:
+
+| Check                                   | Result                                                                                                                                                                                           |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| ESLint 10.14.0 with React plugin 7.37.5 | npm rejected the unsupported peer combination. Loading the current rules directly with ESLint 10 also failed in `react/display-name`, which still calls the removed `context.getFilename()` API. |
+| ESLint 10.14.0 on its own               | Installed minimatch 10.2.6 and retained four moderate package findings from the same advisory. An ESLint upgrade alone does not resolve it.                                                      |
+| minimatch 11.0.4                        | Its CommonJS export is an object; 3.1.5 exports a callable function. Replacing the major version under existing callers is not a compatible patch.                                               |
+
+The installed minimatch 3.1.5 source has none of the `optimizationLevel`, `firstPhasePreProcess` or `secondPhasePreProcess` code described in this advisory. The current lint command and configuration also use repository-defined file patterns, rather than input from website visitors. These observations narrow the exposure of this particular installation; they do not remove the audit finding or establish that every glob-processing path is safe. The advisory's affected range still includes 3.1.5, and the registry's latest 3.x release remains 3.1.5.
+
+There is no verified compatible fix for this dependency tree at this review date. The lock file, React and Hooks rules, and audit thresholds remain unchanged. Recheck the advisory, ESLint's dependency versions and the React compatibility issue before the next dependency update. Do not use a major-version override or bypass peer checks to make the audit count disappear.
 
 For later dependency changes, update package and lock files together, run the checks above, and review major-version migration notes. Do not use `npm audit fix --force` as a substitute for a compatibility review.
 

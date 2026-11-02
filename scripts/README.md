@@ -18,6 +18,24 @@ and managers, then verify that undefined names and missing model attributes fail
 even when the overall lint score exceeds the minimum. No production settings or
 database records are needed.
 
+## Dependency audit coverage
+
+`check_dependency_audit.py` checks a pip-audit JSON report against one generated
+hash lock. Every locked package must appear once at the locked version, with
+vulnerability results and no skip reason. The parser accepts the repository's
+exact pins and SHA-256 continuations; unsupported requirements fail explicitly.
+
+```sh
+python -m pip_audit --strict --require-hashes --disable-pip \
+  -r backend/requirements.txt --format json --output /tmp/runtime-audit.json
+python scripts/check_dependency_audit.py backend/requirements.txt /tmp/runtime-audit.json
+```
+
+Run both commands successfully. Coverage alone does not mean the report has no
+vulnerabilities. CI preserves pip-audit's failure status while retaining its JSON
+output, then checks coverage. Tests include the missing preinstalled packages
+found during the [dependency review](../docs/dependency-findings.md).
+
 ## Local backup and recovery
 
 `local_recovery.py` coordinates explicit local Docker operations;

@@ -91,8 +91,8 @@ Install the development lock into a fresh virtual environment, then run:
 
 ```sh
 python -m pip check
-python -m pip_audit --strict --require-hashes -r backend/requirements.txt
-python -m pip_audit --strict --require-hashes -r backend/requirements-dev.txt
+python -m pip_audit --strict --require-hashes --disable-pip -r backend/requirements.txt
+python -m pip_audit --strict --require-hashes --disable-pip -r backend/requirements-dev.txt
 
 SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(48))')" \
 DATABASE_URL='sqlite:///:memory:' USE_GCS=false \
@@ -105,6 +105,16 @@ successful macOS installation alone does not establish Linux compatibility.
 Use the repository's image scan to check the base operating system and binary
 libraries as well as Python packages. Report unresolved findings explicitly;
 do not delete package metadata or suppress findings simply to pass a scan.
+
+The audit reads every entry from the complete, hashed locks. `--disable-pip`
+avoids a temporary pip environment omitting packages that it already installed
+for its own use. Installation with `--require-hashes` and `pip check` still
+validate distribution hashes and dependency compatibility separately.
+CI also saves the JSON result and uses
+[`check_dependency_audit.py`](../scripts/check_dependency_audit.py) to compare
+every package name and version with its lock. Missing, skipped, duplicated or
+unexpected entries fail that check. The scanner's vulnerability exit status
+remains a separate required check.
 
 Also check a fresh environment that contains only the runtime dependencies:
 
@@ -172,6 +182,29 @@ The Python 3.13 slim base is pinned to a multi-platform image digest. Review and
 update that digest regularly to receive Python and operating-system fixes, then
 rebuild, run the tests and scan the new image. A dependency-lock refresh alone
 does not update the base image.
+
+The build also pins the current Debian time-zone update explicitly. Review that
+version when refreshing the base; if it is no longer available from the Debian
+repository, choose and test the newer update for the same Debian release.
+
+After creating the `app` account, the build removes `adduser`, `passwd` and
+`mount`. Account setup is complete, and the service does not mount filesystems.
+APT also removes their unused dependencies and checks the remaining dependency
+graph. The account itself, Debian's essential packages, package metadata, CA
+certificates and Python runtime libraries remain available. Image changes need
+native-library checks and an actual Gunicorn/PostgreSQL HTTP check as well as
+Django tests, because APT cannot check `/usr/local` Python wheels.
+
+The 2 November 2026 review removed seven OS packages and reduced package-level
+scan findings from 185 to 176. The 85 distinct advisories, including nine HIGH
+advisories, remained unchanged: several binary packages share one source-package
+finding. Debian trixie's stable repositories had no package updates fixing those
+findings at review time; some fixes were already available upstream or in the
+development distribution.
+Keep the complete scan results and reassess vendor updates; removing an unused
+package does not establish that a shared advisory has been fixed elsewhere in
+the image. See [dependency findings](../docs/dependency-findings.md) for remaining
+items and [verification records](../docs/verification.md) for the checks.
 
 The image installs the runtime lock with required hashes and binary wheels only,
 then verifies that the configured gevent worker can be imported. It does not

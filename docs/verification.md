@@ -4,6 +4,30 @@ Legacy deployment reviewed on **27 September 2026**; repository migration begun 
 
 New-repository checks are listed first. The later pre-migration sections retain evidence from the former private `jothep/maori-story-fill` repository and do not verify subsequent changes. See the [migration record](repository-migration.md) for migration scope and the [public aggregate snapshot](evidence/README.md) for historical activity counts.
 
+## Dependency follow-up review 2 November 2026
+
+This follow-up starts from `ac6f44e`. The backend keeps its Python base digest and both application dependency locks, applies the reviewed stable `tzdata` update, and removes seven unused account-management/mount packages and their dependencies after creating the service account. APT dependency checks, package metadata, essential packages, certificate authorities and required native libraries are retained.
+
+The review also found a gap in the previous Python audit command: its temporary pip resolver omitted already-installed `packaging`, and additionally `pip`, `setuptools` and `wheel` in the development lock. Both audits now read the complete locks with `--disable-pip`. A separate checker compares every reported package and version with the lock. CI preserves the scanner's failure status when saving its JSON. This corrects the earlier full-coverage assumption; no known vulnerability was found in the previously omitted packages.
+
+| Check | Result | Scope |
+| --- | --- | --- |
+| Automated tests | 230 passed | 31 Django tests, 119 maintenance/configuration tests, 62 frontend component tests, 16 lint examples and two Pages tests |
+| Audit coverage | Passed | Exact agreement with all 37 runtime and 80 development pins; zero known Python findings. The old incomplete JSON reports are rejected |
+| Coverage regressions | 20 passed | Missing/bootstrap packages, skips, duplicates, unexpected packages, wrong versions, malformed reports and unsupported lock syntax; included in the 119 script tests |
+| Scanner failure propagation | Passed | The same explicit Bash/pipefail setup used by CI retains a failed scanner's exit code after `tee` and stops the next command |
+| Candidate runtime | Passed | 31 Django tests, system and migration checks as non-root `app`; installer/development tools absent; SSL certificate store, SQLite, libpq, gevent and PNG/JPEG/WebP handling available |
+| Native compatibility | Passed | 62 supported native standard-library imports and 113 shared objects checked; no new missing libraries. Optional Tk GUI libraries were absent in both the original slim image and candidate |
+| Actual HTTP/database integration | Passed | Candidate image's default Gunicorn/gevent command served story list/detail/configuration using a new synthetic PostgreSQL database, and retained the read-only API |
+| Backup/recovery integration | Seven scenarios passed | Existing PostgreSQL/media recovery success and refusal/failure cases; no additional resources left behind |
+| Full image scan | Compared against the same database | OS records: HIGH 45→41, MEDIUM 71→70, LOW 61→57, UNKNOWN 8→8, CRITICAL 0. Distinct advisories remain 85, including nine HIGH; no vendor-fixed records were present |
+| Frontend compatibility | Existing checks passed; upgrade deferred | Fresh npm production audit has zero findings; full audit retains six moderate packages from one advisory. Isolated trials confirmed ESLint 10/React incompatibility and the minimatch major API change |
+| Style and workflow checks | Passed | Black, Flake8, backend Pylint, frontend ESLint/Prettier, production build, actionlint and diff checks |
+
+The image scans used Trivy's database updated at `2026-11-02T01:14:05Z`, with local database SHA-256 `72ddbfd4f4fb1b6458b1cceb050e3c31733fd832615deab4be241ded106fece3`. The reduction is in package-level records, not distinct vulnerabilities. Removing unused packages does not fix the same source-package advisory in other installed components. The [dependency findings](dependency-findings.md) explain each HIGH group, the stable-package limits and the frontend upgrade blockers.
+
+These checks used tracked source copies and synthetic data. No production backup, database migration, data cutover or IAM change was performed. The test container/volume set was unchanged after cleanup; the ten pre-existing anonymous volumes were retained.
+
 ## Published recovery tooling 2 November 2026
 
 The fifth batch was merged into `main` at `4f4efdd2c9cd43d3d1f2c006bbef9d8e019a470e` after independent review and a fresh run of all 210 automated tests and seven real Docker recovery scenarios. The final repository check covered tracked files, the full reachable credential scan, documentation links and examples, workflow syntax and deployment scope.

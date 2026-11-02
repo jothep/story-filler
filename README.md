@@ -74,6 +74,11 @@ Backend application tests use SQLite, not Neon; recovery integration tests use r
 
 ## Dependency and delivery maintenance
 
+The [dependency findings](docs/dependency-findings.md) record the current remaining
+advisories, compatible upgrade limits and complete-lock audit coverage. This
+follow-up removes unused backend tools and applies the available time-zone update;
+it retains the React lint rules and the existing security thresholds.
+
 - **Backend:** edit direct dependencies in `backend/requirements.in` and `backend/requirements-dev.in`, then regenerate their hash-locked `.txt` files. The production image installs only the runtime lock. See the [backend guide](backend/README.md) for the Python 3.13 commands.
 - **Frontend:** use Node 24 and `npm ci`. Review `package.json` and `package-lock.json` together. Nginx serves the optional local production containers; the hosted frontend still uses GitHub Pages. See the [frontend guide](frontend/README.md).
 - **Terraform:** commit the provider lock file; keep state and private inputs ignored. [Local validation](terraform/README.md#provider-versions-and-local-validation) disables the remote backend.

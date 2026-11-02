@@ -16,9 +16,17 @@ RUN python -m pip install --no-cache-dir --require-hashes --only-binary=:all: \
     && rm -rf /usr/local/lib/python3.13/ensurepip \
     && python -c 'from gunicorn.workers.ggevent import GeventWorker'
 
+# Create the persistent runtime account before removing its setup tools and mount.
+# Keep the available time-zone update explicit; preserve essential OS packages.
 RUN addgroup --system app \
     && adduser --system --group app \
-    && chown app:app /app
+    && chown app:app /app \
+    && apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends \
+        tzdata=2026f-0+deb13u1 \
+    && apt-get purge --yes --auto-remove adduser mount passwd \
+    && apt-get check \
+    && rm -rf /var/lib/apt/lists/*
 COPY --chown=app:app . .
 
 # Build-created logs and static files must also belong to the runtime user.
