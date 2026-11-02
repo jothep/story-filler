@@ -103,7 +103,7 @@ body.dragging {
   }
 
   /* Increase blank space height for easier touch */
-  .layout-text span[style*="inline-block"] {
+  .layout-text span[style*='inline-block'] {
     min-height: 48px !important;
     min-width: 120px !important;
     line-height: 48px !important;
@@ -145,7 +145,7 @@ body.dragging {
   }
 
   /* Tablet-specific blank spacing */
-  .layout-text span[style*="inline-block"] {
+  .layout-text span[style*='inline-block'] {
     min-height: 44px !important;
   }
 
@@ -203,7 +203,7 @@ body.dragging {
   /* Increase tap target size */
   button,
   a,
-  input[type="checkbox"] {
+  input[type='checkbox'] {
     min-height: 44px;
     min-width: 44px;
   }
@@ -234,7 +234,8 @@ body.dragging {
   }
 
   @keyframes shake {
-    0%, 100% {
+    0%,
+    100% {
       transform: translateX(0);
     }
   }
@@ -242,7 +243,8 @@ body.dragging {
 
 /* Add pulse animation for mobile drop zones */
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     opacity: 1;
   }

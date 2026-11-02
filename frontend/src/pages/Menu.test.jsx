@@ -22,8 +22,7 @@ afterEach(() => {
 });
 
 beforeEach(() => {
-  // Mock Audio constructor
-  global.Audio = vi.fn().mockImplementation(function(src) {
+  global.Audio = vi.fn().mockImplementation(function (src) {
     this.src = src;
     this.loop = false;
     this.volume = 1;
@@ -72,7 +71,6 @@ describe('Menu Component - BGM Configuration', () => {
       expect(screen.queryByText(/Loading stories.../i)).not.toBeInTheDocument();
     });
 
-    // Verify Audio was created
     // URL format depends on VITE_API_URL env var (full URL in dev, relative in prod build)
     expect(global.Audio).toHaveBeenCalled();
     const audioCall = global.Audio.mock.calls[0][0];
@@ -95,7 +93,6 @@ describe('Menu Component - BGM Configuration', () => {
       expect(screen.queryByText(/Loading stories.../i)).not.toBeInTheDocument();
     });
 
-    // Should still render stories even without BGM
     expect(await screen.findByText('Story 1')).toBeInTheDocument();
     expect(await screen.findByText('Story 2')).toBeInTheDocument();
   });
@@ -115,7 +112,6 @@ describe('Menu Component - BGM Configuration', () => {
       expect(screen.queryByText(/Loading stories.../i)).not.toBeInTheDocument();
     });
 
-    // Should still render stories even if config API fails
     expect(await screen.findByText('Story 1')).toBeInTheDocument();
   });
 

@@ -1,4 +1,4 @@
-import { render, screen, cleanup, waitFor } from '@testing-library/react'; 
+import { render, screen, cleanup, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { DndContext } from '@dnd-kit/core';
@@ -70,7 +70,6 @@ describe('StoryPlayer Component', () => {
       expect(screen.queryByText(/^Loading story...$/i)).not.toBeInTheDocument();
     });
 
-    // Check for the new error UI components
     const errorHeading = await screen.findByText(/Oops!/i);
     expect(errorHeading).toBeInTheDocument();
 

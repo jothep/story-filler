@@ -1,0 +1,15 @@
+[MAIN]
+load-plugins = pylint_django
+django-settings-module = maori_story_project.settings
+# Migration files are generated; application code and tests remain in scope.
+ignore = migrations
+fail-under = 7.0
+# Genuine errors must fail even when the overall score is above the threshold.
+fail-on = E,F
+
+[FORMAT]
+max-line-length = 88
+
+[MESSAGES CONTROL]
+# Preserve the existing project's docstring policy; other findings stay visible.
+disable = missing-module-docstring,missing-class-docstring,missing-function-docstring

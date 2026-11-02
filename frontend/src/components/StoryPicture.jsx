@@ -1,12 +1,9 @@
-// src/components/StoryPicture.jsx
-// Displays the story's main picture within a dark container, pulling
-// the image URL from the `useStoryPlayback` context.
 import { useStoryPlayback } from '../context/StoryPlaybackContext';
 
 const imageStyle = {
-  width: '100%',  
-  height: '100%', 
-  objectFit: 'cover', 
+  width: '100%',
+  height: '100%',
+  objectFit: 'cover',
 };
 
 function StoryPicture() {
@@ -17,14 +14,14 @@ function StoryPicture() {
       style={{
         height: '100%',
         boxSizing: 'border-box',
-        
+
         padding: 0,
         backgroundColor: '#111',
       }}
     >
       {story && story.picture_url ? (
         <img
-          src={story.picture_url} 
+          src={story.picture_url}
           alt={story.title || 'Story picture'}
           style={imageStyle}
         />

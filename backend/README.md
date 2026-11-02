@@ -121,6 +121,47 @@ python3.13 -m venv "$runtime_check_dir"
 Start the built image and check its HTTP responses as well. Django unit tests
 alone do not run the configured Gunicorn worker.
 
+## Python style and static checks
+
+Use the locked Black and Flake8 versions from the development environment:
+
+```sh
+python -m black --check backend scripts
+python -m flake8 backend scripts
+```
+
+Black reads the root `pyproject.toml`; Flake8 reads the root `.flake8`. Both use
+88 columns. Flake8 allows only the E203 slice-spacing and W503 operator-line-break
+differences needed to match Black. The standalone password-management script
+has one documented E402 exception to preserve Django initialization before its
+auth import.
+
+The checks cover maintained backend code and repository scripts. Generated
+`core/migrations/` files are excluded from formatting and linting; Django's
+system checks and `makemigrations --check --dry-run` check model consistency.
+From `backend/`, use `python -m black --check .` and `python -m flake8 .` to check
+only the backend with the same parent-directory configuration.
+
+Pylint uses the root `.pylintrc` and `pylint-django` to understand Django's model
+fields and generated managers. Its existing score threshold is 7.0; any error or
+fatal finding also fails the check, regardless of score. Other suggestions stay
+visible. Run it with local-only settings:
+
+```sh
+(
+  cd backend
+  SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(48))')" \
+  DATABASE_URL='sqlite:///:memory:' USE_GCS=false USE_S3=false DEBUG=false \
+  python -m pylint --rcfile=../.pylintrc \
+    core maori_story_project manage.py change_admin_password.py
+)
+python -m unittest discover -s scripts -p 'pylint_config_test.py'
+```
+
+The configuration tests accept valid Django model access and verify that real
+missing attributes and undefined names still fail, including in code scoring
+above 7.0. The plugin and its tests are development tools, not runtime dependencies.
+
 ## Container
 
 ```sh

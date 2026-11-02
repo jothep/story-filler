@@ -1,29 +1,39 @@
-// src/components/ErrorMessage.jsx
-// Reusable error message component with NES.css styling
-
 import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 
 function ErrorMessage({ error, onRetry }) {
   const navigate = useNavigate();
 
-  const errorMessage = typeof error === 'string' ? error : error?.message || 'An unexpected error occurred';
+  const errorMessage =
+    typeof error === 'string'
+      ? error
+      : error?.message || 'An unexpected error occurred';
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '50vh',
-      padding: '2rem'
-    }}>
-      <div className="nes-container is-rounded is-dark" style={{ textAlign: 'center', maxWidth: '500px' }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '50vh',
+        padding: '2rem',
+      }}
+    >
+      <div
+        className="nes-container is-rounded is-dark"
+        style={{ textAlign: 'center', maxWidth: '500px' }}
+      >
         <h2 style={{ color: '#f7d51d', marginBottom: '1rem' }}>⚠️ Oops!</h2>
-        <p style={{ marginBottom: '1.5rem', color: 'white' }}>
-          {errorMessage}
-        </p>
-        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+        <p style={{ marginBottom: '1.5rem', color: 'white' }}>{errorMessage}</p>
+        <div
+          style={{
+            display: 'flex',
+            gap: '1rem',
+            justifyContent: 'center',
+            flexWrap: 'wrap',
+          }}
+        >
           {onRetry && (
             <button
               type="button"
@@ -50,10 +60,10 @@ ErrorMessage.propTypes = {
   error: PropTypes.oneOfType([
     PropTypes.string,
     PropTypes.shape({
-      message: PropTypes.string
-    })
+      message: PropTypes.string,
+    }),
   ]),
-  onRetry: PropTypes.func
+  onRetry: PropTypes.func,
 };
 
 export default ErrorMessage;

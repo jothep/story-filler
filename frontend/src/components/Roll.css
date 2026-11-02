@@ -3,7 +3,7 @@
  * Uses a 'slideLeft' animation to move different image layers (clouds,
  * mountains, etc.) at varying speeds.
  */
- 
+
 @keyframes slideLeft {
   from {
     background-position-x: 0;

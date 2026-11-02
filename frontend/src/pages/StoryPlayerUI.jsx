@@ -1,8 +1,3 @@
-// src/pages/StoryPlayerUI.jsx
-// Renders the main UI layout for the story player, composing all sub-components
-// (like StoryContent, WordList, etc.). It consumes playback and interaction
-// logic from contexts and specifically manages the `DragOverlay` display
-// for dnd-kit by wrapping the context's drag handlers.
 import { useEffect, useState } from 'react';
 import {
   DndContext,

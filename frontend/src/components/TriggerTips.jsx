@@ -1,8 +1,3 @@
-// src/components/TriggerTips.jsx
-// Implements the "Drag word here" drop zone using `dnd-kit`.
-// When a word is dropped, it updates the `selectedWord` in the
-// `WordInteractionContext`.
-
 import { useDroppable, useDndContext } from '@dnd-kit/core';
 import { useWordInteraction } from '../context/WordInteractionContext';
 import questionMarkIcon from '../assets/question_mark.png';
@@ -45,26 +40,20 @@ function TriggerTips() {
   const textContainerStyle = {
     flexShrink: 0,
     textAlign: 'center',
-    minHeight: '2rem', 
+    minHeight: '2rem',
   };
-
 
   return (
     <div ref={setNodeRef} className="nes-container is-dark" style={style}>
-      
       <div style={textContainerStyle}>
         {selectedWord ? (
-          
           <p>
-            <span className="nes-text is-success">Selected:{selectedWord.maori_word}</span>
+            <span className="nes-text is-success">
+              Selected:{selectedWord.maori_word}
+            </span>
           </p>
-
         ) : (
-
-          <p className="nes-text is-warning">
-            Drag word here
-          </p>
-          
+          <p className="nes-text is-warning">Drag word here</p>
         )}
       </div>
     </div>

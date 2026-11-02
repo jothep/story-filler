@@ -1,7 +1,3 @@
-// src/components/DroppableBlank.jsx
-// A droppable component (using `dnd-kit`) that represents a fillable blank.
-// It dynamically changes its style (color, animation) based on whether
-// it is filled correctly, incorrectly, or being hovered over.
 import PropTypes from 'prop-types';
 
 import { useDroppable, useDndContext } from '@dnd-kit/core';

@@ -1,0 +1,6 @@
+[flake8]
+max-line-length = 88
+# Match Black's slice spacing and line breaks before binary operators.
+ignore = E203,W503
+# Generated migrations retain their existing formatting and are checked by Django.
+extend-exclude = .venv,node_modules,build,dist,migrations

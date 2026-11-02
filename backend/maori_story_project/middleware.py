@@ -1,6 +1,7 @@
 """
 Custom middleware for the project
 """
+
 import re
 from django.conf import settings
 from django.middleware.csrf import CsrfViewMiddleware
@@ -23,12 +24,12 @@ class WildcardCsrfViewMiddleware(CsrfViewMiddleware):
 
         if request_origin:
             # Check wildcard patterns
-            wildcard_patterns = getattr(settings, 'CSRF_TRUSTED_ORIGIN_WILDCARDS', [])
+            wildcard_patterns = getattr(settings, "CSRF_TRUSTED_ORIGIN_WILDCARDS", [])
             for pattern in wildcard_patterns:
                 # Convert wildcard pattern to regex
                 # e.g., "https://*.run.app" -> "^https://[^/]+\.run\.app$"
-                regex_pattern = pattern.replace('.', r'\.').replace('*', r'[^/]+')
-                if re.match(f'^{regex_pattern}$', request_origin):
+                regex_pattern = pattern.replace(".", r"\.").replace("*", r"[^/]+")
+                if re.match(f"^{regex_pattern}$", request_origin):
                     return True
 
         # Fall back to default origin check
@@ -36,18 +37,18 @@ class WildcardCsrfViewMiddleware(CsrfViewMiddleware):
 
     def _check_referer(self, request):
         """Override to support wildcard patterns in referer check"""
-        referer = request.META.get('HTTP_REFERER')
+        referer = request.META.get("HTTP_REFERER")
 
         if referer:
             referer_parsed = urlparse(referer)
             referer_origin = f"{referer_parsed.scheme}://{referer_parsed.netloc}"
 
             # Check wildcard patterns
-            wildcard_patterns = getattr(settings, 'CSRF_TRUSTED_ORIGIN_WILDCARDS', [])
+            wildcard_patterns = getattr(settings, "CSRF_TRUSTED_ORIGIN_WILDCARDS", [])
             for pattern in wildcard_patterns:
                 # Convert wildcard pattern to regex
-                regex_pattern = pattern.replace('.', r'\.').replace('*', r'[^/]+')
-                if re.match(f'^{regex_pattern}$', referer_origin):
+                regex_pattern = pattern.replace(".", r"\.").replace("*", r"[^/]+")
+                if re.match(f"^{regex_pattern}$", referer_origin):
                     # Wildcard matched, allow request
                     return None
 

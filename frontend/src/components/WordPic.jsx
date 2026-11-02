@@ -1,7 +1,3 @@
-// src/components/WordPic.jsx
-// Displays the image associated with the `selectedWord` from the
-// `WordInteractionContext`.
-
 import { useWordInteraction } from '../context/WordInteractionContext';
 
 function WordPic() {

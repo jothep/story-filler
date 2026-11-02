@@ -10,7 +10,7 @@ import environ
 env = environ.Env(
     # set casting, default value
     DEBUG=(bool, False),
-    SECRET_KEY=(str, '')
+    SECRET_KEY=(str, ""),
 )
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -46,7 +46,8 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "maori_story_project.middleware.WildcardCsrfViewMiddleware",  # Custom CSRF with wildcard support
+    # Custom CSRF middleware with wildcard support.
+    "maori_story_project.middleware.WildcardCsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -85,7 +86,9 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+        "NAME": (
+            "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+        ),
     },
     {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
@@ -109,10 +112,8 @@ USE_TZ = True
 
 # --- Static files (CSS, JavaScript, Images) ---
 STATIC_URL = "static/"
-STATIC_ROOT = BASE_DIR / "staticfiles" 
-STATICFILES_STORAGE = (
-    "whitenoise.storage.CompressedManifestStaticFilesStorage"  
-)
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # --- Media Files Storage Configuration ---
 # Supports two modes:
@@ -124,14 +125,14 @@ USE_GCS = env.bool("USE_GCS", default=False)
 if USE_GCS:
     # Google Cloud Storage Configuration (Django 4.2+ style)
     GS_BUCKET_NAME = env("GS_BUCKET_NAME")
-    GS_DEFAULT_ACL = 'publicRead'
+    GS_DEFAULT_ACL = "publicRead"
     GS_FILE_OVERWRITE = False
     # Use Application Default Credentials (from Cloud Run service account)
     GS_CREDENTIALS = None  # Use ADC instead of explicit credentials
     GS_AUTO_CREATE_BUCKET = False  # Bucket already exists
-    GS_AUTO_CREATE_ACL = 'publicRead'
+    GS_AUTO_CREATE_ACL = "publicRead"
     GS_QUERYSTRING_AUTH = False  # Don't require signed URLs for public files
-    MEDIA_URL = f'https://storage.googleapis.com/{GS_BUCKET_NAME}/'
+    MEDIA_URL = f"https://storage.googleapis.com/{GS_BUCKET_NAME}/"
 
     # Django 4.2+ STORAGES setting
     STORAGES = {
@@ -165,82 +166,78 @@ CORS_ALLOWED_ORIGINS = env.list(
 
 # --- CSRF Settings ---
 CSRF_TRUSTED_ORIGINS = env.list(
-    "CSRF_TRUSTED_ORIGINS",
-    default=["http://localhost:8000", "http://localhost"]
+    "CSRF_TRUSTED_ORIGINS", default=["http://localhost:8000", "http://localhost"]
 )
 
 # Support for wildcard domains (e.g., https://*.run.app)
 # Store wildcard patterns separately for custom validation
-CSRF_TRUSTED_ORIGIN_WILDCARDS = env.list(
-    "CSRF_TRUSTED_ORIGIN_WILDCARDS",
-    default=[]
-)
+CSRF_TRUSTED_ORIGIN_WILDCARDS = env.list("CSRF_TRUSTED_ORIGIN_WILDCARDS", default=[])
 
 # --- Logging Configuration ---
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '[{levelname}] {asctime} {name} {module} {funcName} - {message}',
-            'style': '{',
-            'datefmt': '%Y-%m-%d %H:%M:%S',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "[{levelname}] {asctime} {name} {module} {funcName} - {message}",
+            "style": "{",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
         },
-        'simple': {
-            'format': '[{levelname}] {message}',
-            'style': '{',
-        },
-    },
-    'filters': {
-        'require_debug_false': {
-            '()': 'django.utils.log.RequireDebugFalse',
-        },
-        'require_debug_true': {
-            '()': 'django.utils.log.RequireDebugTrue',
+        "simple": {
+            "format": "[{levelname}] {message}",
+            "style": "{",
         },
     },
-    'handlers': {
-        'console': {
-            'level': 'INFO',
-            'class': 'logging.StreamHandler',
-            'formatter': 'verbose',
+    "filters": {
+        "require_debug_false": {
+            "()": "django.utils.log.RequireDebugFalse",
         },
-        'file': {
-            'level': 'WARNING',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': BASE_DIR / 'logs' / 'django.log',
-            'maxBytes': 10 * 1024 * 1024,  # 10 MB
-            'backupCount': 5,
-            'formatter': 'verbose',
-        },
-        'api_file': {
-            'level': 'INFO',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': BASE_DIR / 'logs' / 'api.log',
-            'maxBytes': 10 * 1024 * 1024,  # 10 MB
-            'backupCount': 5,
-            'formatter': 'verbose',
+        "require_debug_true": {
+            "()": "django.utils.log.RequireDebugTrue",
         },
     },
-    'loggers': {
-        'django': {
-            'handlers': ['console', 'file'],
-            'level': 'INFO',
-            'propagate': False,
+    "handlers": {
+        "console": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
         },
-        'django.request': {
-            'handlers': ['console', 'file'],
-            'level': 'WARNING',
-            'propagate': False,
+        "file": {
+            "level": "WARNING",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": BASE_DIR / "logs" / "django.log",
+            "maxBytes": 10 * 1024 * 1024,  # 10 MB
+            "backupCount": 5,
+            "formatter": "verbose",
         },
-        'core': {
-            'handlers': ['console', 'api_file'],
-            'level': 'INFO',
-            'propagate': False,
+        "api_file": {
+            "level": "INFO",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": BASE_DIR / "logs" / "api.log",
+            "maxBytes": 10 * 1024 * 1024,  # 10 MB
+            "backupCount": 5,
+            "formatter": "verbose",
         },
     },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO',
+    "loggers": {
+        "django": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "django.request": {
+            "handlers": ["console", "file"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+        "core": {
+            "handlers": ["console", "api_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
     },
 }

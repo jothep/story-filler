@@ -1,18 +1,13 @@
-// src/components/WordList.jsx
-// Renders the scrollable list of draggable words. Each word can be
-// dragged (using `useDraggable`) or clicked to set it as the `selectedWord`.
-
 import PropTypes from 'prop-types';
-import { useDraggable, useDndContext } from '@dnd-kit/core'; 
+import { useDraggable, useDndContext } from '@dnd-kit/core';
 import { useWordInteraction } from '../context/WordInteractionContext';
 
 function DraggableWordButton({ word }) {
   const { setSelectedWord } = useWordInteraction();
-  
-  const { attributes, listeners, setNodeRef } =
-    useDraggable({
-      id: word.id,
-    });
+
+  const { attributes, listeners, setNodeRef } = useDraggable({
+    id: word.id,
+  });
 
   const { active } = useDndContext();
   const isDragging = active && active.id === word.id;
@@ -26,7 +21,7 @@ function DraggableWordButton({ word }) {
     zIndex: 'auto',
   };
 
-  const button = (
+  return (
     <button
       type="button"
       className="nes-btn"
@@ -40,8 +35,6 @@ function DraggableWordButton({ word }) {
       {word.maori_word}
     </button>
   );
-
-  return button;
 }
 
 DraggableWordButton.propTypes = {
@@ -76,10 +69,7 @@ function WordList({ words }) {
         }}
       >
         {words.map((word) => (
-          <DraggableWordButton
-            key={word.id}
-            word={word}
-          />
+          <DraggableWordButton key={word.id} word={word} />
         ))}
       </div>
     </div>
@@ -92,7 +82,7 @@ WordList.propTypes = {
       id: PropTypes.number.isRequired,
       maori_word: PropTypes.string.isRequired,
     })
-  ), 
+  ),
 };
 
 WordList.defaultProps = {

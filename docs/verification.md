@@ -4,13 +4,41 @@ Legacy deployment reviewed on **27 September 2026**; repository migration begun 
 
 New-repository checks are listed first. The later pre-migration sections retain evidence from the former private `jothep/maori-story-fill` repository and do not verify subsequent changes. See the [migration record](repository-migration.md) for migration scope and the [public aggregate snapshot](evidence/README.md) for historical activity counts.
 
+## Local maintenance review 2 November 2026
+
+The fourth batch starts from published commit `4488d20` on `codex/batch-4-maintenance`. It is local and has not been deployed. It makes the maintained application easier to read and turns its formatting and backend lint checks into required CI steps. The historical `demo/` application and generated Django migrations are outside this formatting change.
+
+The frontend now has consistent Prettier formatting, fewer redundant comments and no unused component backup files or starter React icon. Its error boundary uses Vite's development flag for diagnostic visibility, with two component tests. ESLint separates browser code, Node tooling and tests. The 19 existing React rules stay enabled for application code, and Rules of Hooks/effect-dependency checks are added. Sixteen positive and negative examples verify the actual lint configuration.
+
+The backend and Python maintenance scripts use Black's 88-character format. Flake8 now reads a native `.flake8` file; the old `pyproject.toml` Flake8 table was not consumed by that tool. Pylint uses `pylint-django` to understand model fields and managers. It retains the 7.0 score threshold and now fails on any error or fatal diagnostic, even above that score. Three tests confirm that valid model access passes while real missing attributes and undefined names fail. Non-error recommendations remain visible.
+
+| Check | Result | Scope |
+| --- | --- | --- |
+| Automated tests | 159 passed | 62 frontend component/unit tests, 16 frontend lint examples, two Pages HTTP/build tests, 31 Django tests and 48 maintenance/configuration tests |
+| Frontend style and build | Passed | Full frontend ESLint and Prettier checks; Node 24 production build; no local fixture API URL in the build |
+| Python style and analysis | Passed | Black and Flake8 for `backend/` and `scripts/`; Django-aware Pylint scored 9.52/10 with no error/fatal findings and 42 non-error recommendations |
+| Django system and migration checks | Passed | No system-check problems or model changes requiring a migration; temporary SQLite and local storage |
+| Fresh development installs | Passed | Hash-only binary installs and `pip check` on macOS arm64 and Linux amd64 with Python 3.13 |
+| Python dependency audits | Passed | Strict hash-checked audits of both locks reported zero known vulnerabilities; Linux development-lock audit also passed |
+| Lock-file review | Passed | Existing 78 development pins retained; only `pylint-django` 2.8.0 and `pylint-plugin-utils` 0.9.0 added. Both runtime dependency files and the frontend lock are byte-for-byte unchanged |
+| Structure and output comparisons | Passed | Six existing Python maintenance scripts have identical parsed syntax trees. All 30 backend files are equivalent after accounting for one unused import and one constant f-string; nine migration files are byte-for-byte unchanged. Of 45 frontend source/config files, only the documented error-boundary and direct-return simplifications change parsed structure. Generated CSS retains the third batch's filename/hash |
+| Workflow validation | Passed | actionlint checks all five workflows; root Python lint configuration changes trigger backend checks; lint failures no longer continue silently |
+| Changed-file credential scan | No findings | Gitleaks checked all 60 changed/new text files with redaction enabled |
+| Independent review | Passed | Another reviewer checked CI paths and conditions, lint environments, all 80 existing frontend rules and positive/negative checks; no blocking findings |
+
+The frontend dependency review still reports six moderate development-tool findings and zero production findings. A supported ESLint upgrade is blocked by the current React plugin's peer compatibility. The upstream minimatch fix also requires a major version outside the existing dependency ranges. No peer checks or React rules were bypassed, and no forced transitive override was added. See the [frontend maintenance guide](../frontend/README.md#remaining-development-dependency-findings).
+
+Runtime dependency and container definitions are unchanged, so this batch does not claim a new image security scan or repeat the earlier browser gameplay exercise. The existing backend operating-system findings remain tracked below. All test data is temporary; production databases, cloud permissions and runtime credentials were not changed. The dedicated Linux review containers and VM were stopped after verification.
+
+Before publishing this batch, review its source and CI changes together. The next functional work is a separately tested replacement for the disabled local backup/restore workflow, beginning with disposable data and failure cases. The existing restore commands remain disabled until that work passes its own review. A supported ESLint/React-plugin migration remains tracked independently of that recovery work.
+
 ## Hosted frontend lifecycle release 2 November 2026
 
 The third batch was independently reviewed and all 138 automated tests passed again before `68a7ce76cf1afd28dd2284ffb10a75da9d899f24` was merged into `main`. Its frontend was then published through [run 41398092161](https://github.com/jothep/story-filler/actions/runs/41398092161), including the new Pages fallback check. [CodeQL run 41398092180](https://github.com/jothep/story-filler/actions/runs/41398092180) and [credential history scan 41398092152](https://github.com/jothep/story-filler/actions/runs/41398092152) completed successfully.
 
 The public story URL `/story-filler/story/1` loaded directly and after a browser refresh. Story text, picture and word bank appeared. Background music initially showed stopped when autoplay was blocked; a manual click changed it to playing, and it was turned off before continuing. This checks the visible playback control, not recording quality across devices. Pages retains HTTP 404 for the custom fallback document, while the application and its assets load at the original URL.
 
-The backend was not redeployed by this frontend-only change. An independent read-only API smoke check passed again for the story list, story detail and configuration endpoints. The previously verified backend revision and dependency-scan limitations remain as recorded below. The fourth maintenance batch is being prepared separately and is not part of this release.
+The backend was not redeployed by this frontend-only change. An independent read-only API smoke check passed again for the story list, story detail and configuration endpoints. The previously verified backend revision and dependency-scan limitations remain as recorded below. The fourth maintenance batch is recorded separately above and is not part of this release.
 
 ## Local frontend lifecycle review 2 November 2026
 

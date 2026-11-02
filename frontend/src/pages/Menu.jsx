@@ -1,5 +1,3 @@
-// src/pages/Menu.jsx
-// Renders the main menu screen with background music and story list
 import { Link } from 'react-router-dom';
 import Roll from '../components/Roll';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -94,7 +92,6 @@ function Menu() {
     <div style={menuStyles}>
       <Roll />
 
-      {/* BGM Control */}
       <div style={toggleContainerStyles}>
         <label>
           <input
@@ -107,14 +104,8 @@ function Menu() {
         </label>
       </div>
 
-      {/* BGM Hint */}
-      {showHint && (
-        <div style={bgmHintStyles}>
-          Click to start music ⇑
-        </div>
-      )}
+      {showHint && <div style={bgmHintStyles}>Click to start music ⇑</div>}
 
-      {/* Logo */}
       <div style={titleContainerStyles}>
         <img
           src={logoImage}
@@ -126,13 +117,11 @@ function Menu() {
         />
       </div>
 
-      {/* Info/Credits Button */}
       <div style={infoButtonContainerStyles}>
         <InfoCredits />
       </div>
 
-      {/* Story List or No Stories Message */}
-      {(!stories || stories.length === 0) ? (
+      {!stories || stories.length === 0 ? (
         <div
           className="nes-container is-rounded"
           style={{
@@ -143,7 +132,9 @@ function Menu() {
           }}
         >
           <h2>No Stories Available</h2>
-          <p>There are currently no stories to display. Please check back later!</p>
+          <p>
+            There are currently no stories to display. Please check back later!
+          </p>
         </div>
       ) : (
         <div style={menuListStyles}>

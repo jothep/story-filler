@@ -10,7 +10,7 @@ from django.core.files.storage import default_storage
 
 
 class Command(BaseCommand):
-    help = 'Test GCS connectivity and django-storages configuration'
+    help = "Test GCS connectivity and django-storages configuration"
 
     def handle(self, *args, **options):
         self.stdout.write("=" * 60)
@@ -19,13 +19,20 @@ class Command(BaseCommand):
 
         self.stdout.write(f"\nUSE_GCS: {getattr(settings, 'USE_GCS', False)}")
 
-        if hasattr(settings, 'STORAGES'):
-            self.stdout.write(f"STORAGES (default backend): {settings.STORAGES.get('default', {}).get('BACKEND', 'N/A')}")
+        if hasattr(settings, "STORAGES"):
+            self.stdout.write(
+                "STORAGES (default backend): "
+                f"{settings.STORAGES.get('default', {}).get('BACKEND', 'N/A')}"
+            )
 
-        if hasattr(settings, 'GS_BUCKET_NAME'):
+        if hasattr(settings, "GS_BUCKET_NAME"):
             self.stdout.write(f"GS_BUCKET_NAME: {settings.GS_BUCKET_NAME}")
-            self.stdout.write(f"GS_DEFAULT_ACL: {getattr(settings, 'GS_DEFAULT_ACL', 'N/A')}")
-            self.stdout.write(f"GS_CREDENTIALS: {getattr(settings, 'GS_CREDENTIALS', 'N/A')}")
+            self.stdout.write(
+                f"GS_DEFAULT_ACL: {getattr(settings, 'GS_DEFAULT_ACL', 'N/A')}"
+            )
+            self.stdout.write(
+                f"GS_CREDENTIALS: {getattr(settings, 'GS_CREDENTIALS', 'N/A')}"
+            )
 
         self.stdout.write(f"\nStorage backend: {default_storage.__class__.__name__}")
         self.stdout.write(f"Storage module: {default_storage.__class__.__module__}")
@@ -52,11 +59,14 @@ class Command(BaseCommand):
 
             # Clean up
             default_storage.delete(saved_name)
-            self.stdout.write(self.style.SUCCESS(f"✓ File deleted"))
+            self.stdout.write(self.style.SUCCESS("✓ File deleted"))
 
-            self.stdout.write(self.style.SUCCESS("\n✓✓✓ GCS connection is working! ✓✓✓"))
+            self.stdout.write(
+                self.style.SUCCESS("\n✓✓✓ GCS connection is working! ✓✓✓")
+            )
 
         except Exception as e:
             self.stdout.write(self.style.ERROR(f"\n✗✗✗ Error: {e} ✗✗✗"))
             import traceback
+
             self.stdout.write(self.style.ERROR(traceback.format_exc()))

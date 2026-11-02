@@ -1,6 +1,7 @@
 # Maintenance and release checks
 
-Run the offline checks from the repository root:
+Install the backend development lock in an isolated Python environment, then run
+the offline checks from the repository root:
 
 ```bash
 python -m unittest discover -s scripts -p '*_test.py'
@@ -11,13 +12,19 @@ a local test executable. They do not authenticate or contact Google Cloud.
 Restore-safety tests also replace operational commands; the legacy restore entry
 points remain disabled.
 
+The Pylint configuration tests load Django's model metadata with a temporary
+signing key, in-memory SQLite and local storage. They accept valid model fields
+and managers, then verify that undefined names and missing model attributes fail
+even when the overall lint score exceeds the minimum. No production settings or
+database records are needed.
+
 ## Backend delivery
 
 The backend workflow has three jobs:
 
 1. **Test:** install the development dependency lock, audit both Python dependency
-   locks, and run application and maintenance tests. Pull requests receive no
-   cloud secrets.
+   locks, require Black/Flake8 and Django-aware Pylint, and run application and
+   maintenance tests. Pull requests receive no cloud secrets.
 2. **Build, test and scan:** build one image with a unique run tag. Run the Django
    tests and import Gunicorn's gevent worker in that image as its default app user,
    with networking disabled, an in-memory SQLite database, and a temporary random
@@ -27,8 +34,9 @@ The backend workflow has three jobs:
    updating Cloud Run, verifying its serving revision, and checking the API.
 
 Backend source, release workflow, release helper, and smoke-check changes can
-produce a release on `main`. Terraform and other maintenance-script changes run
-tests without deploying the application. A manual run on `main` requests a release.
+produce a release on `main`. Terraform, other maintenance scripts and root Python
+lint configuration changes run tests without deploying the application. A manual
+run on `main` requests a release.
 Terraform is never applied by this workflow.
 
 When updating pinned GitHub Actions, check the repository's selected-actions

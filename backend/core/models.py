@@ -14,21 +14,29 @@ logger = logging.getLogger(__name__)
 
 # ===== File Validators =====
 
+
 def validate_image_file_size(file):
     """Validate image file size (max 10MB)."""
     max_size_mb = 10
     if file.size > max_size_mb * 1024 * 1024:
-        raise ValidationError(f'Image file size cannot exceed {max_size_mb}MB. Current size: {file.size / 1024 / 1024:.2f}MB')
+        raise ValidationError(
+            f"Image file size cannot exceed {max_size_mb}MB. "
+            f"Current size: {file.size / 1024 / 1024:.2f}MB"
+        )
 
 
 def validate_audio_file_size(file):
     """Validate audio file size (max 20MB)."""
     max_size_mb = 20
     if file.size > max_size_mb * 1024 * 1024:
-        raise ValidationError(f'Audio file size cannot exceed {max_size_mb}MB. Current size: {file.size / 1024 / 1024:.2f}MB')
+        raise ValidationError(
+            f"Audio file size cannot exceed {max_size_mb}MB. "
+            f"Current size: {file.size / 1024 / 1024:.2f}MB"
+        )
 
 
 # ===== Helper Functions =====
+
 
 def compress_image(image_file, max_width=1920, max_height=1080, quality=85):
     """
@@ -48,11 +56,11 @@ def compress_image(image_file, max_width=1920, max_height=1080, quality=85):
         img = Image.open(image_file)
 
         # Convert RGBA to RGB (for PNG with transparency)
-        if img.mode in ('RGBA', 'LA', 'P'):
-            background = Image.new('RGB', img.size, (255, 255, 255))
-            if img.mode == 'P':
-                img = img.convert('RGBA')
-            background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+        if img.mode in ("RGBA", "LA", "P"):
+            background = Image.new("RGB", img.size, (255, 255, 255))
+            if img.mode == "P":
+                img = img.convert("RGBA")
+            background.paste(img, mask=img.split()[-1] if img.mode == "RGBA" else None)
             img = background
 
         # Resize if needed
@@ -60,15 +68,17 @@ def compress_image(image_file, max_width=1920, max_height=1080, quality=85):
 
         # Save to BytesIO
         output = BytesIO()
-        img.save(output, format='JPEG', quality=quality, optimize=True)
+        img.save(output, format="JPEG", quality=quality, optimize=True)
         output.seek(0)
 
         # Get original filename and change extension to .jpg
         original_name = image_file.name
-        name_without_ext = '.'.join(original_name.split('.')[:-1])
+        name_without_ext = ".".join(original_name.split(".")[:-1])
         new_name = f"{name_without_ext}.jpg"
 
-        logger.info(f"Compressed image: {original_name} -> {new_name} (quality={quality})")
+        logger.info(
+            f"Compressed image: {original_name} -> {new_name} (quality={quality})"
+        )
 
         return ContentFile(output.read()), new_name
 
@@ -79,18 +89,20 @@ def compress_image(image_file, max_width=1920, max_height=1080, quality=85):
 
 # ===== Models =====
 
+
 class AppConfig(models.Model):
     """
     Global application configuration.
     Currently only stores menu background music.
     """
+
     menu_bgm = models.ForeignKey(
-        'BackgroundMusic',
+        "BackgroundMusic",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         verbose_name="Menu Background Music",
-        help_text="Select background music for the main menu"
+        help_text="Select background music for the main menu",
     )
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Last Updated")
 
@@ -104,19 +116,21 @@ class AppConfig(models.Model):
     def save(self, *args, **kwargs):
         # Ensure only one config instance exists
         if not self.pk and AppConfig.objects.exists():
-            raise ValidationError('Only one Application Configuration can exist.')
+            raise ValidationError("Only one Application Configuration can exist.")
         return super().save(*args, **kwargs)
 
 
 class BackgroundMusic(models.Model):
-    title = models.CharField(max_length=200, verbose_name="BGM Title", help_text="Name of a BGM")
+    title = models.CharField(
+        max_length=200, verbose_name="BGM Title", help_text="Name of a BGM"
+    )
     audio_file = models.FileField(
         upload_to="bgm/",
         verbose_name="BGM file (.m4a, .mp3)",
         validators=[
-            FileExtensionValidator(['mp3', 'm4a', 'aac', 'wav', 'ogg']),
-            validate_audio_file_size
-        ]
+            FileExtensionValidator(["mp3", "m4a", "aac", "wav", "ogg"]),
+            validate_audio_file_size,
+        ],
     )
 
     class Meta:
@@ -128,14 +142,18 @@ class BackgroundMusic(models.Model):
 
 
 class StoryPicture(models.Model):
-    title = models.CharField(max_length=200, verbose_name="Picture Title", help_text="A recognizable name for this picture")
+    title = models.CharField(
+        max_length=200,
+        verbose_name="Picture Title",
+        help_text="A recognizable name for this picture",
+    )
     image_file = models.ImageField(
         upload_to="story_pictures/",
         verbose_name="Picture file",
         validators=[
-            FileExtensionValidator(['jpg', 'jpeg', 'png', 'webp']),
-            validate_image_file_size
-        ]
+            FileExtensionValidator(["jpg", "jpeg", "png", "webp"]),
+            validate_image_file_size,
+        ],
     )
 
     class Meta:
@@ -147,7 +165,7 @@ class StoryPicture(models.Model):
 
     def save(self, *args, **kwargs):
         """Override save to compress images automatically."""
-        if self.image_file and not kwargs.pop('skip_compression', False):
+        if self.image_file and not kwargs.pop("skip_compression", False):
             try:
                 # Check if this is a new upload or changed file
                 if not self.pk or self._state.adding:
@@ -167,7 +185,7 @@ class Story(models.Model):
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
-        verbose_name="Background Music"
+        verbose_name="Background Music",
     )
 
     story_picture = models.ForeignKey(
@@ -175,14 +193,14 @@ class Story(models.Model):
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
-        verbose_name="Story Picture"
+        verbose_name="Story Picture",
     )
 
     word_bank = models.ManyToManyField(
-        'Word',
+        "Word",
         blank=True,
         related_name="stories",
-        verbose_name="Select Words for this Story's Bank"
+        verbose_name="Select Words for this Story's Bank",
     )
 
     def __str__(self):
@@ -190,22 +208,29 @@ class Story(models.Model):
 
 
 class Paragraph(models.Model):
-    story = models.ForeignKey(Story, related_name="paragraphs", on_delete=models.CASCADE, verbose_name="Belonging Story")
+    story = models.ForeignKey(
+        Story,
+        related_name="paragraphs",
+        on_delete=models.CASCADE,
+        verbose_name="Belonging Story",
+    )
     order = models.PositiveIntegerField(default=0, verbose_name="Paragraph Order")
-    text = models.TextField(verbose_name="Paragraph Text")  # Paragraph like __BLANK_water__
+    text = models.TextField(
+        verbose_name="Paragraph Text"
+    )  # Paragraph like __BLANK_water__
     audio = models.FileField(
         upload_to="paragraph_audio/",
         blank=True,
         null=True,
         verbose_name="Paragraph Audio",
         validators=[
-            FileExtensionValidator(['mp3', 'm4a', 'aac', 'wav', 'ogg']),
-            validate_audio_file_size
-        ]
+            FileExtensionValidator(["mp3", "m4a", "aac", "wav", "ogg"]),
+            validate_audio_file_size,
+        ],
     )
 
     class Meta:
-        ordering = ['order']
+        ordering = ["order"]
 
     def __str__(self):
         return f"{self.story.title} - Paragraph {self.order}"
@@ -214,7 +239,9 @@ class Paragraph(models.Model):
 class Word(models.Model):
     """Word Bank"""
 
-    maori_word = models.CharField(max_length=100, verbose_name="Maori word", unique=True)
+    maori_word = models.CharField(
+        max_length=100, verbose_name="Maori word", unique=True
+    )
     english_translation = models.CharField(max_length=100, verbose_name="English word")
     image = models.ImageField(
         upload_to="word_images/",
@@ -222,9 +249,9 @@ class Word(models.Model):
         null=True,
         verbose_name="Word Image",
         validators=[
-            FileExtensionValidator(['jpg', 'jpeg', 'png', 'webp']),
-            validate_image_file_size
-        ]
+            FileExtensionValidator(["jpg", "jpeg", "png", "webp"]),
+            validate_image_file_size,
+        ],
     )
     maori_audio = models.FileField(
         upload_to="word_audio_maori/",
@@ -232,9 +259,9 @@ class Word(models.Model):
         null=True,
         verbose_name="Maori Audio",
         validators=[
-            FileExtensionValidator(['mp3', 'm4a', 'aac', 'wav', 'ogg']),
-            validate_audio_file_size
-        ]
+            FileExtensionValidator(["mp3", "m4a", "aac", "wav", "ogg"]),
+            validate_audio_file_size,
+        ],
     )
     english_audio = models.FileField(
         upload_to="word_audio_english/",
@@ -242,9 +269,9 @@ class Word(models.Model):
         null=True,
         verbose_name="English Audio",
         validators=[
-            FileExtensionValidator(['mp3', 'm4a', 'aac', 'wav', 'ogg']),
-            validate_audio_file_size
-        ]
+            FileExtensionValidator(["mp3", "m4a", "aac", "wav", "ogg"]),
+            validate_audio_file_size,
+        ],
     )
 
     class Meta:
@@ -256,16 +283,13 @@ class Word(models.Model):
 
     def save(self, *args, **kwargs):
         """Override save to compress images automatically."""
-        if self.image and not kwargs.pop('skip_compression', False):
+        if self.image and not kwargs.pop("skip_compression", False):
             try:
                 # Check if this is a new upload or changed file
                 if not self.pk or self._state.adding:
                     # Use smaller size for word images
                     compressed_image, new_name = compress_image(
-                        self.image,
-                        max_width=800,
-                        max_height=800,
-                        quality=80
+                        self.image, max_width=800, max_height=800, quality=80
                     )
                     self.image.save(new_name, compressed_image, save=False)
                     logger.info(f"Word image compressed: {new_name}")
@@ -282,12 +306,11 @@ class BlankLink(models.Model):
         Paragraph,
         related_name="blank_links",
         on_delete=models.CASCADE,
-        verbose_name="Paragraph"
+        verbose_name="Paragraph",
     )
 
     placeholder = models.CharField(
-        max_length=50,
-        verbose_name="Placeholder in Text (e.g., __BLANK_water__)"
+        max_length=50, verbose_name="Placeholder in Text (e.g., __BLANK_water__)"
     )
 
     word = models.ForeignKey(
@@ -295,11 +318,11 @@ class BlankLink(models.Model):
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
-        verbose_name="Linked Word from Bank"
+        verbose_name="Linked Word from Bank",
     )
 
     class Meta:
-        unique_together = ('paragraph', 'placeholder')
+        unique_together = ("paragraph", "placeholder")
         verbose_name = "Blank Link"
         verbose_name_plural = "Blank Links"
 

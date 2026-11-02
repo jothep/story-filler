@@ -1,5 +1,3 @@
-// src/components/InfoCredits.jsx
-// Info & Credits modal component with pixel art style
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CREDITS_CONTENT } from '../constants/credits';
@@ -24,7 +22,6 @@ function InfoCredits() {
   const openModal = () => setIsOpen(true);
   const closeModal = () => setIsOpen(false);
 
-  // Close on Escape key
   const handleKeyDown = (e) => {
     if (e.key === 'Escape') {
       closeModal();
@@ -59,13 +56,11 @@ function InfoCredits() {
           About &amp; Credits
         </h2>
 
-        {/* Author Section */}
         <div style={sectionStyles}>
           <div style={sectionTitleStyles}>Author</div>
           <p>{CREDITS_CONTENT.author.name}</p>
         </div>
 
-        {/* Material Credits Section */}
         <div style={sectionStyles}>
           <div style={sectionTitleStyles}>Material Credits</div>
 
@@ -99,14 +94,17 @@ function InfoCredits() {
           </div>
         </div>
 
-        {/* Disclaimer Section */}
         <div style={sectionStyles}>
           <div style={sectionTitleStyles}>Disclaimer</div>
           <p style={{ fontSize: '0.8rem', lineHeight: '1.6' }}>
             {CREDITS_CONTENT.disclaimer.text}{' '}
-            <a href={`mailto:${CREDITS_CONTENT.disclaimer.email}`} style={linkStyles}>
+            <a
+              href={`mailto:${CREDITS_CONTENT.disclaimer.email}`}
+              style={linkStyles}
+            >
               {CREDITS_CONTENT.disclaimer.email}
-            </a>.
+            </a>
+            .
           </p>
         </div>
       </div>

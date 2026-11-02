@@ -1,42 +1,61 @@
-// eslint.config.js
 import globals from 'globals';
-import pluginJs from '@eslint/js';
-import pluginReactConfig from 'eslint-plugin-react/configs/recommended.js';
-import pluginReactJsxRuntime from 'eslint-plugin-react/configs/jsx-runtime.js';
+import javascript from '@eslint/js';
+import react from 'eslint-plugin-react';
+import reactHooks from 'eslint-plugin-react-hooks';
+
+const sourceFiles = ['src/**/*.{js,jsx}'];
+const testFiles = [
+  'src/**/*.{test,spec}.{js,jsx}',
+  'src/setupTests.js',
+  'src/testUtils/**/*.{js,jsx}',
+];
+const jsxParserOptions = { ecmaFeatures: { jsx: true } };
 
 export default [
-  pluginJs.configs.recommended,
-
-  pluginReactConfig,
-
-  pluginReactJsxRuntime,
-
   {
-    files: ['src/**/*.{js,jsx}'],
+    name: 'generated-files',
+    ignores: ['dist/**', 'node_modules/**'],
+  },
+  {
+    ...javascript.configs.recommended,
+    name: 'javascript',
+    files: ['**/*.{js,jsx,mjs,cjs}'],
+  },
+  {
+    name: 'browser-application',
+    files: sourceFiles,
+    ignores: testFiles,
     languageOptions: {
-      globals: {
-        ...globals.browser,
-        ...globals.node,
-      },
+      globals: globals.browser,
+      parserOptions: jsxParserOptions,
+    },
+    plugins: { react, 'react-hooks': reactHooks },
+    settings: { react: { version: 'detect' } },
+    rules: {
+      ...react.configs.recommended.rules,
+      ...react.configs['jsx-runtime'].rules,
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'error',
     },
   },
   {
-    settings: {
-      react: {
-        version: 'detect', // 自动检测 React 版本
-      },
-    },
+    name: 'node-tooling',
+    files: ['*.config.{js,mjs,cjs}', 'scripts/**/*.{js,mjs,cjs}'],
+    languageOptions: { globals: globals.node },
   },
-
   {
-    ignores: [
-      'dist/',
-      'node_modules/',
-      'eslint.config.js',
-      'vite.config.js',
-      'src/setupTests.js',
-      'src/**/*.test.jsx',
-      'src/**/*.spec.jsx',
-    ],
+    name: 'vitest-and-test-helpers',
+    files: testFiles,
+    languageOptions: {
+      globals: { ...globals.browser, ...globals.node },
+      parserOptions: jsxParserOptions,
+    },
+    // Test components and mocks are fixtures, not application component APIs.
+    // Keep JSX name checks and require explicit imports of Vitest's test APIs.
+    plugins: { react },
+    rules: {
+      'react/jsx-uses-vars': 'error',
+      'react/jsx-no-undef': 'error',
+    },
   },
 ];

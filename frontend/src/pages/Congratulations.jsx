@@ -1,6 +1,3 @@
-// src/pages/Congratulations.jsx
-// Renders a simple congratulatory page displayed when a user finishes a story.
-// Provides a "Back to Menu" link to navigate back to the root route.
 import { Link } from 'react-router-dom';
 
 function Congratulations() {
@@ -12,7 +9,9 @@ function Congratulations() {
         <i className="nes-icon is-large star"></i>
         <i className="nes-icon is-large star"></i>
         <i className="nes-icon is-large star"></i>
-        <p style={{ marginTop: '2rem' }}>You have successfully completed the story.</p>
+        <p style={{ marginTop: '2rem' }}>
+          You have successfully completed the story.
+        </p>
         <Link
           to="/"
           className="nes-btn is-primary"

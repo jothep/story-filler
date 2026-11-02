@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Local maintenance review (2026-11-02)**: standardized formatting across the maintained frontend, backend and Python maintenance scripts; removed unused component backups and an unused starter icon. CI now requires formatting, Flake8 and Django-aware Pylint, with the existing score threshold and an explicit failure for errors. React checks remain enabled, Hooks checks are added, and tests/build scripts receive their own lint environments. Runtime dependencies and database migrations are unchanged.
 - **Dependency and delivery review (2026-11-02)**: separated direct Python dependency inputs from generated runtime/development hash locks; standardized frontend tooling on Node 24 and locked installs; committed Terraform provider checksums. Production frontend containers now use Nginx, retaining their existing ports and URL paths. The backend image installs binary runtime dependencies without compilers or development tools.
 - **Release ordering (2026-11-02)**: separated backend checks, image build/scan/push, and deployment. Releases use the scanned image digest and check the currently serving source commit while holding a deployment lock. Old candidates are skipped; unknown or conflicting metadata stops delivery. Pull requests run without deployment credentials.
 - **Local safety review (2026-11-02)**: disabled both legacy volume-restore entry points before any operational command. Updated their historical guide and generated backup instructions; replacement backup/restore tooling remains a later task.
@@ -65,6 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 10 packages updated via `npm audit fix`
 
 ### Added
+- **Local lint regression coverage (2026-11-02)**: 16 frontend positive/negative lint examples and three Django-aware Pylint examples check that real mistakes still fail. Two additional component tests verify that error details appear only in development. The fourth batch remains local pending release review; see the [verification record](docs/verification.md#local-maintenance-review-2-november-2026).
 - **Release-order regression coverage (2026-11-02)**: 23 offline tests exercise real Git histories and simulated Cloud Run metadata, including stale releases, documentation-only newer commits, legacy image tags, digest formats, traffic policies and safe failures. See [release maintenance](scripts/README.md).
 - **Local safety review (2026-11-02)**: added 20 backend regression tests and seven offline restore-entry tests. The backend workflow now discovers all `scripts/*_test.py` tests when it runs. See the [verification record](docs/verification.md#local-safety-review-2-november-2026) for local results and deferred work.
 

@@ -53,6 +53,12 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Verify lint rule coverage
+        run: npm run test:lint
+
       - name: Run component tests
         run: npm test -- run
 
