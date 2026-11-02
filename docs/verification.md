@@ -4,9 +4,17 @@ Legacy deployment reviewed on **27 September 2026**; repository migration begun 
 
 New-repository checks are listed first. The later pre-migration sections retain evidence from the former private `jothep/maori-story-fill` repository and do not verify subsequent changes. See the [migration record](repository-migration.md) for migration scope and the [public aggregate snapshot](evidence/README.md) for historical activity counts.
 
+## Hosted frontend lifecycle release 2 November 2026
+
+The third batch was independently reviewed and all 138 automated tests passed again before `68a7ce76cf1afd28dd2284ffb10a75da9d899f24` was merged into `main`. Its frontend was then published through [run 41398092161](https://github.com/jothep/story-filler/actions/runs/41398092161), including the new Pages fallback check. [CodeQL run 41398092180](https://github.com/jothep/story-filler/actions/runs/41398092180) and [credential history scan 41398092152](https://github.com/jothep/story-filler/actions/runs/41398092152) completed successfully.
+
+The public story URL `/story-filler/story/1` loaded directly and after a browser refresh. Story text, picture and word bank appeared. Background music initially showed stopped when autoplay was blocked; a manual click changed it to playing, and it was turned off before continuing. This checks the visible playback control, not recording quality across devices. Pages retains HTTP 404 for the custom fallback document, while the application and its assets load at the original URL.
+
+The backend was not redeployed by this frontend-only change. An independent read-only API smoke check passed again for the story list, story detail and configuration endpoints. The previously verified backend revision and dependency-scan limitations remain as recorded below. The fourth maintenance batch is being prepared separately and is not part of this release.
+
 ## Local frontend lifecycle review 2 November 2026
 
-This third batch starts from the published review code and its release record at `80046e5`. It is prepared on `codex/batch-3-frontend` and has not been published. It changes frontend behavior and adds regression coverage; it does not change database models, production data, credentials or cloud permissions.
+This third batch starts from the published review code and its release record at `80046e5`. It was prepared on `codex/batch-3-frontend`; the subsequent hosted release is recorded above. It changes frontend behavior and adds regression coverage; it does not change database models, production data, credentials or cloud permissions.
 
 - **Incomplete story content:** a blank without its linked word is shown as unavailable and cannot receive drops. Text and paragraph navigation remain usable. Completion checks the actual answers across every paragraph rather than counting arbitrary entries in the answer map.
 - **Request ownership:** switching routes, retrying or unmounting cancels the old request. A separate identity check ignores late results from transports that still finish. Route changes hide old content and errors on the first render, before effects start the next request.
@@ -32,7 +40,7 @@ The two image builds reused unchanged dependency and operating-system layers, so
 
 ## Hosted release 2 November 2026
 
-The first two review batches were merged into `main` at `43ba793fc8c5c505dfcd905d2315a4fd3d6cf7c7`. The frontend was published from that commit. The backend was published from `8af5dd842e00bedaf107ec7bf5688e15f02059d0`, which adds the legacy Cloud Run metadata compatibility fix described below. The subsequent frontend lifecycle work remains a separate local branch.
+The first two review batches were merged into `main` at `43ba793fc8c5c505dfcd905d2315a4fd3d6cf7c7`. The frontend was published from that commit. The backend was published from `8af5dd842e00bedaf107ec7bf5688e15f02059d0`, which adds the legacy Cloud Run metadata compatibility fix described below. The subsequent frontend lifecycle release is recorded above.
 
 | Check | Result | Evidence |
 | --- | --- | --- |
