@@ -51,7 +51,12 @@ args = sys.argv[1:]
 with (root / 'cloud-calls.jsonl').open('a') as calls:
     calls.write(json.dumps(args) + '\\n')
 expected = {
-    'services': 'spec.traffic,status.traffic,status.url',
+    'services': (
+        'metadata.generation,spec.traffic,spec.template.metadata.name,'
+        'spec.template.spec.containers[0].image,status.traffic,status.url,'
+        'status.observedGeneration,status.latestCreatedRevisionName,'
+        'status.latestReadyRevisionName,status.conditions'
+    ),
     'revisions': (
         'metadata.labels.source_commit,spec.containers[0].image,status.imageDigest'
     ),
@@ -170,6 +175,107 @@ print((root / (args[1] + '.json')).read_text())
         self.revision["spec"]["containers"][0]["image"] = REPOSITORY + ":" + self.first
         self.assertEqual(self.check_release().returncode, 0)
 
+    def use_resolved_legacy_revision(self):
+        """Match Cloud Run's observed legacy shape: template tag, revision digest."""
+        self.revision.pop("metadata", None)
+        self.service["metadata"] = {"generation": 28}
+        # Cloud Run does not require a name in the service's revision template.
+        self.service["spec"]["template"] = {
+            "spec": {"containers": [{"image": REPOSITORY + ":" + self.first}]}
+        }
+        self.service["status"].update(
+            {
+                "observedGeneration": 28,
+                "latestCreatedRevisionName": REVISION,
+                "latestReadyRevisionName": REVISION,
+                "conditions": [{"type": "Ready", "status": "True"}],
+            }
+        )
+
+    def test_resolved_legacy_revision_uses_its_ready_service_template(self):
+        self.use_resolved_legacy_revision()
+        result = self.check_release()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "deploy=true\ndecision=deploy\n")
+
+    def test_legacy_template_with_explicit_matching_revision_name_is_accepted(self):
+        self.use_resolved_legacy_revision()
+        self.service["spec"]["template"]["metadata"] = {"name": REVISION}
+        self.assertEqual(self.check_release().returncode, 0)
+
+    def test_pending_or_nonserving_templates_cannot_supply_the_commit(self):
+        for field, value in (
+            ("observedGeneration", 27),
+            ("latestCreatedRevisionName", "example-backend-r2"),
+            ("latestReadyRevisionName", "example-backend-r2"),
+            ("conditions", [{"type": "Ready", "status": "False"}]),
+            ("conditions", [{"type": "Ready", "status": "Unknown"}]),
+        ):
+            with self.subTest(field=field, value=value):
+                self.use_resolved_legacy_revision()
+                self.service["status"][field] = value
+                self.assert_rejected(self.check_release(), "legacy service template")
+
+    def test_legacy_template_generation_and_revision_binding_are_required(self):
+        for path in (
+            ("metadata",),
+            ("metadata", "generation"),
+            ("status", "observedGeneration"),
+            ("status", "latestCreatedRevisionName"),
+            ("status", "latestReadyRevisionName"),
+            ("status", "conditions"),
+            ("spec", "template"),
+            ("spec", "template", "spec", "containers"),
+        ):
+            with self.subTest(missing=path):
+                self.use_resolved_legacy_revision()
+                parent = self.service
+                for key in path[:-1]:
+                    parent = parent[key]
+                parent.pop(path[-1])
+                self.assert_rejected(self.check_release(), "legacy service template")
+
+    def test_legacy_template_name_mismatch_is_rejected_when_name_is_present(self):
+        self.use_resolved_legacy_revision()
+        self.service["spec"]["template"]["metadata"] = {"name": "example-backend-r2"}
+        self.assert_rejected(self.check_release(), "legacy service template")
+
+    def test_legacy_template_requires_a_trusted_full_commit_tag(self):
+        for reference in (
+            REPOSITORY + ":latest",
+            OLD_IMAGE,
+            "other/backend:" + self.first,
+        ):
+            with self.subTest(reference=reference):
+                self.use_resolved_legacy_revision()
+                self.service["spec"]["template"]["spec"]["containers"][0][
+                    "image"
+                ] = reference
+                self.assert_rejected(self.check_release(), "legacy service template")
+
+    def test_legacy_template_does_not_bypass_split_traffic_or_digest_checks(self):
+        self.use_resolved_legacy_revision()
+        self.service["status"]["traffic"] = [
+            {"revisionName": REVISION, "percent": 90},
+            {"revisionName": "example-backend-r2", "percent": 10},
+        ]
+        self.assert_rejected(self.check_release(), "one identified serving revision")
+        self.service["status"]["traffic"] = [{"revisionName": REVISION, "percent": 100}]
+        self.revision["status"]["imageDigest"] = NEW_IMAGE
+        self.assert_rejected(self.check_release(), "does not match its resolved digest")
+
+    def test_legacy_template_commit_still_must_exist_in_main_history(self):
+        self.use_resolved_legacy_revision()
+        self.service["spec"]["template"]["spec"]["containers"][0]["image"] = (
+            REPOSITORY + ":" + "f" * 40
+        )
+        self.assert_rejected(self.check_release(), "absent")
+
+    def test_malformed_commit_label_cannot_fall_back_to_a_template_tag(self):
+        self.use_resolved_legacy_revision()
+        self.revision["metadata"] = {"labels": {"source_commit": "not-a-commit"}}
+        self.assert_rejected(self.check_release(), "full source commit")
+
     def test_bare_status_digest_is_normalized_after_repository_validation(self):
         self.revision["status"]["imageDigest"] = "sha256:" + "1" * 64
         for reference in (OLD_IMAGE, REPOSITORY + ":" + self.first):
@@ -254,7 +360,7 @@ print((root / (args[1] + '.json')).read_text())
                 self.revision["spec"]["containers"][0]["image"] = reference
                 self.assert_rejected(self.check_release(), "image reference")
 
-    def test_digest_image_requires_a_commit_label(self):
+    def test_digest_image_requires_a_commit_label_or_bound_legacy_template(self):
         self.revision.pop("metadata")
         self.assert_rejected(self.check_release(), "full source commit")
 

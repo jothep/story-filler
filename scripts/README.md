@@ -31,6 +31,11 @@ produce a release on `main`. Terraform and other maintenance-script changes run
 tests without deploying the application. A manual run on `main` requests a release.
 Terraform is never applied by this workflow.
 
+When updating pinned GitHub Actions, check the repository's selected-actions
+allowlist before publishing. Include the exact commit SHA of each action and any
+actions called by its composite steps. Preserve the existing restrictions; do not
+add wildcard patterns or enable all actions to resolve a blocked workflow.
+
 ## Release ordering
 
 `cloud_run_release.py` only reads Cloud Run release metadata and Git history. It
@@ -42,7 +47,13 @@ configurations stop automatic delivery for review.
 New revisions carry a `source_commit` label and an immutable image digest. The
 helper also recognizes the existing pipeline's full 40-character commit image
 tags in the configured repository, allowing the current release to transition to
-this scheme. It rejects unknown provenance rather than guessing a commit.
+this scheme. Cloud Run can resolve an old revision's image tag to a digest while
+keeping the tag in the service template. In that case, the helper uses the template
+only after its observed generation matches the current configuration, the service
+is ready, and its latest created and ready revisions both match the revision
+serving all traffic. An explicit template revision name must also match. A pending
+or unrelated template cannot identify the running release. Unknown provenance is
+rejected rather than assigned a guessed commit.
 
 Within the deployment lock, the candidate and serving commits must exist in the
 repository and belong to `origin/main` history. A later documentation commit does

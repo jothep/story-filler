@@ -14,7 +14,12 @@ from urllib.parse import urlsplit
 
 COMMIT_PATTERN = re.compile(r"[0-9a-f]{40}")
 DIGEST_PATTERN = re.compile(r"sha256:[0-9a-f]{64}")
-SERVICE_FIELDS = "spec.traffic,status.traffic,status.url"
+SERVICE_FIELDS = (
+    "metadata.generation,spec.traffic,spec.template.metadata.name,"
+    "spec.template.spec.containers[0].image,status.traffic,status.url,"
+    "status.observedGeneration,status.latestCreatedRevisionName,"
+    "status.latestReadyRevisionName,status.conditions"
+)
 REVISION_FIELDS = (
     "metadata.labels.source_commit,spec.containers[0].image,status.imageDigest"
 )
@@ -77,10 +82,47 @@ def full_image_digest(value, repository):
     return value
 
 
+def legacy_template_commit(details, revision, repository):
+    """Bind an old template's commit tag to the fully reconciled serving revision."""
+    try:
+        generation = details["metadata"]["generation"]
+        status = details["status"]
+        template = details["spec"]["template"]
+        observed = status["observedGeneration"]
+        if (
+            type(generation) is not int
+            or type(observed) is not int
+            or generation < 1
+            or observed != generation
+            or status["latestCreatedRevisionName"] != revision
+            or status["latestReadyRevisionName"] != revision
+        ):
+            raise ValueError
+        ready = [item for item in status["conditions"] if item["type"] == "Ready"]
+        if len(ready) != 1 or ready[0]["status"] != "True":
+            raise ValueError
+        template_name = template.get("metadata", {}).get("name")
+        if template_name is not None and template_name != revision:
+            raise ValueError
+        tag = re.fullmatch(
+            re.escape(repository) + r":([0-9a-f]{40})",
+            template["spec"]["containers"][0]["image"],
+        )
+        if not tag:
+            raise ValueError
+    except (KeyError, IndexError, TypeError, ValueError, AttributeError) as error:
+        raise ReleaseError(
+            "The legacy service template cannot safely identify "
+            "the serving revision's full source commit."
+        ) from error
+    return tag[1]
+
+
 def serving_release(service, project, region, repository):
     details = describe_cloud_resource(
         "services", service, project, region, SERVICE_FIELDS
     )
+    service_details = details
     try:
         traffic = details["status"]["traffic"]
         policy = details["spec"]["traffic"]
@@ -163,6 +205,10 @@ def serving_release(service, project, region, repository):
         raise ReleaseError(
             "The serving image reference does not match its resolved digest."
         )
+    if commit is None and digest_reference:
+        # Cloud Run resolves old revision tags to digests. Only the corresponding
+        # fully ready service template can supply their original commit tag.
+        commit = legacy_template_commit(service_details, revision, repository)
     if not isinstance(commit, str) or not COMMIT_PATTERN.fullmatch(commit):
         raise ReleaseError("The serving image does not identify a full source commit.")
     return ServingRelease(revision, commit, image, url)

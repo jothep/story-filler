@@ -104,6 +104,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Migration**: Kubernetes deployments must update port configuration
 
 ### Fixed
+- **Legacy Cloud Run release metadata (2026-11-02)**: identify the old source commit when Cloud Run resolves a revision image tag into a digest. The service template must be fully reconciled and bound to the revision serving all traffic. Added nine regression tests for successful transitions and unsafe or incomplete metadata.
+
 - **Hardcoded BGM path removed** (2026-03-09, commit 1f9967a)
   - Removed hardcoded BGM path from Menu.jsx line 61
   - BGM path now fetched from `/api/config/` endpoint
