@@ -604,10 +604,11 @@ A: 是的，EBS 存储会继续计费（$2.40/月），但 EC2 计算费用会�
 A: 修改 `terraform.tfvars` 中的 `instance_type`，然后运行 `terraform apply`。
 
 **Q: 数据会丢失吗？**
-A: 不会。EBS 卷配置为实例终止时不删除，数据永久保存。
+A: 存储保留策略不能代替备份；误删除、损坏或配置变化仍可能导致数据丢失。
 
 **Q: 如何备份数据？**
-A: SSH 到实例后运行 `~/maori-story-fill/backup.sh`。
+A: 旧 `backup.sh` 已停用。当前本地 Compose 的逻辑备份与隔离恢复流程见
+[备份恢复指南](VOLUME_BACKUP_GUIDE.md)。它不自动迁移或切换 EC2、Neon 或 GCS。
 
 **Q: 可以在其他区域部署吗？**
 A: 可以，修改 `aws_region` 变量，但成本可能更高。

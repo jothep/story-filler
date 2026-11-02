@@ -9,14 +9,32 @@ python -m unittest discover -s scripts -p '*_test.py'
 
 The release-order tests create temporary Git histories and replace `gcloud` with
 a local test executable. They do not authenticate or contact Google Cloud.
-Restore-safety tests also replace operational commands; the legacy restore entry
-points remain disabled.
+Retired-entry tests also replace operational commands; all four legacy backup
+and restore commands remain disabled.
 
 The Pylint configuration tests load Django's model metadata with a temporary
 signing key, in-memory SQLite and local storage. They accept valid model fields
 and managers, then verify that undefined names and missing model attributes fail
 even when the overall lint score exceeds the minimum. No production settings or
 database records are needed.
+
+## Local backup and recovery
+
+`local_recovery.py` coordinates explicit local Docker operations;
+`recovery_archive.py` validates the bundle and media paths without extracting
+them. Both use only the Python standard library. Read
+[the operator guide](../VOLUME_BACKUP_GUIDE.md) before using them.
+
+The offline suite checks archive integrity, source selection, new-resource
+ownership and failure cleanup. `recovery_integration.py` is deliberately separate
+from unit-test discovery: it needs Docker and the pinned PostgreSQL image. It
+creates synthetic source data and isolated recovery resources, checks successful
+restoration and real database failure, then cleans up only its own resources.
+
+The dedicated `verify-local-recovery.yml` workflow runs these checks on Linux
+without cloud credentials. It never connects to the hosted database or replaces
+existing application data. Its success is separate from the backend deployment
+workflow's result.
 
 ## Backend delivery
 

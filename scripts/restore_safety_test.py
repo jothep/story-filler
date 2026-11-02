@@ -1,4 +1,4 @@
-"""Verify that retired restore entry points cannot reach operational commands."""
+"""Verify that retired backup/restore commands cannot reach operational commands."""
 
 from pathlib import Path
 import subprocess
@@ -7,7 +7,12 @@ import tempfile
 import unittest
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
-RESTORE_SCRIPTS = ("restore-volumes.sh", "restore-volumes-ec2.sh")
+RETIRED_SCRIPTS = (
+    SCRIPTS_DIR / "restore-volumes.sh",
+    SCRIPTS_DIR / "restore-volumes-ec2.sh",
+    SCRIPTS_DIR / "backup-volumes.sh",
+    SCRIPTS_DIR.parent / "backup.sh",
+)
 OPERATIONAL_COMMANDS = (
     "docker",
     "docker-compose",
@@ -22,6 +27,8 @@ OPERATIONAL_COMMANDS = (
     "cp",
     "mv",
     "mkdir",
+    "find",
+    "du",
 )
 COMMAND_STUB = """#!/bin/sh
 printf '%s' "${0##*/}" >> "$RESTORE_SAFETY_COMMAND_LOG"
@@ -56,11 +63,11 @@ class RestoreSafetyTests(unittest.TestCase):
 
     def assert_restore_disabled(self, arguments, input_text="", extra_environment=None):
         environment = {**self.environment, **(extra_environment or {})}
-        for script_name in RESTORE_SCRIPTS:
-            with self.subTest(script=script_name, arguments=arguments):
+        for script in RETIRED_SCRIPTS:
+            with self.subTest(script=script.name, arguments=arguments):
                 self.command_log.write_text("")
                 result = subprocess.run(
-                    ["/bin/bash", str(SCRIPTS_DIR / script_name), *arguments],
+                    ["/bin/bash", str(script), *arguments],
                     cwd=self.root,
                     env=environment,
                     input=input_text,
@@ -76,8 +83,8 @@ class RestoreSafetyTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 1)
                 self.assertEqual(result.stdout, "")
                 self.assertIn("disabled", result.stderr)
-                self.assertIn("delete existing data", result.stderr)
-                self.assertIn("not available", result.stderr)
+                self.assertIn("local_recovery.py", result.stderr)
+                self.assertIn("VOLUME_BACKUP_GUIDE.md", result.stderr)
 
     def test_missing_argument(self):
         self.assert_restore_disabled([])

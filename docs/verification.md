@@ -4,6 +4,39 @@ Legacy deployment reviewed on **27 September 2026**; repository migration begun 
 
 New-repository checks are listed first. The later pre-migration sections retain evidence from the former private `jothep/maori-story-fill` repository and do not verify subsequent changes. See the [migration record](repository-migration.md) for migration scope and the [public aggregate snapshot](evidence/README.md) for historical activity counts.
 
+## Local backup and recovery review 2 November 2026
+
+The fifth batch starts from published commit `a830ec9` on `codex/batch-5-recovery`. It is local and has not been deployed. It replaces the unsafe local backup procedures with PostgreSQL 16 logical exports and recovery into new Docker resources. It does not operate Neon/GCS, replace a running application's data or change cloud permissions.
+
+`local_recovery.py` provides backup, verification and restore commands with explicit local Docker targets. Backup checks Compose ownership, the stopped backend's actual media mount, database/tool versions and active media writers. The operator also confirms that external writers have been stopped. It uses `pg_dump` rather than copying live PostgreSQL data files, and writes a private output directory with a completion manifest last. Existing output and old backups are never overwritten or pruned.
+
+`recovery_archive.py` validates the versioned manifest, hashes, sizes and media archive without extracting it. It rejects escaping or conflicting paths, links, special files, sparse members, duplicate metadata keys, truncated records and excessive sizes. Restore first makes a private snapshot and validates that snapshot and the dump directory. Only then does it allocate new, randomly named and labelled resources. The database has no network or published port. Media are normalized and read back for hash comparison. Successful recovery retains the isolated database and two named volumes for inspection; the application is not switched to them.
+
+All four historical shell entry points now refuse execution. The operator guide was rewritten to remove unsafe historical deletion commands and unverified success claims. The new workflow uses the pinned official PostgreSQL 16 image and no cloud credentials.
+
+| Check | Result | Scope |
+| --- | --- | --- |
+| Automated suite | 210 passed | 31 backend tests and 99 script/configuration tests; the unchanged frontend's 62 component tests, 16 lint examples and two Pages tests also passed during this turn's fourth-batch review |
+| Recovery unit tests | 51 passed | 27 operational safeguards and 24 archive-validation tests; included in the 99 script tests above |
+| Retired commands | Passed | Seven tests exercise 32 calls across all four old entry points; no operational command is reached |
+| Linux standard-library tests | 58 passed | Recovery tests plus retired-entry tests in a fixed Python 3.13 image, with no network or host-directory mounts |
+| Real PostgreSQL recovery | Passed | Logical export/import of synthetic multi-table data; Unicode and spaced media names; exact row and media hashes; foreign keys, unique/not-null/check constraints and subsequent sequence values |
+| Refused inputs | Passed | A running media writer blocks backup; a damaged checksum is rejected before any recovery resource is created |
+| Real database failure | Passed | A valid dump using a source-only tablespace passes archive checks but fails at `pg_restore`; only that attempt's new resources are removed |
+| Helper failure cleanup | Passed | Real output-limit and two-second timeout failures stop and remove the helper and its anonymous volume; previously existing resources remain unchanged |
+| Complete resource comparison | Passed | All container IDs and volume names match before and after the final seven-scenario integration run; no new resources remain |
+| Changed-file credential scan | No findings | Gitleaks checked all 18 changed/new text files with redaction enabled |
+| Style and workflow checks | Passed | Black and Flake8 across backend and Python scripts, Django-aware Pylint, syntax checks for tracked shell scripts, and actionlint for all six workflows |
+| Independent review | Passed | Archive validation, operational ownership, cleanup and CI wiring were cross-reviewed; identified cleanup defects were fixed and retested |
+
+The first review found that killing an attached Docker client does not guarantee its helper container stops. Every helper now has an operation label and explicit cleanup. Testing then exposed anonymous volumes automatically created by the PostgreSQL image. Owned containers are removed with their anonymous volumes; named volumes still require separate ownership checks. A deeply nested JSON/PAX error path was also made to fail safely.
+
+The final integration run was repeated after those fixes. Ten anonymous volumes from earlier test attempts were already present in the dedicated test VM. Its event history no longer established their exact ownership, so they were recorded and left untouched rather than pruned. The final run added none. The dedicated review VM was stopped afterwards; the default Docker environment was not changed.
+
+A checksum establishes integrity, not trust. Only dumps from a trusted local database are supported, and database/media consistency depends on the documented stopped-writer window. Tests use synthetic records and local volumes; they do not demonstrate a hosted restore, point-in-time recovery, application cutover or recovery-time objective. The supported scope and exact commands are in the [operator guide](../VOLUME_BACKUP_GUIDE.md).
+
+Next: independently review and publish this batch, then perform the final repository/release check. The existing ESLint compatibility issue remains tracked separately; the fifth batch does not change application dependencies or resolve those upstream advisories.
+
 ## Hosted maintenance release 2 November 2026
 
 The fourth batch was independently reviewed and all 159 automated tests passed again before `8a394f8b0277a13d52991be70cc6ae5c5961ad46` was merged into `main`. [Frontend run 41404713288](https://github.com/jothep/story-filler/actions/runs/41404713288) and [backend run 41404713244](https://github.com/jothep/story-filler/actions/runs/41404713244) both completed successfully. The new formatting and Django-aware Pylint gates passed in CI, along with both Python dependency audits, runtime-image tests and the existing image scan policy. [CodeQL](https://github.com/jothep/story-filler/actions/runs/41404713355) and [credential history scanning](https://github.com/jothep/story-filler/actions/runs/41404713510) also completed successfully.

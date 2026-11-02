@@ -33,7 +33,7 @@ The [production architecture](docs/architecture-production-gcp.md) explains the 
 
 ## Local engineering practice
 
-The legacy `scripts/restore-volumes.sh` and `scripts/restore-volumes-ec2.sh` commands are disabled. They exit before touching services or data because the previous implementation could delete data before validating a backup. Their replacement requires an isolated restore exercise; see the [verification record](docs/verification.md#local-safety-review-2-november-2026). These scripts do not operate the current Cloud Run/Neon deployment.
+The [local backup and recovery guide](VOLUME_BACKUP_GUIDE.md) describes the fifth review batch's PostgreSQL logical backup and media archive workflow. It validates a backup before restoring into new, isolated Docker resources for inspection. The four legacy backup/restore entry points remain disabled. This workflow does not switch the running application to restored data or operate the current Cloud Run, Neon and GCS deployment. See the [verification record](docs/verification.md) for the batch's local status and checks.
 
 These environments serve different purposes. The [local platform lab](docs/local-platform-lab.md) links their implementation, startup order and verification limits.
 

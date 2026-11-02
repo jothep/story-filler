@@ -1,0 +1,54 @@
+name: Verify local backup and recovery
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/local_recovery*'
+      - 'scripts/recovery_*'
+      - 'scripts/restore_safety_test.py'
+      - 'scripts/*-volumes*.sh'
+      - 'backup.sh'
+      - '.github/workflows/verify-local-recovery.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/local_recovery*'
+      - 'scripts/recovery_*'
+      - 'scripts/restore_safety_test.py'
+      - 'scripts/*-volumes*.sh'
+      - 'backup.sh'
+      - '.github/workflows/verify-local-recovery.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recovery:
+    name: Restore synthetic data in isolated Docker resources
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13'
+
+      - name: Test archive validation and operational safeguards
+        run: |
+          python -m unittest discover -s scripts -p '*recovery*_test.py'
+          python -m unittest discover -s scripts -p 'restore_safety_test.py'
+
+      - name: Load the pinned PostgreSQL test image
+        run: |
+          image="$(PYTHONPATH=scripts python -c 'from local_recovery import POSTGRES_IMAGE; print(POSTGRES_IMAGE)')"
+          docker --host unix:///var/run/docker.sock pull "$image"
+
+      - name: Exercise backup, restore and failure paths
+        run: python scripts/recovery_integration.py --docker-host unix:///var/run/docker.sock

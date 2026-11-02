@@ -258,6 +258,8 @@ docker-compose.override.yml
 # Backups
 # ----------------------
 *.sql
+*.dump
+media.tar
 *.tar.gz
 backups/
 *-backups/

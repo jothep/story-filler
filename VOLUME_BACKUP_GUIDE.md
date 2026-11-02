@@ -1,414 +1,164 @@
-> **Historical implementation note — September 2026 review:** This document retains an earlier design, estimate, procedure or plan. It is not the current deployment specification, and its performance, cost, security and recovery claims have not all been revalidated. Use the [architecture index](docs/ARCHITECTURE.md) and [dated verification record](docs/verification.md) for current scope and evidence.
+# Local Compose backup and isolated recovery
 
-# Docker Volume 备份迁移历史记录
+This workflow backs up one PostgreSQL 16 database and its local Docker media
+volume. It restores into new resources for inspection. It does not switch an
+existing application to those resources or operate the hosted Neon/GCS service.
 
-**2026-11-02：旧恢复入口已停用。** `scripts/restore-volumes.sh` 与
-`scripts/restore-volumes-ec2.sh` 会返回非零退出状态，不会停止服务、删除文件或修改卷。
-原实现存在备份路径处理错误，以及在确认备份有效之前删除目标数据的问题。
+Use `scripts/local_recovery.py`. The previous `backup.sh`, `backup-volumes.sh`,
+`restore-volumes.sh` and `restore-volumes-ec2.sh` entry points refuse execution.
+Their old archives are not accepted by the new tool.
 
-下面的命令和输出保留用于理解旧 Compose/EC2 实现，不能作为当前可执行的恢复步骤。
-普通 `tar` 复制运行中的 PostgreSQL 数据目录不能保证一致性；原备份脚本也尚未完成修复。
-后续将先修复备份来源和格式，再用隔离数据库及合成数据验证恢复流程。
-不要从 Git 历史取回旧脚本用于实际数据恢复。
+## What the backup contains
 
-当前托管应用使用 Cloud Run、Neon 和 GCS；此处的本地卷流程不适用于它们。
-第一批修复的检查范围见[验证记录](docs/verification.md#local-safety-review-2-november-2026)。
+A completed backup has exactly three files:
 
-## 以下为历史流程
+- `database.dump`: a PostgreSQL custom-format logical export, made with `pg_dump`.
+- `media.tar`: the media files and directories, read from the source volume.
+- `manifest.json`: format version, PostgreSQL major version, file sizes and SHA-256
+  checksums. It contains no database password or connection address.
 
-## 步骤1：本地创建测试数据
+The output directory is new and private to its owner. The manifest is written
+last; a failed backup is incomplete and must not be treated as usable. The tool
+does not delete old backups or overwrite an existing output directory.
 
-### 1.1 登录Django Admin
+The database export does not include cluster-wide roles or server configuration.
+The tool does not copy application environment files or container settings. Keep
+those configuration sources separately. The backup
+files themselves contain application data, which may be private; keep them out of
+Git. The repository ignores `backups/`, but storage and access permissions still
+need to be managed when copying a backup elsewhere.
 
-访问：http://localhost/admin
+## Prepare the source
 
-- 用户名：`admin`
-- 密码：使用此前私下设置的管理员密码；如已遗忘，运行 `python manage.py changepassword admin` 并按隐藏输入提示重置。
+Use Python 3.13 and a local Docker Engine. All Docker calls require an explicit
+Unix socket. Remote TCP and SSH endpoints are rejected. From the repository root:
 
-### 1.2 创建测试内容
-
-**添加BGM：**
-1. 点击 "Background musics" → "ADD BACKGROUND MUSIC"
-2. 上传MP3文件（例如：`test-bgm.mp3`）
-3. 设置标题：`测试背景音乐`
-4. 保存
-
-**添加故事：**
-1. 点击 "Stories" → "ADD STORY"
-2. 填写标题和内容
-3. 上传图片
-4. 保存
-
-**配置应用：**
-1. 点击 "App configs" → "ADD APP CONFIG"
-2. Key: `menu_bgm_path`
-3. Value: `bgm/test-bgm.mp3`
-4. 保存
-
-### 1.3 验证数据
-
-```bash
-# 检查数据库记录
-docker exec maori-dev-backend python manage.py shell -c "
-from core.models import Story, BackgroundMusic
-print(f'故事数量: {Story.objects.count()}')
-print(f'BGM数量: {BackgroundMusic.objects.count()}')
-"
-
-# 检查媒体文件
-docker exec maori-dev-backend ls -lh /app/media/bgm/
-docker exec maori-dev-backend ls -lh /app/media/story_pictures/
+```sh
+recovery_host="$(docker context inspect --format '{{.Endpoints.docker.Host}}')"
+recovery_image="$(PYTHONPATH=scripts python3 -c 'from local_recovery import POSTGRES_IMAGE; print(POSTGRES_IMAGE)')"
+docker --host "$recovery_host" pull "$recovery_image"
+python3 scripts/local_recovery.py --help
 ```
 
----
+The image is an official PostgreSQL 16 image pinned by digest. The tool does not
+pull images implicitly. Review and retest deliberate image updates.
 
-## 步骤2：本地备份Volumes
+Identify the actual Compose project, database container and media volume. Do not
+infer them from the current directory name. The tool checks Compose ownership,
+the running database and stopped backend before reading data. It also rejects a
+media volume mounted read-write by a running container.
 
-### 2.1 运行备份脚本
+Pause application writes for the whole backup window. Stop the source backend
+using its existing Compose project/configuration, and stop any other writer you
+operate. The explicit `--writers-stopped` flag confirms that external writers
+have also been paused. Docker checks cannot establish that an unrelated database
+client has stopped writing.
 
-```bash
-cd /Users/zhuxiang/Documents/maori-story-fill
-./scripts/backup-volumes.sh
+The database stays running: `pg_dump` takes a consistent database snapshot.
+Pausing application and media writes keeps the database references and files in
+the same stable window. Copying a running PostgreSQL data directory with `tar`
+is not a substitute for this procedure.
+
+## Create and verify a backup
+
+This example assumes a development stack deliberately created with project name
+`story-filler-dev`. Substitute its actual names if yours differ. Supply a new
+output directory each time:
+
+```sh
+mkdir -p ./backups
+python3 scripts/local_recovery.py backup \
+  --docker-host "$recovery_host" \
+  --project story-filler-dev \
+  --db-container maori-dev-db \
+  --database maori_story_dev \
+  --db-user devuser \
+  --media-volume story-filler-dev_media_dev_data \
+  --output ./backups/manual-20261102 \
+  --writers-stopped
+
+python3 scripts/local_recovery.py verify --bundle ./backups/manual-20261102
 ```
 
-**输出示例：**
-```
-=== Docker Volume 备份工具 ===
-📁 备份目录: ./volume-backup-20260412-143000
+Both commands must succeed. The tool never stops or restarts the source service;
+resume the writers yourself after recording the backup result. If backup fails,
+inspect the reported stage, retain the original data and use a new output
+location for the next attempt.
 
-📦 备份数据库 Volume...
-✅ 数据库备份完成: postgres_data.tar.gz (45M)
+Offline verification checks the manifest, required files, checksums, PostgreSQL
+archive header and media members. It rejects links, special files, duplicate or
+escaping paths and truncated archives. Limits are 2 GiB of bundle data, 2 GiB of
+expanded media, 100,000 archive members and 512-character paths. Empty media is
+valid. Verification checks integrity; it does not prove the database can be
+restored or that the backup's source is trustworthy.
 
-📦 备份媒体文件 Volume...
-✅ 媒体文件备份完成: media_data.tar.gz (12M)
+## Restore into an isolated environment
 
-✅ 备份完成！
-📁 备份位置: ./volume-backup-20260412-143000
-```
+Only restore backups from a trusted database that you control. PostgreSQL dumps
+can contain executable database definitions; a matching checksum does not make
+an unknown dump safe. The separate acknowledgement is required:
 
-### 2.2 备份内容
-
-```bash
-# 查看备份文件
-ls -lh volume-backup-20260412-143000/
-
-# 输出：
-# -rw-r--r--  postgres_data.tar.gz  (45MB - 完整的PostgreSQL数据)
-# -rw-r--r--  media_data.tar.gz     (12MB - 所有上传的文件)
-# -rw-r--r--  backup-info.txt       (备份信息)
+```sh
+python3 scripts/local_recovery.py restore \
+  --docker-host "$recovery_host" \
+  --bundle ./backups/manual-20261102 \
+  --trusted-backup
 ```
 
----
+The tool takes a private snapshot of the backup, validates it, and checks the
+PostgreSQL archive directory before creating destination volumes. It allocates
+random resource names and checks their operation labels to avoid reusing an
+existing volume. Restoring the database uses one transaction and stops on errors.
+Media are restored from validated file/directory entries with normalized
+permissions (files `0644`, directories `0755`) and temporary ownership
+`1000:1000`, then read back for content
+verification. This ownership is for the recovery environment; it is not an
+assumption about the production application's runtime user.
 
-## 步骤3：上传到EC2
+The recovery PostgreSQL container has no network or published port. Helpers have
+no network, host directory mount or Docker socket mount. The source database,
+media volume and running application are not replaced. On failure, cleanup is
+limited to resources whose operation label matches this attempt. An interrupted
+process can leave its own resources behind; inspect the reported identifiers
+before removing anything.
 
-### 方法1：使用SCP
+Success reports the new recovery container and volumes. Inspect the restored
+records and media, then assess application configuration, file ownership,
+permissions and an application-level smoke check before planning any separate
+cutover. This tool does not claim to perform that cutover. Keep the old environment
+until the replacement has been independently validated.
 
-```bash
-# 打包备份目录
-tar czf volume-backup.tar.gz volume-backup-20260412-143000/
+Remove only the specific disposable recovery resources you no longer need.
+Never use a global prune or a wildcard to clean up a recovery attempt.
 
-# 上传到EC2
-scp volume-backup.tar.gz ec2-user@your-ec2-ip:/home/ec2-user/
+## Repeat the tests
 
-# 在EC2上解压
-ssh ec2-user@your-ec2-ip
-cd /home/ec2-user
-tar xzf volume-backup.tar.gz
+The archive and operation tests use temporary files and simulated Docker
+responses. They need only the Python standard library:
+
+```sh
+python3 -m unittest discover -s scripts -p '*recovery*_test.py'
+python3 -m unittest discover -s scripts -p 'restore_safety_test.py'
 ```
 
-### 方法2：通过S3中转（推荐大文件）
+Run the integration check on a dedicated, otherwise idle Docker Engine because
+it observes resource creation/deletion during failure cases. It uses the pinned
+image above and synthetic data. It creates
+its own isolated source and destination resources, runs the CLI, checks restored
+records, constraints, sequences and media, and checks that source sentinels are
+unchanged. It also exercises rejected and failed recovery attempts:
 
-```bash
-# 本地上传到S3
-aws s3 cp volume-backup-20260412-143000/ \
-  s3://your-bucket/backups/volume-backup-20260412-143000/ \
-  --recursive
-
-# EC2下载
-ssh ec2-user@your-ec2-ip
-aws s3 cp s3://your-bucket/backups/volume-backup-20260412-143000/ \
-  ./volume-backup-20260412-143000/ \
-  --recursive
+```sh
+python3 scripts/recovery_integration.py --docker-host "$recovery_host"
 ```
 
----
-
-## 步骤4：EC2恢复Volumes
-
-### 4.1 准备EC2环境
-
-```bash
-# SSH到EC2
-ssh ec2-user@your-ec2-ip
-
-# 进入项目目录
-cd /home/ec2-user/maori-story-fill
-
-# 确保docker-compose文件存在
-ls -la docker-compose.prod.yml
-```
-
-### 4.2 运行恢复脚本
-
-```bash
-# 恢复volumes
-./scripts/restore-volumes-ec2.sh ~/volume-backup-20260412-143000
-```
-
-**执行过程：**
-```
-=== EC2 生产环境 Volume 恢复 ===
-📁 备份目录: /home/ec2-user/volume-backup-20260412-143000
-
-⏸️  停止服务...
-✅ 服务已停止
-
-📦 准备Volumes...
-
-📦 恢复数据库 Volume...
-✅ 数据库恢复完成
-
-📦 恢复媒体文件 Volume...
-✅ 媒体文件恢复完成
-
-🚀 启动服务...
-✅ 服务已启动
-
-🎉 恢复完成！
-```
-
-### 4.3 验证恢复
-
-```bash
-# 检查容器状态
-docker-compose -f docker-compose.prod.yml ps
-
-# 检查数据库数据
-docker exec maori-backend python manage.py shell -c "
-from core.models import Story, BackgroundMusic
-print(f'故事数量: {Story.objects.count()}')
-print(f'BGM数量: {BackgroundMusic.objects.count()}')
-"
-
-# 检查媒体文件
-docker exec maori-backend ls -lh /app/media/bgm/
-docker exec maori-backend ls -lh /app/media/story_pictures/
-```
-
-### 4.4 访问应用
-
-浏览器访问：`http://your-ec2-ip`
-
-登录Admin：`http://your-ec2-ip/admin`
-- 用户名：`admin`（从备份恢复）
-- 密码：使用此前私下设置的管理员密码；如已遗忘，运行 `python manage.py changepassword admin` 并按隐藏输入提示重置。
-
----
-
-## 工作原理
-
-### Volume备份原理
-
-```bash
-# 备份命令
-docker run --rm \
-  -v maori-story-fill_postgres_dev_data:/source:ro \  # 挂载源volume（只读）
-  -v $(pwd)/backup:/backup \                          # 挂载备份目录
-  alpine \                                            # 使用alpine临时容器
-  tar czf /backup/postgres_data.tar.gz -C /source .  # 打包volume内容
-```
-
-**过程：**
-1. 创建临时Alpine容器
-2. 挂载Volume到容器的 `/source` 目录
-3. 用tar打包 `/source` 的内容
-4. 保存到本地的备份目录
-5. 容器自动删除（--rm）
-
-### Volume恢复原理
-
-```bash
-# 恢复命令
-docker run --rm \
-  -v maori-story-fill_postgres_data:/target \        # 挂载目标volume（可写）
-  -v $(pwd)/backup:/backup:ro \                      # 挂载备份目录（只读）
-  alpine \                                           # 使用alpine临时容器
-  tar xzf /backup/postgres_data.tar.gz -C /target   # 解压到volume
-```
-
----
-
-## 对比：Volume备份 vs pg_dump
-
-### Volume备份方式（本指南）
-
-**优点：**
-- ✅ 一次性完整备份（数据库+文件）
-- ✅ 操作简单（一键备份/恢复）
-- ✅ 100%数据完整性
-- ✅ 快速（直接文件复制）
-- ✅ 包含所有PostgreSQL配置
-
-**缺点：**
-- ❌ 备份文件较大（包含整个数据库）
-- ❌ PostgreSQL版本必须完全一致
-- ❌ 不支持跨数据库迁移（例如PostgreSQL → MySQL）
-
-### pg_dump方式
-
-**优点：**
-- ✅ 备份文件较小（SQL文本）
-- ✅ 跨版本兼容性好
-- ✅ 可编辑SQL文件
-- ✅ 支持选择性导入（单表、schema等）
-
-**缺点：**
-- ❌ 需要分别处理数据库和媒体文件
-- ❌ 恢复速度慢（需要执行SQL）
-- ❌ 操作复杂（多个步骤）
-
----
-
-## 最佳实践
-
-### 开发环境 → 生产环境（首次部署）
-
-**推荐：Volume备份**
-```bash
-# 本地
-./scripts/backup-volumes.sh
-
-# 上传到EC2
-scp -r volume-backup-* ec2-user@your-ec2-ip:/home/ec2-user/
-
-# EC2恢复
-./scripts/restore-volumes-ec2.sh ~/volume-backup-*
-```
-
-### 生产环境定期备份
-
-**推荐：自动化备份**
-```bash
-# 每天凌晨2点自动备份
-0 2 * * * /path/to/backup-volumes.sh && \
-  aws s3 cp volume-backup-$(date +\%Y\%m\%d)/ \
-  s3://your-bucket/daily-backups/ --recursive
-```
-
-### 灾难恢复
-
-**推荐：S3 + Volume备份组合**
-- 数据库：Volume备份存储在S3
-- 媒体文件：直接使用S3存储（USE_S3=true）
-- 好处：媒体文件不需要备份，只需备份数据库
-
----
-
-## 故障排查
-
-### 问题1：恢复后数据为空
-
-**原因：**Volume未完全清空
-
-**解决：**
-```bash
-# 完全删除旧volume
-docker volume rm maori-story-fill_postgres_data
-docker volume rm maori-story-fill_media_data
-
-# 重新恢复
-./scripts/restore-volumes-ec2.sh ~/volume-backup-*
-```
-
-### 问题2：Permission denied
-
-**原因：**文件权限不正确
-
-**解决：**
-```bash
-# 修复权限
-docker exec maori-backend chown -R app:app /app/media
-docker exec maori-backend chmod -R 755 /app/media
-```
-
-### 问题3：PostgreSQL版本不匹配
-
-**症状：**
-```
-FATAL: database files are incompatible with server
-```
-
-**解决：**
-- 确保本地和EC2使用相同的PostgreSQL版本
-- 本地：`postgres:16-alpine`
-- EC2：也必须是 `postgres:16-alpine`
-
-### 问题4：备份文件过大
-
-**解决：**
-```bash
-# 使用更高压缩率
-docker run --rm \
-  -v maori-story-fill_postgres_dev_data:/source:ro \
-  -v $(pwd)/backup:/backup \
-  alpine \
-  tar czf /backup/postgres_data.tar.gz -C /source . --use-compress-program=pigz
-```
-
----
-
-## 快速参考
-
-### 本地备份
-```bash
-./scripts/backup-volumes.sh
-```
-
-### 上传到EC2
-```bash
-scp -r volume-backup-* ec2-user@your-ec2-ip:/home/ec2-user/
-```
-
-### EC2恢复
-```bash
-./scripts/restore-volumes-ec2.sh ~/volume-backup-*
-```
-
-### 验证
-```bash
-docker-compose -f docker-compose.prod.yml ps
-docker exec maori-backend python manage.py shell -c "from core.models import Story; print(Story.objects.count())"
-```
-
----
-
-## 进阶：增量备份
-
-Volume备份是全量备份。如果需要增量备份：
-
-```bash
-# 使用rsync增量同步
-docker run --rm \
-  -v maori-story-fill_postgres_dev_data:/source:ro \
-  -v $(pwd)/incremental-backup:/backup \
-  alpine \
-  rsync -av --delete /source/ /backup/
-```
-
-但对于生产环境，推荐使用：
-- **AWS RDS** - 自动备份和时间点恢复
-- **S3存储** - 媒体文件直接存储在S3，无需备份
-
----
-
-## 下一步
-
-1. ✅ 本地测试备份和恢复
-2. ✅ 在测试EC2实例验证完整流程
-3. ✅ 配置自动化备份（cron + S3）
-4. ✅ 生产环境部署时使用Volume恢复
-
-有问题参考：
-- [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md) - 其他迁移方案
-- [S3_STORAGE_GUIDE.md](./S3_STORAGE_GUIDE.md) - S3存储配置
+The dedicated [recovery workflow](.github/workflows/verify-local-recovery.yml)
+runs these checks on Linux without cloud credentials. Dated results are in the
+[verification record](docs/verification.md). These checks do not establish
+production recovery times or test the hosted database's recovery features.
+
+## References
+
+- PostgreSQL: [pg_dump and consistent logical exports](https://www.postgresql.org/docs/16/app-pgdump.html).
+- PostgreSQL: [pg_restore, transactions and trusted sources](https://www.postgresql.org/docs/16/app-pgrestore.html).
+- Docker: [volume creation can reuse an existing name](https://docs.docker.com/reference/cli/docker/volume/create/).
