@@ -4,9 +4,29 @@ Legacy deployment reviewed on **27 September 2026**; repository migration begun 
 
 New-repository checks are listed first. The later pre-migration sections retain evidence from the former private `jothep/maori-story-fill` repository and do not verify subsequent changes. See the [migration record](repository-migration.md) for migration scope and the [public aggregate snapshot](evidence/README.md) for historical activity counts.
 
+## Hosted release 2 November 2026
+
+The first two review batches were merged into `main` at `43ba793fc8c5c505dfcd905d2315a4fd3d6cf7c7`. The frontend was published from that commit. The backend was published from `8af5dd842e00bedaf107ec7bf5688e15f02059d0`, which adds the legacy Cloud Run metadata compatibility fix described below. The subsequent frontend lifecycle work remains a separate local branch.
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Frontend delivery | Passed | [Run 41393538930](https://github.com/jothep/story-filler/actions/runs/41393538930): dependency audits, lint, six tests, production build and GitHub Pages deployment |
+| Backend delivery | Passed | [Run 41394419852](https://github.com/jothep/story-filler/actions/runs/41394419852): both dependency audits, 31 Django tests, 45 script tests, runtime-image tests, image security gate, registry push, Cloud Run deployment and public API checks |
+| Serving version | Verified independently | Ready revision `maori-story-backend-00029-sv6`, source label `8af5dd8`, 100% of service traffic; running digest matched this workflow's image in Artifact Registry |
+| Public API | Passed independently | Story list, story 1 with eight paragraphs and 11 words, and configuration JSON; read-only requests |
+| Browser | Passed for normal navigation | Public menu and story details loaded through the menu link. Direct refresh of a nested story URL still returned the Pages 404; correction is part of the next local frontend batch |
+| Credential history scan | Passed | [Run 41394419952](https://github.com/jothep/story-filler/actions/runs/41394419952) on the backend release commit |
+| CodeQL | Completed successfully | [Run 41392325733](https://github.com/jothep/story-filler/actions/runs/41392325733) on the merged review commit; advisory analysis, not a claim that no alerts exist |
+
+The initial workflows could not start because the repository's selected-actions allowlist did not include the updated pinned actions. The allowlist was updated with 12 exact commit references, including the needed composite-action dependencies. Existing entries and restrictions were preserved. The [maintenance guide](../scripts/README.md) now includes this check when updating action pins.
+
+The first backend deployment attempt stopped before modifying the service. Cloud Run had resolved the old revision's full-commit image tag to a digest, while its original tag remained in the service template. The compatibility fix only accepts that template when the configuration generation is fully observed, the service is ready, and the latest created and ready revisions both match the revision serving all traffic. Nine additional regression tests cover this transition and rejection of pending, unrelated or incomplete metadata. No release protection was disabled.
+
+At 05:34 UTC the independently checked backend digest was `sha256:02bfce299ad3613d051f4b1fe79867b572f47c48555c8ced32f37878effb0967`. The release did not run database migrations, restore data, change runtime credentials or expand cloud IAM permissions. The earlier scan limitations below still apply.
+
 ## Local dependency and delivery review 2 November 2026
 
-The second review batch builds on local safety commit `321c80e`. It updates dependency locks, container packaging and delivery checks. It has not been deployed: the source changes were prepared and tested in an isolated copy, without production credentials, production database operations, IAM changes or cloud deployment calls.
+The second review batch builds on local safety commit `321c80e`. It updates dependency locks, container packaging and delivery checks. The source changes were first prepared and tested in an isolated copy, without production credentials, production database operations, IAM changes or cloud deployment calls. The hosted release is recorded above.
 
 Python dependencies now have direct `.in` inputs and generated runtime/development `.txt` locks with hashes. The locks were resolved on Linux amd64 with CPython 3.13. The runtime uses Django 5.2.18, Django REST framework 3.18.3 and Pillow 13.0.0. Development tools are separate. The frontend keeps its existing application code and uses Node 24 with `npm ci`. Container base images and the Actions used in the three updated delivery workflows are pinned by digest or commit. Terraform keeps Google provider 5.45.2 and now commits its lock and Linux/macOS checksums.
 
@@ -39,7 +59,7 @@ Application lifecycle fixes, complete repository formatting, the ESLint migratio
 
 ## Local safety review 2 November 2026
 
-The first review batch updates the local source based on `12a466cbf2750042c0934d9b316e4e31040b3ded`. It restores application-configuration add permissions, returns safe API failures, and disables the two unsafe legacy volume-restore commands. Successful API payloads, nullable content, model definitions and storage settings remain unchanged. These are local checks, not a new hosted release.
+The first review batch updates the local source based on `12a466cbf2750042c0934d9b316e4e31040b3ded`. It restores application-configuration add permissions, returns safe API failures, and disables the two unsafe legacy volume-restore commands. Successful API payloads, nullable content, model definitions and storage settings remain unchanged. These checks were performed locally before the hosted release recorded above.
 
 The backend regressions were first run against the original code: 10 failed and 10 passed, exposing the intended permission, error-disclosure and false-success defects. Fake operational commands also confirmed that the original restore scripts could reach service-stop or deletion operations before restoration succeeded. No real recovery operation was executed.
 
