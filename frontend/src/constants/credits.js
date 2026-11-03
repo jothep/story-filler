@@ -6,6 +6,8 @@
 export const CREDITS_CONTENT = {
   author: {
     name: 'Xiang Zhu',
+    portfolioUrl: 'https://jothep.github.io/projects/story-filler/',
+    linkedinUrl: 'https://www.linkedin.com/in/Xiang-Zhu-DevOps',
   },
   materials: {
     bgm: {
@@ -26,7 +28,6 @@ export const CREDITS_CONTENT = {
     },
   },
   disclaimer: {
-    text: 'This application is strictly for personal coding practice and demonstration. If you are the copyright owner of any materials and wish for them to be removed, please contact me via email at',
-    email: 'shelldry325@gmail.com',
+    text: 'This application is strictly for personal coding practice and demonstration. If you are the copyright owner of any materials and wish for them to be removed, please contact me on',
   },
 };

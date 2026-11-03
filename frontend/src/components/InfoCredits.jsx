@@ -60,6 +60,25 @@ function InfoCredits() {
         <div style={sectionStyles}>
           <div style={sectionTitleStyles}>Author</div>
           <p>{CREDITS_CONTENT.author.name}</p>
+          <p>
+            <a
+              href={CREDITS_CONTENT.author.portfolioUrl}
+              style={linkStyles}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Project portfolio
+            </a>
+            <br />
+            <a
+              href={CREDITS_CONTENT.author.linkedinUrl}
+              style={linkStyles}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              LinkedIn
+            </a>
+          </p>
         </div>
 
         <div style={sectionStyles}>
@@ -100,10 +119,12 @@ function InfoCredits() {
           <p style={{ fontSize: '0.8rem', lineHeight: '1.6' }}>
             {CREDITS_CONTENT.disclaimer.text}{' '}
             <a
-              href={`mailto:${CREDITS_CONTENT.disclaimer.email}`}
+              href={CREDITS_CONTENT.author.linkedinUrl}
               style={linkStyles}
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              {CREDITS_CONTENT.disclaimer.email}
+              LinkedIn
             </a>
             .
           </p>
