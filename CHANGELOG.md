@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **About & Credits content (2026-11-03)**: added an application introduction and acknowledgements for Gemini, Claude and ChatGPT. Kept the author, portfolio and LinkedIn links, simplified the material credits, and removed the generic disclaimer.
 - **About and contact links (2026-11-03)**: added the Story Filler portfolio case study and LinkedIn links to About & Credits. Replaced the email address with LinkedIn as the contact route.
 - **PostgreSQL-only backend verification (2026-11-03)**: moved all existing Django tests to isolated PostgreSQL in CI and final-image verification. Pinned local Compose to the same PostgreSQL image used by recovery tests. Build-time static collection runs without networking; lint loads PostgreSQL metadata without connecting to a database.
 - **Backend base image (2026-11-03)**: moved the runtime to digest-pinned Python 3.13 on Alpine 3.24. A separate build stage compiles two dependencies that have no musllinux wheels; hashes, fixed build tools, the existing runtime versions and non-root UID/GID are preserved. Added pre-merge image, PostgreSQL, static-resource and shutdown checks.

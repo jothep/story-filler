@@ -58,44 +58,53 @@ function InfoCredits() {
         </h2>
 
         <div style={sectionStyles}>
-          <div style={sectionTitleStyles}>Author</div>
-          <p>{CREDITS_CONTENT.author.name}</p>
+          {CREDITS_CONTENT.about.map((paragraph) => (
+            <p key={paragraph}>{paragraph}</p>
+          ))}
+        </div>
+
+        <div style={sectionStyles}>
+          <h3 style={sectionTitleStyles}>Author</h3>
           <p>
+            Created and maintained by{' '}
+            <strong>{CREDITS_CONTENT.author.name}</strong>.
+          </p>
+          <p>
+            Explore the architecture, engineering decisions and verification
+            results in the{' '}
             <a
               href={CREDITS_CONTENT.author.portfolioUrl}
               style={linkStyles}
               target="_blank"
               rel="noopener noreferrer"
             >
-              Project portfolio
+              project portfolio
             </a>
-            <br />
+            .
+          </p>
+          <p>
             <a
               href={CREDITS_CONTENT.author.linkedinUrl}
               style={linkStyles}
               target="_blank"
               rel="noopener noreferrer"
             >
-              LinkedIn
+              Connect on LinkedIn
             </a>
           </p>
         </div>
 
         <div style={sectionStyles}>
-          <div style={sectionTitleStyles}>Material Credits</div>
+          <h3 style={sectionTitleStyles}>Acknowledgements</h3>
+          <p>{CREDITS_CONTENT.acknowledgements}</p>
+        </div>
 
-          <div style={{ marginBottom: '1rem' }}>
-            <strong>{CREDITS_CONTENT.materials.bgm.label}</strong>
-            <br />
-            <span>{CREDITS_CONTENT.materials.bgm.credit}</span>
-          </div>
-
-          <div>
-            <strong>{CREDITS_CONTENT.materials.graphics.label}</strong>
-            <br />
-            {CREDITS_CONTENT.materials.graphics.items.map((item, index) => (
-              <span key={index}>
-                • {item.label}:{' '}
+        <div style={sectionStyles}>
+          <h3 style={sectionTitleStyles}>Credits</h3>
+          <ul>
+            {CREDITS_CONTENT.materials.map((item) => (
+              <li key={item.label}>
+                <strong>{item.label}:</strong>{' '}
                 {item.url ? (
                   <a
                     href={item.url}
@@ -108,26 +117,9 @@ function InfoCredits() {
                 ) : (
                   item.credit
                 )}
-                <br />
-              </span>
+              </li>
             ))}
-          </div>
-        </div>
-
-        <div style={sectionStyles}>
-          <div style={sectionTitleStyles}>Disclaimer</div>
-          <p style={{ fontSize: '0.8rem', lineHeight: '1.6' }}>
-            {CREDITS_CONTENT.disclaimer.text}{' '}
-            <a
-              href={CREDITS_CONTENT.author.linkedinUrl}
-              style={linkStyles}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              LinkedIn
-            </a>
-            .
-          </p>
+          </ul>
         </div>
       </div>
     </div>
