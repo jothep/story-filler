@@ -1,5 +1,8 @@
 import PropTypes from 'prop-types';
 
+export const COLD_START_NOTE =
+  'Waking up the free server. First load can take up to 30s.';
+
 /** @param {{message?: string}} props */
 function LoadingSpinner({ message = 'Loading...' }) {
   return (
@@ -29,6 +32,16 @@ function LoadingSpinner({ message = 'Loading...' }) {
             animation: 'spin 1s linear infinite',
           }}
         />
+        <p
+          style={{
+            marginTop: '1rem',
+            marginBottom: 0,
+            fontSize: '0.7rem',
+            lineHeight: 1.6,
+          }}
+        >
+          {COLD_START_NOTE}
+        </p>
       </div>
       <style>{`
         @keyframes spin {

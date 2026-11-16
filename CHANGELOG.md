@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Cold-start loading note (2026-11-17)**: the story and story-list loading screens now say the free server is waking up and the first load can take up to 30s. Cloud Run logs over 60 days showed cold API responses of 5–19s (median 11s); a fully cold live page load took 15.5s to show the menu.
 - **About & Credits content (2026-11-03)**: added an application introduction and acknowledgements for Gemini, Claude and ChatGPT. Kept the author, portfolio and LinkedIn links, simplified the material credits, and removed the generic disclaimer.
 - **About and contact links (2026-11-03)**: added the Story Filler portfolio case study and LinkedIn links to About & Credits. Replaced the email address with LinkedIn as the contact route.
 - **PostgreSQL-only backend verification (2026-11-03)**: moved all existing Django tests to isolated PostgreSQL in CI and final-image verification. Pinned local Compose to the same PostgreSQL image used by recovery tests. Build-time static collection runs without networking; lint loads PostgreSQL metadata without connecting to a database.
