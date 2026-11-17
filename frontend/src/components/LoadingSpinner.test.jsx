@@ -1,6 +1,6 @@
 import { render, screen, cleanup } from '@testing-library/react';
 import { describe, it, expect, afterEach } from 'vitest';
-import LoadingSpinner, { COLD_START_NOTE } from './LoadingSpinner';
+import LoadingSpinner from './LoadingSpinner';
 
 afterEach(() => {
   cleanup();
@@ -11,7 +11,10 @@ describe('LoadingSpinner', () => {
     render(<LoadingSpinner message="Loading stories..." />);
 
     expect(screen.getByText('Loading stories...')).toBeInTheDocument();
-    expect(screen.getByText(COLD_START_NOTE)).toBeInTheDocument();
-    expect(COLD_START_NOTE).toMatch(/up to \d+s\./);
+    expect(
+      screen.getByText(
+        'Waking up the free server. First load can take up to 30s.'
+      )
+    ).toBeInTheDocument();
   });
 });

@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 
-export const COLD_START_NOTE =
+const COLD_START_NOTE =
   'Waking up the free server. First load can take up to 30s.';
 
 /** @param {{message?: string}} props */
