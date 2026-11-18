@@ -5,6 +5,33 @@ then the backend base-image replacement from `a16507e` and SQLite removal from `
 available fixes, compatibility limits and the findings retained after review.
 The [verification record](verification.md) contains the release and test results.
 
+## Frontend: picomatch advisory allowed without a patch (18 November)
+
+[GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf)
+(high, ReDoS through repeated extglob patterns) affects picomatch up to 4.0.7.
+GitHub reviewed it on 17 November 2026, after which the full-tree npm audit failed
+on every frontend run.
+
+- **Patch availability:** none on 18 November; 4.0.7 is the latest release. npm's
+  `npm audit fix --force` would install Vitest 3.1.4, a breaking change that
+  leaves Vite affected, so it was not used.
+- **Dependency path:** picomatch 4.0.4 through Vite 7.3.7 (directly and through
+  fdir and tinyglobby) and Vitest 4.1.12; npm reports five packages.
+- **Separate observation:** these tools match repository-controlled glob patterns
+  at build and test time. The production audit (`npm audit --omit=dev`) reports
+  zero findings.
+
+Decision: the full-tree audits in the frontend workflows and the scheduled
+maintenance run now use `npm run audit:full`. It allows only advisory and package
+pairs listed in [`frontend/audit-allowlist.json`](../frontend/audit-allowlist.json)
+and still fails on any other advisory at every severity. Unclear audit output also
+fails. The production audit is unchanged. The entry has no expiry date; it is
+reviewed manually. When the advisory is no longer reported, the check prints a
+reminder to remove the entry.
+
+To close it: once a picomatch release above 4.0.7 exists, update the frontend
+lock, confirm the full audit no longer reports the advisory, and delete the entry.
+
 ## Current backend: SQLite removed (3 November)
 
 Production uses PostgreSQL. SQLite was an unused library inherited from the
@@ -232,6 +259,9 @@ against several binary packages built from the same source package.
   update. Keep an exact record of version changes and repeat runtime tests.
 - Do not suppress an advisory simply because the affected feature appears unused.
   Record that observation separately from vendor status and patch availability.
+- Allow a frontend advisory only as one advisory and package pair in
+  `frontend/audit-allowlist.json`, with a date and reason, and remove the entry
+  once a fixed release is in the lock.
 
 Sources: the [Debian security tracker](https://security-tracker.debian.org/tracker/),
 the advisory links above, and the npm package metadata and compatibility tests

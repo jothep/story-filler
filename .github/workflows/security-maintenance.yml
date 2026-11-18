@@ -68,7 +68,7 @@ jobs:
         with:
           node-version-file: frontend/.nvmrc
       - run: npm ci
-      - run: npm audit
+      - run: npm run audit:full
       - run: npm audit --omit=dev
 
   images:
