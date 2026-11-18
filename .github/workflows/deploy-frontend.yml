@@ -53,8 +53,11 @@ jobs:
       - name: Audit production dependencies
         run: npm audit --omit=dev
 
+      - name: Test the audit allowlist check
+        run: npm run test:audit
+
       - name: Audit development and build dependencies
-        run: npm audit
+        run: npm run audit:full
 
       - name: Check JavaScript and React
         run: npm run lint

@@ -24,7 +24,8 @@ The Vite base is `/story-filler/`. The router and error recovery derive their ba
 
 ```bash
 npm audit --omit=dev
-npm audit
+npm run test:audit
+npm run audit:full
 npm run lint
 npm run format:check
 npm run test:lint
@@ -84,9 +85,21 @@ lock; update `package.json` and `package-lock.json` together.
 
 The previous six moderate package findings came from one minimatch advisory,
 [GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249), in the
-ESLint dependency tree. That tree is now removed. Fresh full and production-only
-npm audits report **zero known findings**. Both CI workflows now fail on any
-audit severity, including low and moderate development findings.
+ESLint dependency tree. That tree was removed on 3 November 2026, when fresh full
+and production-only npm audits reported zero known findings.
+
+Current state (18 November 2026):
+
+- **Production audit** (`npm audit --omit=dev`): zero known findings. Both CI
+  workflows fail on any finding at every severity. This audit does not read the
+  allowlist.
+- **Full-tree audit** (`npm run audit:full`): reports one high advisory, the
+  unpatched picomatch ReDoS
+  ([GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf)),
+  reached through Vite and Vitest. CI allows only the advisory and package pairs
+  listed in [`audit-allowlist.json`](audit-allowlist.json), each with a recorded
+  date and reason, and fails on any other advisory at every severity. See
+  [dependency findings](../docs/dependency-findings.md#frontend-picomatch-advisory-allowed-without-a-patch-18-november).
 
 The review also checked the native linter, beyond npm's advisory database:
 registry signatures, release provenance, and the Rust dependency lock at the
