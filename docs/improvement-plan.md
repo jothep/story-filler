@@ -50,18 +50,18 @@ Its 13 blanks each need a separate Blank Link entry. Content exists only in Neon
 - Where a guide still describes current operations, replace it with a short English page under `docs/operations/`.
 - Rewrite the admin guide for the current model, without account details.
 - Rename the root `Requirements.txt` (the original course brief, not a pip file) and move it to `docs/history/`.
-- Review the EC2-era scripts in `scripts/` (`start-instance.sh`, `stop-instance.sh`, `instance-status.sh`, `restore-volumes-ec2.sh`, `export-data.sh`, `import-data.sh`) and archive or remove them.
+- Review the EC2-era scripts in `scripts/` (`start-instance.sh`, `stop-instance.sh`, `instance-status.sh`, `restore-volumes-ec2.sh`, `export-data.sh`, `import-data.sh`) and the root `deploy.sh` and `backup.sh`, and archive or remove them.
 - Keep `Infra/` and `demo/`: [ARCHITECTURE.md](ARCHITECTURE.md) cites them as historical evidence. Label them clearly instead.
 - Update links in README and the docs index.
 
-**Done when:** the root holds only README, LICENSE, SECURITY, CHANGELOG and configuration files; public docs are in English; every internal link resolves.
+**Done when:** the root holds only README, LICENSE, SECURITY, CHANGELOG, configuration files and the code and infrastructure directories (`backend/`, `frontend/`, `scripts/`, `terraform/`, `docs/`, plus the retained `Infra/` and `demo/`); public docs are in English; every internal link resolves.
 
 ### 2. Data model and admin fixes
 
-- Remove `Story.word_bank`, with a migration.
+- Remove `Story.word_bank` with a migration. In the same change, remove its `filter_horizontal` and fieldset entries in `StoryAdmin` and its `prefetch_related` entry in `StoryDetailAPIView.get_queryset()`; otherwise story reads and admin editing fail.
 - Create Blank Links automatically when a paragraph is saved, matching each placeholder to a word.
 - Move the audio MIME helper into one shared function.
-- Add a draft/published status to Story; the public API returns published stories only.
+- Add a draft/published status to Story; the public API returns published stories only. The story package carries the same status (workstream 3).
 - Delete the stored file when an asset is replaced or removed (or rely on workstream 4's cleanup).
 
 **Done when:** a story can be created without visiting the Blank Link page, and no admin field is ignored by the API.
@@ -74,11 +74,12 @@ Its 13 blanks each need a separate Blank Link entry. Content exists only in Neon
   content/
     words.yaml                  # shared lexicon: Māori, English, media, provenance
     stories/rona-and-the-moon/
-      story.yaml                # title, cover, music, paragraphs
+      story.yaml                # title, status, cover, music, paragraphs
       media/
   ```
 
-- Write blanks inline in paragraph text, for example `Rona looked up at the {{marama}}.`. The importer derives Blank Links and the story word list.
+- `status` (`draft` or `published`) maps directly to the Story field: import sets it, export writes it back, and the public API serves published stories only. A story without a status imports as a draft.
+- Write blanks inline in paragraph text, for example `Rona looked up at the {{marama}}.`. The importer translates each one into the existing `__BLANK_<key>__` placeholder and creates its Blank Link, so the API and the frontend parser stay unchanged. Keys are ASCII slugs, because the parser accepts only `[A-Za-z0-9_]` and Māori words can contain macrons.
 - Add `export_content` to bootstrap the package from the live story, then `import_content` to validate, process media, upload to GCS and upsert the database. Imports are repeatable and support a dry run.
 - Add a CI job that checks every blank resolves to a word, every word has its required media, files meet format and size rules, and provenance is complete.
 - Use the package as seed data for local development and tests.
@@ -91,9 +92,10 @@ Its 13 blanks each need a separate Blank Link entry. Content exists only in Neon
 - Audio: one format (MP3), mono for speech, loudness normalisation (ffmpeg `loudnorm`), trimmed silence.
 - Recordings: support one long take split by silence and named from a word list or paragraph order.
 - Images: fixed sizes and format.
-- Name uploaded files by content hash, serve them with long cache headers, and remove objects no package references.
+- Name uploaded files by content hash. Storage uses `GS_FILE_OVERWRITE=False`, which renames a file on collision, so the importer checks whether the hash key already exists and reuses it instead of saving again.
+- Serve hash-named files with long cache headers, and remove objects no package references.
 
-**Done when:** every live asset passes the format checks and GCS holds no unreferenced objects.
+**Done when:** every live asset passes the format checks, a repeated import uploads no new objects, and GCS holds no unreferenced objects.
 
 ### 5. Media provenance and credits
 
