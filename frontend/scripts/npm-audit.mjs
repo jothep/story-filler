@@ -5,6 +5,17 @@ const ADVISORY_URL =
   /^https:\/\/github\.com\/advisories\/(GHSA(?:-[0-9a-z]{4}){3})$/;
 const ADVISORY_ID = /^GHSA(?:-[0-9a-z]{4}){3}$/;
 
+// Accept only real calendar dates, so 2026-02-30 or 2026-99-99 is rejected.
+function isCalendarDate(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+  const date = new Date(`${value}T00:00:00Z`);
+  return (
+    !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value
+  );
+}
+
 export function readAllowlist(data) {
   if (!data || !Array.isArray(data.advisories)) {
     throw new Error('Allowlist must contain an advisories array');
@@ -22,7 +33,7 @@ export function readAllowlist(data) {
     if (typeof name !== 'string' || !name) {
       throw new Error(`${where} needs the affected package name`);
     }
-    if (typeof recorded !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(recorded)) {
+    if (!isCalendarDate(recorded)) {
       throw new Error(`${where} needs a recorded date (YYYY-MM-DD)`);
     }
     if (typeof reason !== 'string' || !reason.trim()) {
@@ -46,18 +57,23 @@ export function readAdvisories(report) {
   }
   const vulnerable = report.vulnerabilities;
   const advisories = [];
+  const paths = new Map();
+  const sourced = new Set();
   for (const [name, entry] of Object.entries(vulnerable)) {
     if (!entry || !Array.isArray(entry.via) || entry.via.length === 0) {
       throw new Error(`Vulnerability ${name} has no source`);
     }
+    paths.set(name, []);
     for (const source of entry.via) {
       if (typeof source === 'string') {
         // A dependency path: the named package must carry its own finding.
         if (!Object.hasOwn(vulnerable, source)) {
           throw new Error(`Vulnerability ${name} cites unreported ${source}`);
         }
+        paths.get(name).push(source);
         continue;
       }
+      sourced.add(name);
       const match = ADVISORY_URL.exec(source?.url ?? '');
       if (!match || typeof source.name !== 'string') {
         throw new Error(`Vulnerability ${name} has an unidentified advisory`);
@@ -70,6 +86,24 @@ export function readAdvisories(report) {
       });
     }
   }
+  // Every finding must reach an advisory. A cycle of dependency paths with no
+  // advisory would otherwise contribute nothing and pass unnoticed.
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const [name, via] of paths) {
+      if (!sourced.has(name) && via.some((source) => sourced.has(source))) {
+        sourced.add(name);
+        changed = true;
+      }
+    }
+  }
+  for (const name of paths.keys()) {
+    if (!sourced.has(name)) {
+      throw new Error(`Vulnerability ${name} does not lead to an advisory`);
+    }
+  }
+
   const total = report.metadata?.vulnerabilities?.total;
   if (total !== Object.keys(vulnerable).length) {
     throw new Error('Audit metadata does not match the reported packages');

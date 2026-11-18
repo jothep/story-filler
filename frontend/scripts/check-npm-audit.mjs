@@ -114,12 +114,42 @@ test('unclear reports fail closed', () => {
   }
 });
 
+test('dependency paths that never reach an advisory fail closed', () => {
+  const cycleOnly = {
+    auditReportVersion: 2,
+    vulnerabilities: { a: { via: ['b'] }, b: { via: ['a'] } },
+    metadata: { vulnerabilities: { total: 2 } },
+  };
+  assert.throws(
+    () => evaluateAudit(cycleOnly, allowlist),
+    /does not lead to an advisory/
+  );
+  // A cycle beside the allowed picomatch chain must not hide behind it.
+  assert.throws(
+    () =>
+      evaluateAudit(
+        report({ a: { via: ['b'] }, b: { via: ['a'] } }),
+        allowlist
+      ),
+    /does not lead to an advisory/
+  );
+  // A cycle that does reach an advisory is still a valid report.
+  assert.doesNotThrow(() =>
+    evaluateAudit(
+      report({ a: { via: ['b', 'picomatch'] }, b: { via: ['a'] } }),
+      allowlist
+    )
+  );
+});
+
 test('allowlist entries need an id, package, date and reason', () => {
   const base = allowlist.advisories[0];
   for (const change of [
     { id: 'CVE-2026-1' },
     { package: '' },
     { recorded: '18/11/2026' },
+    { recorded: '2026-99-99' },
+    { recorded: '2026-02-30' },
     { reason: ' ' },
   ]) {
     assert.throws(() =>
