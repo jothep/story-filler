@@ -1,0 +1,10 @@
+{
+  "advisories": [
+    {
+      "id": "GHSA-fc5q-39xc-vjpf",
+      "package": "picomatch",
+      "recorded": "2026-11-18",
+      "reason": "No patched release exists (affected: <=4.0.7). picomatch reaches the tree only through Vite and Vitest, matches repository-controlled glob patterns at build and test time, and is not part of the production audit or the Pages bundle. Remove this entry once a fixed release is in the lock."
+    }
+  ]
+}

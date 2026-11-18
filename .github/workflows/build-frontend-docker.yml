@@ -53,9 +53,13 @@ jobs:
         working-directory: frontend
         run: npm audit --omit=dev
 
+      - name: Test the audit allowlist check
+        working-directory: frontend
+        run: npm run test:audit
+
       - name: Audit development and build dependencies
         working-directory: frontend
-        run: npm audit
+        run: npm run audit:full
 
       - name: Check JavaScript and React
         working-directory: frontend

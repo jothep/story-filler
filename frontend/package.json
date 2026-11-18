@@ -10,11 +10,13 @@
     "test": "vitest",
     "test:pages": "node --test scripts/check-pages-requests.mjs scripts/check-pages-fallback.mjs",
     "test:lint": "node --test scripts/check-lint-config.mjs",
+    "test:audit": "node --test scripts/check-npm-audit.mjs",
     "lint": "npm run lint:js && npm run typecheck",
     "format:check": "prettier --check .",
     "format:write": "prettier --write .",
     "lint:js": "oxlint --config oxlint.config.mjs --disable-nested-config --deny-warnings --report-unused-disable-directives-severity=error .",
-    "typecheck": "node scripts/check-types.mjs"
+    "typecheck": "node scripts/check-types.mjs",
+    "audit:full": "node scripts/run-npm-audit.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

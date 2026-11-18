@@ -24,7 +24,8 @@ The Vite base is `/story-filler/`. The router and error recovery derive their ba
 
 ```bash
 npm audit --omit=dev
-npm audit
+npm run test:audit
+npm run audit:full
 npm run lint
 npm run format:check
 npm run test:lint
@@ -87,6 +88,13 @@ The previous six moderate package findings came from one minimatch advisory,
 ESLint dependency tree. That tree is now removed. Fresh full and production-only
 npm audits report **zero known findings**. Both CI workflows now fail on any
 audit severity, including low and moderate development findings.
+
+Since 18 November 2026 the full-tree audit runs through `npm run audit:full`.
+It fails on every advisory except the advisory and package pairs listed in
+[`audit-allowlist.json`](audit-allowlist.json), each with a recorded date and
+reason. The only entry is the unpatched picomatch advisory described in
+[dependency findings](../docs/dependency-findings.md#frontend-picomatch-advisory-allowed-without-a-patch-18-november).
+The production audit (`npm audit --omit=dev`) does not read the allowlist.
 
 The review also checked the native linter, beyond npm's advisory database:
 registry signatures, release provenance, and the Rust dependency lock at the
