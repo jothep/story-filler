@@ -128,6 +128,10 @@ Its 13 blanks each need a separate Blank Link entry. Content exists only in Neon
 2. **Pipeline:** workstreams 3 and 4, starting with `export_content`.
 3. **Content and polish:** audio replacement and generated credits (workstream 5), draft status, workstream 6, then workstream 7.
 
+## Follow-ups
+
+- **picomatch advisory ([GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf)).** The full-tree npm audits allow it through `frontend/audit-allowlist.json`, because no patched release existed on 18 November 2026. The entry has no expiry date and nothing sends a reminder. Check from time to time whether picomatch has a release above 4.0.7. When it does, update the frontend lock, confirm `npm run audit:full` no longer reports the advisory, and delete the entry. See [dependency findings](dependency-findings.md#frontend-picomatch-advisory-allowed-without-a-patch-18-november).
+
 ## Open decisions
 
 - Which text-to-speech tools to use for English and te reo Māori, and whether their terms allow public redistribution.
