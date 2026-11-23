@@ -211,10 +211,21 @@ jobs:
         if: steps.scope.outputs.docs_only != 'true'
         env:
           IMAGE_TAG: ${{ steps.image.outputs.tag }}
+        # Cloud Run records a platform manifest digest. An image index (added by
+        # default attestations on newer Docker) would fail release verification.
         run: |
           docker build \
+            --provenance=false --sbom=false \
             --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
             --tag "$IMAGE_TAG" backend
+          docker image inspect "$IMAGE_TAG" | python3 -c '
+          import json, sys
+          descriptor = json.load(sys.stdin)[0].get("Descriptor") or {}
+          media_type = descriptor.get("mediaType", "not reported")
+          print(f"Image descriptor media type: {media_type}")
+          if "index" in media_type or "manifest.list" in media_type:
+              raise SystemExit("Expected a single image manifest, not an image index.")
+          '
 
       - name: Verify the runtime and isolated PostgreSQL integration
         if: steps.scope.outputs.docs_only != 'true'
@@ -302,6 +313,11 @@ jobs:
           images = [value for value in json.loads(raw) if pattern.fullmatch(value)]
           if len(images) != 1:
               raise SystemExit('Expected one immutable digest for the image just pushed.')
+          manifest = json.loads(subprocess.check_output(
+              ['docker', 'buildx', 'imagetools', 'inspect', '--raw', images[0]], text=True,
+          ))
+          if 'manifests' in manifest or 'config' not in manifest:
+              raise SystemExit('The pushed digest is not a single image manifest.')
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
               output.write(f'image={images[0]}\n')
           PY
