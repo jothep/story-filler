@@ -69,8 +69,13 @@ class StoryAdmin(admin.ModelAdmin):
     )
 
     def save_related(self, request, form, formsets, change):
-        """Link new placeholders to words once the paragraphs are saved."""
+        """Link new placeholders to words once the paragraphs are saved.
+
+        Only editors who may add Blank Links get them created for them.
+        """
         super().save_related(request, form, formsets, change)
+        if not request.user.has_perm("core.add_blanklink"):
+            return
         index = build_word_index()
         unlinked = []
         for paragraph in form.instance.paragraphs.all():

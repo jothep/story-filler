@@ -1,6 +1,7 @@
 """Coverage for linking paragraph placeholders to words in the bank."""
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Permission
 from django.contrib.messages import get_messages
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -92,11 +93,9 @@ class StoryAdminLinkingTests(TestCase):
         )
         Word.objects.create(maori_word="marama", english_translation="moon")
 
-    def setUp(self):
-        self.client.force_login(self.admin_user)
-
-    def test_saving_a_story_links_placeholders_and_warns_about_the_rest(self):
-        response = self.client.post(
+    def post_story(self, user):
+        self.client.force_login(user)
+        return self.client.post(
             reverse("admin:core_story_add"),
             {
                 "title": "Rona and the Moon",
@@ -114,9 +113,36 @@ class StoryAdminLinkingTests(TestCase):
             },
         )
 
+    def test_saving_a_story_links_placeholders_and_warns_about_the_rest(self):
+        response = self.post_story(self.admin_user)
+
         self.assertEqual(response.status_code, 302)
         link = BlankLink.objects.get()
         self.assertEqual(link.placeholder, "__BLANK_moon__")
         self.assertEqual(link.word.maori_word, "marama")
         warnings = [str(message) for message in get_messages(response.wsgi_request)]
         self.assertTrue(any("__BLANK_sky__" in message for message in warnings))
+
+    def test_editors_without_blank_link_permission_get_no_links(self):
+        editor = get_user_model().objects.create_user(
+            username="paragraph-editor", is_staff=True
+        )
+        editor.user_permissions.add(
+            *Permission.objects.filter(
+                content_type__app_label="core",
+                codename__in=[
+                    "add_story",
+                    "change_story",
+                    "view_story",
+                    "add_paragraph",
+                    "change_paragraph",
+                    "view_paragraph",
+                ],
+            )
+        )
+
+        response = self.post_story(editor)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Story.objects.filter(title="Rona and the Moon").exists())
+        self.assertFalse(BlankLink.objects.exists())

@@ -21,7 +21,7 @@ Replacing a file leaves the old copy in storage.
 3. Mark each blank in the text with a placeholder `__BLANK_<key>__`. The key names a word in the Word Bank:
    - its English translation in lowercase, for example `__BLANK_moon__`; or
    - its Māori word without macrons, with underscores for spaces, for example `__BLANK_korero_paki__` for *kōrero paki*.
-4. Save. Each new placeholder that matches exactly one word gets a Blank Link to it automatically. Any placeholder that matches no word, or more than one, is listed in a warning at the top of the page. Link those on the **Blank Links** page, where the placeholder must match the paragraph text exactly.
+4. Save. If your account may add Blank Links, each new placeholder that matches exactly one word gets a Blank Link to it automatically. Any placeholder that matches no word, or more than one, is listed in a warning at the top of the page. Link those on the **Blank Links** page, where the placeholder must match the paragraph text exactly.
 
 The game's word list is made of the words linked to the story's blanks; there is no separate word selection.
 
