@@ -9,6 +9,8 @@ the one the frontend uses to find blanks.
 import re
 import unicodedata
 
+from django.db import IntegrityError, transaction
+
 from .models import BlankLink, Word
 
 PLACEHOLDER = re.compile(r"__BLANK_([A-Za-z0-9_]+)__")
@@ -57,19 +59,32 @@ def link_placeholders(paragraph, index=None):
 
     Existing links are never changed or removed. A placeholder gets a link only
     when exactly one word matches its key. Returns the placeholders that still
-    have no link, so the caller can ask for them to be linked by hand.
+    have no word, so the caller can ask for them to be linked by hand: no or
+    several matches, an existing link without a word, a placeholder too long to
+    store, or a word deleted while saving.
     """
     index = index or build_word_index()
-    linked = set(paragraph.blank_links.values_list("placeholder", flat=True))
+    max_length = BlankLink._meta.get_field("placeholder").max_length
+    links = dict(paragraph.blank_links.values_list("placeholder", "word_id"))
     unlinked = []
     for placeholder in placeholders_in(paragraph.text):
-        if placeholder in linked:
+        if placeholder in links:
+            if links[placeholder] is None:
+                unlinked.append(placeholder)
             continue
         word = find_word(index, PLACEHOLDER.fullmatch(placeholder).group(1))
-        if word is None:
+        if word is None or len(placeholder) > max_length:
             unlinked.append(placeholder)
             continue
-        BlankLink.objects.create(
-            paragraph=paragraph, placeholder=placeholder, word=word
-        )
+        try:
+            # A savepoint keeps a concurrent save or a deleted word from
+            # breaking the surrounding admin transaction.
+            with transaction.atomic():
+                BlankLink.objects.get_or_create(
+                    paragraph=paragraph,
+                    placeholder=placeholder,
+                    defaults={"word": word},
+                )
+        except IntegrityError:
+            unlinked.append(placeholder)
     return unlinked

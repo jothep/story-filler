@@ -1,5 +1,6 @@
 """Coverage for linking paragraph placeholders to words in the bank."""
 
+from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.contrib.messages import get_messages
@@ -76,6 +77,25 @@ class LinkPlaceholdersTests(TestCase):
         )
         self.assertEqual(self.links(paragraph), {})
 
+    def test_links_without_a_word_long_placeholders_and_deleted_words_are_reported(
+        self,
+    ):
+        long_key = "x" * 50
+        Word.objects.create(maori_word="roa", english_translation=long_key)
+        sky = Word.objects.create(maori_word="rangi", english_translation="sky")
+        paragraph = self.paragraph(f"__BLANK_moon__ __BLANK_{long_key}__ __BLANK_sky__")
+        BlankLink.objects.create(
+            paragraph=paragraph, placeholder="__BLANK_moon__", word=None
+        )
+        index = build_word_index()
+        sky.delete()
+
+        self.assertEqual(
+            link_placeholders(paragraph, index),
+            ["__BLANK_moon__", f"__BLANK_{long_key}__", "__BLANK_sky__"],
+        )
+        self.assertEqual(self.links(paragraph), {"__BLANK_moon__": None})
+
 
 @override_settings(
     STORAGES={
@@ -120,7 +140,11 @@ class StoryAdminLinkingTests(TestCase):
         link = BlankLink.objects.get()
         self.assertEqual(link.placeholder, "__BLANK_moon__")
         self.assertEqual(link.word.maori_word, "marama")
-        warnings = [str(message) for message in get_messages(response.wsgi_request)]
+        warnings = [
+            str(message)
+            for message in get_messages(response.wsgi_request)
+            if message.level == messages.WARNING
+        ]
         self.assertTrue(any("__BLANK_sky__" in message for message in warnings))
 
     def test_editors_without_blank_link_permission_get_no_links(self):
