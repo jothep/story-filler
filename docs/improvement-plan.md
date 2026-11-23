@@ -34,7 +34,7 @@ Its 13 blanks each need a separate Blank Link entry. Content exists only in Neon
 | Publishing | Saving in admin publishes immediately; there is no draft state or preview | [ADMIN_GUIDE.md](history/ADMIN_GUIDE.md) Q4 |
 | Media | Live audio mixes 22 MP3, 8 Ogg and 1 M4A files. Images are compressed on upload; audio is not processed | [models.py](../backend/core/models.py#L41), [AUDIO_DEBUG_GUIDE.md](AUDIO_DEBUG_GUIDE.md) |
 | Media | Replacing or deleting an asset leaves the old object in GCS | No cleanup code in `backend/core` |
-| Credits | Credits are hard-coded and list one music track; the live menu track is a different piece. Assets carry no source or licence fields | [credits.js](../frontend/src/constants/credits.js#L21) |
+| Credits | Credits are hard-coded and listed one music track; the live menu track is a different piece. Both pieces have been credited since 23 November, but the credits are still hard-coded and assets carry no source or licence fields | [credits.js](../frontend/src/constants/credits.js#L21) |
 | Admin code | The same audio MIME helper is copied into four admin classes | [admin.py](../backend/core/admin.py) |
 | Frontend | Drag and drop supports mouse and touch only, so the game cannot be played with a keyboard | [StoryPlayerUI.jsx](../frontend/src/pages/StoryPlayerUI.jsx#L64) |
 | Frontend | Styling is split across 78 inline style objects, CSS files, a styles module and theme tokens | `frontend/src` |
