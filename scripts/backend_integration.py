@@ -77,7 +77,6 @@ django.setup()
 from core.models import AppConfig, BlankLink, Paragraph, Story, Word
 story = Story.objects.create(title='Runtime verification')
 word = Word.objects.create(maori_word='wai', english_translation='water')
-story.word_bank.add(word)
 paragraph = Paragraph.objects.create(
     story=story, order=1, text='Kia ora __BLANK_water__'
 )

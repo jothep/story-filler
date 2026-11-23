@@ -196,13 +196,6 @@ class Story(models.Model):
         verbose_name="Story Picture",
     )
 
-    word_bank = models.ManyToManyField(
-        "Word",
-        blank=True,
-        related_name="stories",
-        verbose_name="Select Words for this Story's Bank",
-    )
-
     def __str__(self):
         return self.title
 
