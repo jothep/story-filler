@@ -12,7 +12,7 @@ Sign in to the admin and choose **Change password**, which opens `/admin/passwor
 
 Use this when no administrator can sign in. The commands write directly to the production database.
 
-1. In `backend/`, install the backend's Python dependencies as described in the [backend README](../../backend/README.md).
+1. From the repository root, install the backend's Python dependencies as described in the [backend README](../../backend/README.md), then change to `backend/`.
 2. In the same shell, set `DATABASE_URL` (the Neon connection string), `SECRET_KEY` and `DEBUG=False`, which the settings module requires. Take the values from where you keep them privately, not from files in this repository, and keep them out of shell history. Values set in the shell take precedence over a local `backend/.env`.
 3. Run one of:
 
@@ -21,7 +21,7 @@ Use this when no administrator can sign in. The commands write directly to the p
    python manage.py createsuperuser
    ```
 
-   `python change_admin_password.py <username>` does the same as `changepassword`; it asks for the new password twice and makes no change if the entries differ.
+   Both commands check the new password against Django's password validators.
 
 4. Close the shell, or unset the three variables, when you are done.
 
