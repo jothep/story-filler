@@ -5,7 +5,7 @@
 访问地址: https://maori-story-backend-tc2dttesfa-uc.a.run.app/admin/
 
 登录信息: 
-- 用户名: `jaskoadmin`
+- 用户名: `<admin-username>`
 - 密码: (保存在 terraform.tfvars)
 
 ---
@@ -577,7 +577,7 @@ gsutil -m cp -r gs://maori-story-media/* ./media_backup/
 ### 超级用户 (Superuser)
 - 可以访问所有功能
 - 可以添加/删除其他用户
-- 当前账号: `jaskoadmin`
+- 当前账号: `<admin-username>`
 
 ### 普通管理员 (Staff)
 可以创建普通管理员账号：

@@ -78,6 +78,7 @@ Provider plan features are not evidence that those features have been enabled or
 ## Reading the rest of the repository
 
 Use the current deployment page above as the architecture reference.
-Older root-level deployment guides and design drafts retain historical context and may describe alternative stages or planned work.
+Older deployment guides, design drafts and scripts are kept in [historical records](history/README.md); they retain historical context and may describe alternative stages or planned work.
 Treat their commands as material to review, not a verified end-to-end bootstrap procedure.
 The implementation and dated verification records take precedence over unsupported claims in those older documents.
+Current procedures are in [operations](operations/).
