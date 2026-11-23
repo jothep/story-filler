@@ -216,7 +216,7 @@ visible. Run it with local-only settings:
   SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(48))')" \
   DATABASE_URL='postgresql://lint:lint@127.0.0.1:1/lint?connect_timeout=1' USE_GCS=false USE_S3=false DEBUG=false \
   python -m pylint --rcfile=../.pylintrc \
-    core maori_story_project manage.py change_admin_password.py
+    core maori_story_project manage.py
 )
 python -m unittest discover -s scripts -p 'pylint_config_test.py'
 ```
