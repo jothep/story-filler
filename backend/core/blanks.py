@@ -77,13 +77,20 @@ def link_placeholders(paragraph, index=None):
             unlinked.append(placeholder)
             continue
         try:
-            # A savepoint keeps a concurrent save or a deleted word from
+            # The savepoint keeps a concurrent save of the same link from
             # breaking the surrounding admin transaction.
             with transaction.atomic():
+                # Foreign keys are checked at commit, so re-read and lock the
+                # word: a word deleted since the index was built is reported,
+                # and one still present cannot be deleted before this commits.
+                current = Word.objects.select_for_update().filter(pk=word.pk).first()
+                if current is None:
+                    unlinked.append(placeholder)
+                    continue
                 BlankLink.objects.get_or_create(
                     paragraph=paragraph,
                     placeholder=placeholder,
-                    defaults={"word": word},
+                    defaults={"word": current},
                 )
         except IntegrityError:
             unlinked.append(placeholder)
