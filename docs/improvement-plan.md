@@ -1,6 +1,6 @@
 # Improvement plan: content workflow, code quality and repository cleanup
 
-**Status:** planned, not started. **Created:** 18 November 2026.
+**Status:** in progress; workstream 1 under way. **Created:** 18 November 2026.
 
 This plan covers the content workflow, application code and repository layout.
 It does not change the hosting model (GitHub Pages, Cloud Run, Neon, GCS).
@@ -31,7 +31,7 @@ Its 13 blanks each need a separate Blank Link entry. Content exists only in Neon
 | --- | --- | --- |
 | Data model | Authors must select a story word bank, but the API derives the word list from Blank Links. The field is never read | [models.py](../backend/core/models.py#L199), [serializers.py](../backend/core/serializers.py#L138) |
 | Data model | Each `__BLANK_x__` placeholder needs a manual Blank Link on a separate admin page, with the placeholder typed again | [models.py](../backend/core/models.py#L302) |
-| Publishing | Saving in admin publishes immediately; there is no draft state or preview | [ADMIN_GUIDE.md](../ADMIN_GUIDE.md) Q4 |
+| Publishing | Saving in admin publishes immediately; there is no draft state or preview | [ADMIN_GUIDE.md](history/ADMIN_GUIDE.md) Q4 |
 | Media | Live audio mixes 22 MP3, 8 Ogg and 1 M4A files. Images are compressed on upload; audio is not processed | [models.py](../backend/core/models.py#L41), [AUDIO_DEBUG_GUIDE.md](AUDIO_DEBUG_GUIDE.md) |
 | Media | Replacing or deleting an asset leaves the old object in GCS | No cleanup code in `backend/core` |
 | Credits | Credits are hard-coded and list one music track; the live menu track is a different piece. Assets carry no source or licence fields | [credits.js](../frontend/src/constants/credits.js#L21) |
@@ -46,15 +46,15 @@ Its 13 blanks each need a separate Blank Link entry. Content exists only in Neon
 
 ### 1. Repository cleanup
 
-- Review each root guide (ADMIN_GUIDE, ADMIN_PASSWORD_GUIDE, CHANGELOG-2026-04-30, CLOUD_RUN_ENV_VARS, CLOUD_RUN_URL_STABILITY, CODE_ANALYSIS, COST_COMPARISON, CREATE_ADMIN, DATABASE_MIGRATION_GUIDE, DEPLOYMENT, DEPLOYMENT_QUICKSTART, DEPLOYMENT_URLS, MIGRATION_GUIDE, ORACLE_CLOUD_SETUP, PUBLIC_ACCESS_GUIDE, REFACTORING_PLAN, TERRAFORM_GUIDE, WORKFLOW). Move historical ones to `docs/history/` with an index, or remove them if they add no evidence.
-- Where a guide still describes current operations, replace it with a short English page under `docs/operations/`.
-- Rewrite the admin guide for the current model, without account details.
-- Rename the root `Requirements.txt` (the original course brief, not a pip file) and move it to `docs/history/`.
-- Review the EC2-era scripts in `scripts/` (`start-instance.sh`, `stop-instance.sh`, `instance-status.sh`, `restore-volumes-ec2.sh`, `export-data.sh`, `import-data.sh`) and the root `deploy.sh` and `backup.sh`, and archive or remove them.
+- Move the 18 root guides, the two Chinese guides in `terraform/`, the root `deploy.sh` and the EC2-era scripts (`start-instance.sh`, `stop-instance.sh`, `instance-status.sh`, `export-data.sh`, `import-data.sh`) to [`docs/history/`](history/README.md), with an English index. Archive rather than delete, keeping the original text.
+- Move the root `Requirements.txt` (the original course requirements, not a pip file) to `docs/history/course-requirements.txt`.
+- Replace guides that still describe current operations with short English pages under [`docs/operations/`](operations/): administrator accounts now; the content admin guide and the production migration procedure with workstream 2.
+- Remove account details from the archived admin guide.
+- Keep the four retired backup and restore entry points (`backup.sh`, `scripts/backup-volumes.sh`, `scripts/restore-volumes.sh`, `scripts/restore-volumes-ec2.sh`). They refuse to run, point to the current recovery tool, and are covered by `scripts/restore_safety_test.py`.
 - Keep `Infra/` and `demo/`: [ARCHITECTURE.md](ARCHITECTURE.md) cites them as historical evidence. Label them clearly instead.
 - Update links in README and the docs index.
 
-**Done when:** the root holds only README, LICENSE, SECURITY, CHANGELOG, configuration files and the code and infrastructure directories (`backend/`, `frontend/`, `scripts/`, `terraform/`, `docs/`, plus the retained `Infra/` and `demo/`); public docs are in English; every internal link resolves.
+**Done when:** the root holds only README, LICENSE, SECURITY, CHANGELOG, VOLUME_BACKUP_GUIDE, the retired `backup.sh` entry point, configuration files and the code and infrastructure directories (`backend/`, `frontend/`, `scripts/`, `terraform/`, `docs/`, plus the retained `Infra/` and `demo/`); current docs are in English, with original-language records only in `docs/history/`; every internal link resolves.
 
 ### 2. Data model and admin fixes
 
@@ -63,6 +63,7 @@ Its 13 blanks each need a separate Blank Link entry. Content exists only in Neon
 - Move the audio MIME helper into one shared function.
 - Add a draft/published status to Story; the public API returns published stories only. The story package carries the same status (workstream 3).
 - Delete the stored file when an asset is replaced or removed (or rely on workstream 4's cleanup).
+- Write an English content admin guide for the new model, and an English procedure for running production migrations, under `docs/operations/`.
 
 **Done when:** a story can be created without visiting the Blank Link page, and no admin field is ignored by the API.
 

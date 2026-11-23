@@ -176,7 +176,6 @@ It is useful for explaining incremental development before the richer paragraph,
 It is not a second platform component, a production service or the same API contract as the current game.
 
 There is no prototype README or dedicated Python dependency manifest.
-Root `Requirements.txt` contains project requirements, not pip dependencies.
 The following reconstruction uses the maintained backend dependency set; prototype compatibility has not been verified by running it:
 
 ```bash

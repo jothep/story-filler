@@ -1,4 +1,4 @@
-> **Historical implementation note — September 2026 review:** This document retains an earlier design, estimate, procedure or plan. It is not the current deployment specification, and its performance, cost, security and recovery claims have not all been revalidated. Use the [architecture index](docs/ARCHITECTURE.md) and [dated verification record](docs/verification.md) for current scope and evidence.
+> **Historical implementation note — September 2026 review:** This document retains an earlier design, estimate, procedure or plan. It is not the current deployment specification, and its performance, cost, security and recovery claims have not all been revalidated. Use the [architecture index](../ARCHITECTURE.md) and [dated verification record](../verification.md) for current scope and evidence.
 
 # 🏗️ Maori Story Fill - Terraform 部署指南
 
@@ -608,7 +608,7 @@ A: 存储保留策略不能代替备份；误删除、损坏或配置变化仍�
 
 **Q: 如何备份数据？**
 A: 旧 `backup.sh` 已停用。当前本地 Compose 的逻辑备份与隔离恢复流程见
-[备份恢复指南](VOLUME_BACKUP_GUIDE.md)。它不自动迁移或切换 EC2、Neon 或 GCS。
+[备份恢复指南](../../VOLUME_BACKUP_GUIDE.md)。它不自动迁移或切换 EC2、Neon 或 GCS。
 
 **Q: 可以在其他区域部署吗？**
 A: 可以，修改 `aws_region` 变量，但成本可能更高。

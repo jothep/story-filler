@@ -1,4 +1,4 @@
-> **Historical implementation note — September 2026 review:** This document retains an earlier design, estimate, procedure or plan. It is not the current deployment specification, and its performance, cost, security and recovery claims have not all been revalidated. Use the [architecture index](docs/ARCHITECTURE.md) and [dated verification record](docs/verification.md) for current scope and evidence.
+> **Historical implementation note — September 2026 review:** This document retains an earlier design, estimate, procedure or plan. It is not the current deployment specification, and its performance, cost, security and recovery claims have not all been revalidated. Use the [architecture index](../ARCHITECTURE.md) and [dated verification record](../verification.md) for current scope and evidence.
 
 # 数据迁移指南
 
@@ -319,6 +319,6 @@ aws s3api get-bucket-policy --bucket maori-story-media
 4. **CI/CD集成：** GitHub Actions自动部署
 
 详细配置请参考：
-- [S3_STORAGE_GUIDE.md](./S3_STORAGE_GUIDE.md) - S3存储详细配置
-- [docker-compose.prod.yml](./docker-compose.prod.yml) - 生产环境配置
-- [CHANGELOG.md](./CHANGELOG.md) - 版本更新记录
+- S3_STORAGE_GUIDE.md - S3存储详细配置（该文件已在提交 3629a0c 中删除）
+- [docker-compose.prod.yml](../../docker-compose.prod.yml) - 生产环境配置
+- [CHANGELOG.md](../../CHANGELOG.md) - 版本更新记录

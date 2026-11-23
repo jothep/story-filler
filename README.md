@@ -128,5 +128,7 @@ Enter credentials interactively, then use `/admin/`. Production credentials and 
 | [`.github/workflows/`](.github/workflows/) | Delivery and security workflows |
 | [`scripts/`](scripts/) | Local configuration, isolated recovery, release checks and public API verification |
 | [`docs/engineering-case-study.md`](docs/engineering-case-study.md) | Decisions, alternatives, and evidence for portfolio review |
+| [`docs/operations/`](docs/operations/) | Current operating procedures |
+| [`docs/history/`](docs/history/README.md) | Earlier guides, plans and scripts kept as historical records |
 
 For security scope and reporting, see [SECURITY.md](SECURITY.md).
