@@ -17,11 +17,15 @@ export const CREDITS_CONTENT = {
     'Gemini, Claude and ChatGPT supported the development of Story Filler through technical discussions, coding assistance and design exploration.',
   materials: [
     {
-      label: 'Music',
+      label: 'Menu music',
+      credit: 'Schumann — Träumerei, Kinderszenen, Op. 15, No. 7',
+    },
+    {
+      label: 'Story music',
       credit: 'Dvořák — Humoresque, Op. 101, No. 7',
     },
     { label: 'Background animations', credit: 'itch.io' },
-    { label: 'Logo', credit: 'Gemini' },
+    { label: 'Logo and illustrations', credit: 'Gemini' },
     {
       label: 'UI styling',
       credit: 'NES.css',
