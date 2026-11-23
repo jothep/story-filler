@@ -153,7 +153,7 @@ jobs:
           DEBUG: 'false'
         run: |
           export SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(64))')"
-          python -m pylint --rcfile=../.pylintrc core maori_story_project manage.py change_admin_password.py
+          python -m pylint --rcfile=../.pylintrc core maori_story_project manage.py
 
       - name: Test the backend with PostgreSQL
         working-directory: backend

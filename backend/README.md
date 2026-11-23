@@ -195,9 +195,7 @@ python -m flake8 backend scripts
 
 Black reads the root `pyproject.toml`; Flake8 reads the root `.flake8`. Both use
 88 columns. Flake8 allows only the E203 slice-spacing and W503 operator-line-break
-differences needed to match Black. The standalone password-management script
-has one documented E402 exception to preserve Django initialization before its
-auth import.
+differences needed to match Black.
 
 The checks cover maintained backend code and repository scripts. Generated
 `core/migrations/` files are excluded from formatting and linting; Django's
@@ -216,7 +214,7 @@ visible. Run it with local-only settings:
   SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(48))')" \
   DATABASE_URL='postgresql://lint:lint@127.0.0.1:1/lint?connect_timeout=1' USE_GCS=false USE_S3=false DEBUG=false \
   python -m pylint --rcfile=../.pylintrc \
-    core maori_story_project manage.py change_admin_password.py
+    core maori_story_project manage.py
 )
 python -m unittest discover -s scripts -p 'pylint_config_test.py'
 ```
