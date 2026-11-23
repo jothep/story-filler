@@ -1,6 +1,6 @@
 # Improvement plan: content workflow, code quality and repository cleanup
 
-**Status:** in progress; workstream 1 under way. **Created:** 18 November 2026.
+**Status:** in progress; workstream 1 done, workstream 2 under way. **Created:** 18 November 2026.
 
 This plan covers the content workflow, application code and repository layout.
 It does not change the hosting model (GitHub Pages, Cloud Run, Neon, GCS).
@@ -62,7 +62,7 @@ Its 13 blanks each need a separate Blank Link entry. Content exists only in Neon
 - Create Blank Links automatically when a paragraph is saved, matching each placeholder to a word.
 - Move the audio MIME helper into one shared function.
 - Add a draft/published status to Story; the public API returns published stories only. The story package carries the same status (workstream 3).
-- Delete the stored file when an asset is replaced or removed (or rely on workstream 4's cleanup).
+- Leave stored-file cleanup to workstream 4's removal of unreferenced objects, rather than deleting media from admin saves.
 - Write an English content admin guide for the new model, and an English procedure for running production migrations, under `docs/operations/`.
 
 **Done when:** a story can be created without visiting the Blank Link page, and no admin field is ignored by the API.

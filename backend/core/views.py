@@ -69,7 +69,6 @@ class StoryDetailAPIView(generics.RetrieveAPIView):
           - story_picture (FK)
 
         - prefetch_related: Uses separate queries for M2M and reverse FK (4-5 queries)
-          - word_bank (M2M relationship)
           - paragraphs (reverse FK)
           - paragraphs__blank_links (reverse FK through paragraphs)
           - paragraphs__blank_links__word (FK through blank_links)
@@ -77,7 +76,6 @@ class StoryDetailAPIView(generics.RetrieveAPIView):
         return Story.objects.select_related(
             "background_music", "story_picture"
         ).prefetch_related(
-            "word_bank",
             "paragraphs",
             "paragraphs__blank_links",
             "paragraphs__blank_links__word",

@@ -201,8 +201,8 @@ class PublicAPIErrorTests(APITestCase):
         self.assert_safe_server_error(response)
 
     def test_story_response_preserves_optional_media_and_unlinked_blanks(self):
-        extra_word = Word.objects.create(maori_word="rangi", english_translation="sky")
-        self.story.word_bank.add(extra_word)
+        # An unlinked word in the bank must not appear in the story response.
+        Word.objects.create(maori_word="rangi", english_translation="sky")
 
         response = self.client.get(self.detail_url)
 

@@ -1,8 +1,9 @@
 # core/admin.py
 # Configure the Django admin interface for all core models.
-# Improve usability using inlines, filter_horizontal, and custom forms.
-from django.contrib import admin
+# Improve usability using inlines, media previews and custom forms.
+from django.contrib import admin, messages
 from django.utils.html import format_html
+from .blanks import build_word_index, link_placeholders
 from .models import (
     Story,
     Paragraph,
@@ -13,6 +14,22 @@ from .models import (
     AppConfig,
 )
 from .forms import BlankLinkForm
+
+AUDIO_MIME_TYPES = {
+    ".mp3": "audio/mpeg",
+    ".m4a": "audio/mp4",
+    ".aac": "audio/aac",
+    ".wav": "audio/wav",
+    ".ogg": "audio/ogg",
+}
+
+
+def audio_mime_type(url):
+    """Return the MIME type for an audio URL, from its file extension."""
+    for extension, mime_type in AUDIO_MIME_TYPES.items():
+        if url.endswith(extension):
+            return mime_type
+    return "audio/mpeg"
 
 
 class ParagraphInline(admin.StackedInline):
@@ -33,7 +50,6 @@ class StoryAdmin(admin.ModelAdmin):
 
     list_display = ("title", "preview_picture")
     inlines = [ParagraphInline]
-    filter_horizontal = ("word_bank",)
     search_fields = ("title",)
     readonly_fields = ("picture_preview", "music_preview")
 
@@ -50,8 +66,23 @@ class StoryAdmin(admin.ModelAdmin):
                 )
             },
         ),
-        ("Word Bank", {"fields": ("word_bank",)}),
     )
+
+    def save_related(self, request, form, formsets, change):
+        """Link new placeholders to words once the paragraphs are saved."""
+        super().save_related(request, form, formsets, change)
+        index = build_word_index()
+        unlinked = []
+        for paragraph in form.instance.paragraphs.all():
+            unlinked.extend(link_placeholders(paragraph, index))
+        if unlinked:
+            self.message_user(
+                request,
+                "No single word matched "
+                + ", ".join(dict.fromkeys(unlinked))
+                + ". Add these on the Blank Links page.",
+                level=messages.WARNING,
+            )
 
     def preview_picture(self, obj):
         """Show thumbnail in list view"""
@@ -80,7 +111,7 @@ class StoryAdmin(admin.ModelAdmin):
         """Show audio player"""
         if obj.background_music and obj.background_music.audio_file:
             file_url = obj.background_music.audio_file.url
-            audio_type = self._get_audio_type(file_url)
+            audio_type = audio_mime_type(file_url)
             return format_html(
                 """
                 <audio controls style="width:100%; max-width:400px;">
@@ -94,20 +125,6 @@ class StoryAdmin(admin.ModelAdmin):
         return "No music selected"
 
     music_preview.short_description = "Music Preview"
-
-    def _get_audio_type(self, url):
-        """Determine MIME type from file extension"""
-        if url.endswith(".mp3"):
-            return "audio/mpeg"
-        elif url.endswith(".m4a"):
-            return "audio/mp4"
-        elif url.endswith(".aac"):
-            return "audio/aac"
-        elif url.endswith(".wav"):
-            return "audio/wav"
-        elif url.endswith(".ogg"):
-            return "audio/ogg"
-        return "audio/mpeg"
 
 
 @admin.register(AppConfig)
@@ -129,7 +146,7 @@ class AppConfigAdmin(admin.ModelAdmin):
         if obj.menu_bgm and obj.menu_bgm.audio_file:
             file_url = obj.menu_bgm.audio_file.url
             # Detect audio type from file extension
-            audio_type = self._get_audio_type(file_url)
+            audio_type = audio_mime_type(file_url)
             return format_html(
                 """
                 <audio controls style="width:100%; max-width:400px;">
@@ -145,20 +162,6 @@ class AppConfigAdmin(admin.ModelAdmin):
         return "No menu music selected"
 
     menu_bgm_preview.short_description = "Menu BGM Preview"
-
-    def _get_audio_type(self, url):
-        """Determine MIME type from file extension"""
-        if url.endswith(".mp3"):
-            return "audio/mpeg"
-        elif url.endswith(".m4a"):
-            return "audio/mp4"
-        elif url.endswith(".aac"):
-            return "audio/aac"
-        elif url.endswith(".wav"):
-            return "audio/wav"
-        elif url.endswith(".ogg"):
-            return "audio/ogg"
-        return "audio/mpeg"  # default
 
     def has_add_permission(self, request):
         # Creating the singleton still requires the normal model permission.
@@ -217,7 +220,7 @@ class BackgroundMusicAdmin(admin.ModelAdmin):
         """Show audio player"""
         if obj.audio_file:
             file_url = obj.audio_file.url
-            audio_type = self._get_audio_type(file_url)
+            audio_type = audio_mime_type(file_url)
             return format_html(
                 """
                 <audio controls style="width:100%; max-width:500px;">
@@ -233,20 +236,6 @@ class BackgroundMusicAdmin(admin.ModelAdmin):
         return "No audio uploaded yet"
 
     audio_preview.short_description = "Audio Preview"
-
-    def _get_audio_type(self, url):
-        """Determine MIME type from file extension"""
-        if url.endswith(".mp3"):
-            return "audio/mpeg"
-        elif url.endswith(".m4a"):
-            return "audio/mp4"
-        elif url.endswith(".aac"):
-            return "audio/aac"
-        elif url.endswith(".wav"):
-            return "audio/wav"
-        elif url.endswith(".ogg"):
-            return "audio/ogg"
-        return "audio/mpeg"
 
 
 @admin.register(Word)
@@ -299,7 +288,7 @@ class WordAdmin(admin.ModelAdmin):
         """Show Maori audio player"""
         if obj.maori_audio:
             file_url = obj.maori_audio.url
-            audio_type = self._get_audio_type(file_url)
+            audio_type = audio_mime_type(file_url)
             return format_html(
                 """
                 <audio controls style="width:100%; max-width:300px;">
@@ -318,7 +307,7 @@ class WordAdmin(admin.ModelAdmin):
         """Show English audio player"""
         if obj.english_audio:
             file_url = obj.english_audio.url
-            audio_type = self._get_audio_type(file_url)
+            audio_type = audio_mime_type(file_url)
             return format_html(
                 """
                 <audio controls style="width:100%; max-width:300px;">
@@ -332,20 +321,6 @@ class WordAdmin(admin.ModelAdmin):
         return "No English audio"
 
     english_audio_preview.short_description = "English Audio"
-
-    def _get_audio_type(self, url):
-        """Determine MIME type from file extension"""
-        if url.endswith(".mp3"):
-            return "audio/mpeg"
-        elif url.endswith(".m4a"):
-            return "audio/mp4"
-        elif url.endswith(".aac"):
-            return "audio/aac"
-        elif url.endswith(".wav"):
-            return "audio/wav"
-        elif url.endswith(".ogg"):
-            return "audio/ogg"
-        return "audio/mpeg"
 
 
 @admin.register(BlankLink)

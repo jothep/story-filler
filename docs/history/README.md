@@ -16,7 +16,7 @@ For current information, start with the [README](../../README.md), [architecture
 
 | File | Original location | What it covered | Current source |
 | --- | --- | --- | --- |
-| [ADMIN_GUIDE.md](ADMIN_GUIDE.md) | Root | Django admin content entry for an earlier data model | A new content guide is planned in the [improvement plan](../improvement-plan.md) |
+| [ADMIN_GUIDE.md](ADMIN_GUIDE.md) | Root | Django admin content entry for an earlier data model | [Adding and editing stories](../operations/content-admin.md) |
 | [ADMIN_PASSWORD_GUIDE.md](ADMIN_PASSWORD_GUIDE.md) | Root | Ways to change or reset the administrator password | [Administrator accounts](../operations/admin-account.md) |
 | [CREATE_ADMIN.md](CREATE_ADMIN.md) | Root | Creating or resetting an administrator | [Administrator accounts](../operations/admin-account.md) |
 | [CHANGELOG-2026-04-30.md](CHANGELOG-2026-04-30.md) | Root | Change notes for 30 April 2026: single-line menu logo, layout tidy-up, removal of unused assets | [CHANGELOG](../../CHANGELOG.md) for later changes |
@@ -24,7 +24,7 @@ For current information, start with the [README](../../README.md), [architecture
 | [CLOUD_RUN_URL_STABILITY.md](CLOUD_RUN_URL_STABILITY.md) | Root | Cloud Run URL formats | [Current deployment](../architecture-production-gcp.md) |
 | [DEPLOYMENT_URLS.md](DEPLOYMENT_URLS.md) | Root | Service URLs at the time | [README](../../README.md) |
 | [PUBLIC_ACCESS_GUIDE.md](PUBLIC_ACCESS_GUIDE.md) | Root | Why the backend is publicly reachable, and a 403 investigation | [Current deployment](../architecture-production-gcp.md) |
-| [DATABASE_MIGRATION_GUIDE.md](DATABASE_MIGRATION_GUIDE.md) | Root | Django migrations and the first Neon setup | Production migrations run manually; an English procedure is planned in the [improvement plan](../improvement-plan.md) |
+| [DATABASE_MIGRATION_GUIDE.md](DATABASE_MIGRATION_GUIDE.md) | Root | Django migrations and the first Neon setup | [Production database migrations](../operations/database-migrations.md) |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | Root | Step-by-step deployment to Cloud Run and GitHub Pages | [Current deployment](../architecture-production-gcp.md) |
 | [DEPLOYMENT_QUICKSTART.md](DEPLOYMENT_QUICKSTART.md) | Root | Short version of the deployment steps | [Current deployment](../architecture-production-gcp.md) |
 | [WORKFLOW.md](WORKFLOW.md) | Root | Early workflow notes from the first Neon setup | [Architecture overview](../ARCHITECTURE.md) |
