@@ -11,7 +11,9 @@ describe('CREDITS_CONTENT.materials', () => {
     const credits = Object.fromEntries(
       CREDITS_CONTENT.materials.map((item) => [item.label, item.credit])
     );
-    expect(credits['Menu music']).toMatch(/Träumerei/);
-    expect(credits['Story music']).toMatch(/Humoresque/);
+    expect(credits['Menu music']).toBe(
+      'Schumann — Träumerei, Kinderszenen, Op. 15, No. 7'
+    );
+    expect(credits['Story music']).toBe('Dvořák — Humoresque, Op. 101, No. 7');
   });
 });
