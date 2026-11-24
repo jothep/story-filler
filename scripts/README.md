@@ -108,7 +108,9 @@ security checks for the same caller commit:
    Pylint, and run application and maintenance tests. Pull requests receive no
    cloud secrets.
 2. **Build, test and scan:** build one image with a unique run tag on pull requests
-   and application releases. Check its exact runtime dependency set, native
+   and application releases. The build adds no provenance or SBOM attestations
+   and fails unless Docker reports a single image manifest, so the pushed digest is the single
+   manifest that Cloud Run records for the revision. Check its exact runtime dependency set, native
    libraries, storage configuration and Django tests offline. Then run its
    unmodified default command against a new synthetic PostgreSQL database; check
    the public API, static assets, three workers and graceful shutdown. Save the
