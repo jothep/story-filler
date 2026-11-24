@@ -11,6 +11,8 @@ A pull request with a migration should say which order applies.
 
 ## Steps
 
+Only one person runs production migrations at a time. Agree who it is before step 1.
+
 1. Create a Neon branch from `production` as a restore point, as described under [Neon branches](production-shell.md#neon-branches).
 2. Open a [production database shell](production-shell.md) and check that it targets the service's database.
 3. Check what will run:

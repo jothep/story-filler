@@ -23,7 +23,7 @@ export DATABASE_URL="$(gcloud run services describe maori-story-backend --projec
 export SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(64))')" DEBUG=False
 ```
 
-The first command prints nothing when it succeeds. The connection string is not shown and does not enter shell history. Migrations and password changes do not need the production `SECRET_KEY`; a random value satisfies the settings module. Values set in the shell take precedence over a local `backend/.env`.
+If your shell traces commands (`set -x`), turn that off first with `set +x`, or the trace will print the connection string. The first command prints nothing when it succeeds; an error means `DATABASE_URL` was not set, so stop there. The connection string is not shown and does not enter shell history. `gcloud run services describe --format=json` returns the service in the Knative (v1) shape that the lookup reads. Migrations and password changes do not need the production `SECRET_KEY`; a random value satisfies the settings module. Values set in the shell take precedence over a local `backend/.env`.
 
 ## Check the target before writing
 
