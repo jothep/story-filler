@@ -1,6 +1,6 @@
 # Improvement plan: content workflow, code quality and repository cleanup
 
-**Status:** in progress; workstream 1 done, workstream 2 under way. **Created:** 18 November 2026.
+**Status:** in progress; phase 1 (quick wins) done on 24 November 2026, phase 2 not started. **Created:** 18 November 2026.
 
 This plan covers the content workflow, application code and repository layout.
 It does not change the hosting model (GitHub Pages, Cloud Run, Neon, GCS).

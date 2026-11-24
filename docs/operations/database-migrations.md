@@ -11,8 +11,10 @@ A pull request with a migration should say which order applies.
 
 ## Steps
 
-1. Create a Neon branch of the production database as a restore point.
-2. Prepare a shell as for an [administrator password reset](admin-account.md): install the backend dependencies from the repository root, change to `backend/`, and set `DATABASE_URL`, `SECRET_KEY` and `DEBUG=False` privately.
+Only one person runs production migrations at a time. Agree who it is before step 1.
+
+1. Create a Neon branch from `production` as a restore point, as described under [Neon branches](production-shell.md#neon-branches).
+2. Open a [production database shell](production-shell.md) and check that it targets the service's database.
 3. Check what will run:
 
    ```bash
@@ -27,10 +29,14 @@ A pull request with a migration should say which order applies.
    ```
 
 5. Check that the story list and a story load in the game, and that the admin opens.
-6. Close the shell, or unset the variables. Delete the Neon branch once you no longer need the restore point.
+6. Close the shell. Delete the Neon branch, or let it expire, once you no longer need the restore point.
 
 ## Pending
 
-| Migration | Kind | When to apply |
+None.
+
+## Applied
+
+| Migration | Kind | Applied |
 | --- | --- | --- |
-| `core.0009_remove_story_word_bank` | Removal: drops the story word bank relation and its table, which nothing reads | After the release that contains it |
+| `core.0009_remove_story_word_bank` | Removal: drops the story word bank relation and its table | 2026-11-24, after the release that contains it |
