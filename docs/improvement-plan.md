@@ -1,9 +1,14 @@
 # Improvement plan: content workflow, code quality and repository cleanup
 
-**Status:** in progress; phase 1 (quick wins) done on 24 November 2026, phase 2 not started. **Created:** 18 November 2026.
+**Status:** in progress; phase 1 (quick wins) done on 24 November 2026; phase 2 revised on 25 November 2026 and under way. **Created:** 18 November 2026.
 
 This plan covers the content workflow, application code and repository layout.
 It does not change the hosting model (GitHub Pages, Cloud Run, Neon, GCS).
+
+On 25 November 2026 the direction changed in two ways:
+
+- Story Filler becomes a word-learning game for any language, not only te reo Māori. Each story is written in one language and teaches words in one learning language: Māori, Chinese, any other language, or the story's own language (for example, English words in an English story).
+- Content stays in the Django admin, which gains the automation instead. Story Filler has one author, and a separate content package or folder import would add manual steps rather than remove them.
 
 ## Why
 
@@ -20,10 +25,13 @@ Its 13 blanks each need a separate Blank Link entry. Content exists only in Neon
 
 ## Goals
 
-- Add a story by writing one story file and preparing only media that is new.
-- Review content changes like code: pull request, CI checks, revert.
+- Teach words in any language, with each story fixed to one learning language.
+- Enter a story in the admin without uploading media one file at a time or linking blanks by hand. Audio may be missing and added later.
+- See what a story is missing before it is published.
 - Record a source and licence for every published asset, and generate credits from that record.
 - Make the repository easy to navigate for a first-time reader.
+
+Content history and rollback are not goals.
 
 ## Findings
 
@@ -31,6 +39,8 @@ Its 13 blanks each need a separate Blank Link entry. Content exists only in Neon
 | --- | --- | --- |
 | Data model | Authors must select a story word bank, but the API derives the word list from Blank Links. The field is never read | [models.py](../backend/core/models.py#L199), [serializers.py](../backend/core/serializers.py#L138) |
 | Data model | Each `__BLANK_x__` placeholder needs a manual Blank Link on a separate admin page, with the placeholder typed again | [models.py](../backend/core/models.py#L302) |
+| Languages | The word model, the API and the game assume Māori words with English translations (`maori_word`, `english_translation` and their audio) | [models.py](../backend/core/models.py), [serializers.py](../backend/core/serializers.py), `frontend/src/components` |
+| Admin entry | Each paragraph is a page in the game and is typed into its own form; every media file is uploaded through its own form field | [admin.py](../backend/core/admin.py) |
 | Publishing | Saving in admin publishes immediately; there is no draft state or preview | [ADMIN_GUIDE.md](history/ADMIN_GUIDE.md) Q4 |
 | Media | Live audio mixes 22 MP3, 8 Ogg and 1 M4A files. Images are compressed on upload; audio is not processed | [models.py](../backend/core/models.py#L41), [AUDIO_DEBUG_GUIDE.md](AUDIO_DEBUG_GUIDE.md) |
 | Media | Replacing or deleting an asset leaves the old object in GCS | No cleanup code in `backend/core` |
@@ -61,47 +71,41 @@ Its 13 blanks each need a separate Blank Link entry. Content exists only in Neon
 - Remove `Story.word_bank` with a migration. In the same change, remove its `filter_horizontal` and fieldset entries in `StoryAdmin` and its `prefetch_related` entry in `StoryDetailAPIView.get_queryset()`; otherwise story reads and admin editing fail.
 - Create Blank Links automatically when a paragraph is saved, matching each placeholder to a word.
 - Move the audio MIME helper into one shared function.
-- Add a draft/published status to Story; the public API returns published stories only. The story package carries the same status (workstream 3).
-- Leave stored-file cleanup to workstream 4's removal of unreferenced objects, rather than deleting media from admin saves.
+- Draft/published status moved to workstream 4, where it pairs with the completeness check.
+- Do not delete media from admin saves; stored-file cleanup is deferred (see [Deferred](#deferred)).
 - Write an English content admin guide for the new model, and an English procedure for running production migrations, under `docs/operations/`.
 
 **Done when:** a story can be created without visiting the Blank Link page, and no admin field is ignored by the API.
 
-### 3. Content as code
+### 3. Words in any language
 
-- Define a story package:
+- Replace the Māori-specific word fields with:
+  - **word entries**: an ASCII key (used in blanks, such as `moon`) and an image shared by every language;
+  - **word forms**: one per entry and language, with its text and optional audio.
+- Give each story a story language and a learning language. A blank shows the word in the learning language, with the story-language form as its translation when the two differ. When they are the same, only that form is shown.
+- Keep the model ready for players to choose the learning language before opening a story, without building that choice now. The language stays fixed during play.
+- Ship it in three releases so the live game keeps working:
+  1. Add the new tables and fields, copy the Māori and English data into them, and return both the new and the old fields from the API. This is an addition: migrate, then release.
+  2. Switch the game to the new fields, label audio buttons by language name, and make the About text language-neutral.
+  3. Remove the old fields. This is a removal: release, then migrate.
+- Keep the cloud resource names (`maori-story-*`) and the Django project name. Renaming them changes infrastructure with no benefit to players.
 
-  ```text
-  content/
-    words.yaml                  # shared lexicon: Māori, English, media, provenance
-    stories/rona-and-the-moon/
-      story.yaml                # title, status, cover, music, paragraphs
-      media/
-  ```
+**Done when:** *Rona and the Moon* plays as before from the new model, and a story can teach Chinese or English words without code changes.
 
-- `status` (`draft` or `published`) maps directly to the Story field: import sets it, export writes it back, and the public API serves published stories only. A story without a status imports as a draft.
-- Write blanks inline in paragraph text, for example `Rona looked up at the {{marama}}.`. The importer translates each one into the existing `__BLANK_<key>__` placeholder and creates its Blank Link, so the API and the frontend parser stay unchanged. Keys are ASCII slugs, because the parser accepts only `[A-Za-z0-9_]` and Māori words can contain macrons.
-- Add `export_content` to bootstrap the package from the live story, then `import_content` to validate, process media, upload to GCS and upsert the database. Imports are repeatable and support a dry run.
-- Add a CI job that checks every blank resolves to a word, every word has its required media, files meet format and size rules, and provenance is complete.
-- Use the package as seed data for local development and tests.
-- Treat the repository as the source of truth; make content models read-only in admin.
+### 4. Admin entry automation
 
-**Done when:** *Rona and the Moon* round-trips through export and import with no data change, and a pull request that breaks a blank fails CI.
+- **Pages from pasted text.** Paste a whole story into the story form. A blank line starts a new page (paragraph), and a page longer than the limit is split at sentence ends. Existing pages keep their audio when their text is unchanged.
+- **Blanks written inline.** Write `{{moon}}` in the text. Saving links each blank to the word entry with that key, extending the automatic Blank Links from workstream 2 to any language.
+- **Many files at once.** Drop a set of files on a word or story page and match them by name: `moon.jpg` is the image of `moon`, `moon.mi.mp3` its Māori audio, `page-03.mp3` the narration for page 3. Unmatched files are listed, not guessed.
+- **Completeness check and draft status.** Each story shows what it is missing. Problems that break play, such as a blank without a word or a word without a form in the learning language, keep the story in draft. Missing audio, a missing image or a long page is a warning only, because audio is often added later. The public API serves published stories only.
+- **Formats.** Images keep their current resize and compression on upload. Audio is checked for format and size; converting it needs ffmpeg in the backend image, which is evaluated before it is added (see [Open decisions](#open-decisions)).
 
-### 4. Media processing
-
-- Audio: one format (MP3), mono for speech, loudness normalisation (ffmpeg `loudnorm`), trimmed silence.
-- Recordings: support one long take split by silence and named from a word list or paragraph order.
-- Images: fixed sizes and format.
-- Name uploaded files by content hash. Storage uses `GS_FILE_OVERWRITE=False`, which renames a file on collision, so the importer checks whether the hash key already exists and reuses it instead of saving again.
-- Serve hash-named files with long cache headers, and remove objects no package references.
-
-**Done when:** every live asset passes the format checks, a repeated import uploads no new objects, and GCS holds no unreferenced objects.
+**Done when:** a new story can be entered in the admin by pasting its text and dropping its files, without visiting the Blank Link page, and the story list shows each story's state and missing items.
 
 ### 5. Media provenance and credits
 
 - Add provenance to every asset: source, creator or tool, licence, credit text and date.
-- Replace the current word and paragraph audio with generated audio whose terms allow public redistribution, produced through workstream 4.
+- Replace the current word and paragraph audio with generated audio whose terms allow public redistribution, uploaded through workstream 4.
   - English: a text-to-speech service.
   - Te reo Māori: a tool that explicitly supports the language, with pronunciation checked by a fluent speaker where possible.
 - Credit Gemini for the word images and cover.
@@ -115,19 +119,27 @@ Its 13 blanks each need a separate Blank Link entry. Content exists only in Neon
 - Add keyboard drag support (dnd-kit `KeyboardSensor`) and screen-reader announcements.
 - Consolidate styling on one approach with shared theme tokens.
 - Add one end-to-end test (Playwright) for open story → fill blanks → complete, against seeded content.
-- Check readability of the pixel font at its smallest sizes on mobile.
+- Check readability of the pixel font at its smallest sizes on mobile, and how text in other scripts (such as Chinese) falls back from it.
 
 **Done when:** the full story can be completed with a keyboard and the end-to-end test runs in CI.
 
 ### 7. More stories
 
-- Add two or three stories through the new pipeline, reusing the shared lexicon.
+- Add two or three stories through the admin automation, reusing the shared word entries, including one that teaches a language other than Māori.
 
 ## Order
 
-1. **Quick wins:** workstream 1, workstream 2 except draft status, and the credit corrections from workstream 5.
-2. **Pipeline:** workstreams 3 and 4, starting with `export_content`.
-3. **Content and polish:** audio replacement and generated credits (workstream 5), draft status, workstream 6, then workstream 7.
+1. **Quick wins (done):** workstream 1, workstream 2 except draft status, and the credit corrections from workstream 5.
+2. **Languages and admin entry:** workstream 3 (three releases), then workstream 4, including draft status.
+3. **Content and polish:** audio replacement and generated credits (workstream 5), workstream 6, then workstream 7.
+
+## Deferred
+
+These were planned for phase 2 before the change of direction. They wait until they would remove work for the author.
+
+- A content package in the repository (TOML files with an `export_content` command), a folder import, CI checks of content, and a read-only admin. The export was written and closed unmerged; branch `feat/export-content` keeps it.
+- Splitting one long narration into pages by silence, loudness normalisation, and naming uploads by content hash.
+- Removing storage objects that no record references.
 
 ## Follow-ups
 
@@ -136,6 +148,5 @@ Its 13 blanks each need a separate Blank Link entry. Content exists only in Neon
 ## Open decisions
 
 - Which text-to-speech tools to use for English and te reo Māori, and whether their terms allow public redistribution.
-- Where media originals live: in the repository, Git LFS or a private bucket.
-- Whether admin stays editable for urgent fixes once the repository is the source of truth.
+- Whether to convert audio on upload, which needs ffmpeg in the backend image and must still pass the image scan, or only check its format.
 - Whether to also publish a static JSON snapshot of stories to Pages. It would remove the cold start from the visitor path, but Cloud Run and Neon would no longer serve public reads.
