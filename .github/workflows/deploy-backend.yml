@@ -212,7 +212,8 @@ jobs:
         env:
           IMAGE_TAG: ${{ steps.image.outputs.tag }}
         # Cloud Run records a platform manifest digest. An image index (added by
-        # default attestations on newer Docker) would fail release verification.
+        # default attestations on newer Docker) would fail release verification,
+        # so anything Docker does not report as a single manifest fails here.
         run: |
           docker build \
             --provenance=false --sbom=false \
@@ -223,8 +224,11 @@ jobs:
           descriptor = json.load(sys.stdin)[0].get("Descriptor") or {}
           media_type = descriptor.get("mediaType", "not reported")
           print(f"Image descriptor media type: {media_type}")
-          if "index" in media_type or "manifest.list" in media_type:
-              raise SystemExit("Expected a single image manifest, not an image index.")
+          if media_type not in (
+              "application/vnd.docker.distribution.manifest.v2+json",
+              "application/vnd.oci.image.manifest.v1+json",
+          ):
+              raise SystemExit("Docker did not report a single image manifest.")
           '
 
       - name: Verify the runtime and isolated PostgreSQL integration

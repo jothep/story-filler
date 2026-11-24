@@ -109,7 +109,7 @@ security checks for the same caller commit:
    cloud secrets.
 2. **Build, test and scan:** build one image with a unique run tag on pull requests
    and application releases. The build adds no provenance or SBOM attestations
-   and fails if Docker stores an image index, so the pushed digest is the single
+   and fails unless Docker reports a single image manifest, so the pushed digest is the single
    manifest that Cloud Run records for the revision. Check its exact runtime dependency set, native
    libraries, storage configuration and Django tests offline. Then run its
    unmodified default command against a new synthetic PostgreSQL database; check
