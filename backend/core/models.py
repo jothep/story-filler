@@ -165,7 +165,8 @@ class StoryPicture(models.Model):
 
     def save(self, *args, **kwargs):
         """Override save to compress images automatically."""
-        if self.image_file and not kwargs.pop("skip_compression", False):
+        skip_compression = kwargs.pop("skip_compression", False)
+        if self.image_file and not skip_compression:
             try:
                 # Check if this is a new upload or changed file
                 if not self.pk or self._state.adding:
@@ -276,7 +277,8 @@ class Word(models.Model):
 
     def save(self, *args, **kwargs):
         """Override save to compress images automatically."""
-        if self.image and not kwargs.pop("skip_compression", False):
+        skip_compression = kwargs.pop("skip_compression", False)
+        if self.image and not skip_compression:
             try:
                 # Check if this is a new upload or changed file
                 if not self.pk or self._state.adding:

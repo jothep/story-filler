@@ -73,14 +73,15 @@ Its 13 blanks each need a separate Blank Link entry. Content exists only in Neon
 
   ```text
   content/
-    words.yaml                  # shared lexicon: Māori, English, media, provenance
+    library.toml                # story pictures, music and the menu music
+    words.toml                  # shared lexicon: Māori, English, media, provenance
     stories/rona-and-the-moon/
-      story.yaml                # title, status, cover, music, paragraphs
-      media/
+      story.toml                # title, status, cover, music, paragraphs
   ```
 
 - `status` (`draft` or `published`) maps directly to the Story field: import sets it, export writes it back, and the public API serves published stories only. A story without a status imports as a draft.
 - Write blanks inline in paragraph text, for example `Rona looked up at the {{marama}}.`. The importer translates each one into the existing `__BLANK_<key>__` placeholder and creates its Blank Link, so the API and the frontend parser stay unchanged. Keys are ASCII slugs, because the parser accepts only `[A-Za-z0-9_]` and Māori words can contain macrons.
+- Use TOML, which Python reads with the standard library (`tomllib`), so the package adds no dependency. Media values name objects already in media storage; media files are not committed. Workstream 4 decides how new files enter the package.
 - Add `export_content` to bootstrap the package from the live story, then `import_content` to validate, process media, upload to GCS and upsert the database. Imports are repeatable and support a dry run.
 - Add a CI job that checks every blank resolves to a word, every word has its required media, files meet format and size rules, and provenance is complete.
 - Use the package as seed data for local development and tests.
