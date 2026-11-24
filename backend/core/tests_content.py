@@ -4,10 +4,11 @@ import io
 import tempfile
 import tomllib
 from pathlib import Path
+from unittest import mock
 
 from django.core.management import call_command
 from django.core.management.base import CommandError
-from django.test import SimpleTestCase, TestCase
+from django.test import SimpleTestCase, TestCase, TransactionTestCase
 
 from .content import dump_toml, toml_string
 from .models import (
@@ -28,11 +29,18 @@ class TomlTests(SimpleTestCase):
             "Rona's “moon”",
             'quote " and backslash \\ and """ three',
             "tab\tnew line\nreturn\r",
-            "control \x00 \x08 \x1f delete \x7f",
+            "control \x00 \x08 \x1f delete \x7f C1 \x80 \x85 \x9f",
             "kōrero paki, Träumerei, 夢幻曲, 🌕",
         ]:
             with self.subTest(value=value):
                 self.assertEqual(tomllib.loads(f"v = {toml_string(value)}")["v"], value)
+
+    def test_c1_controls_are_escaped(self):
+        self.assertEqual(toml_string("a\x85b"), '"a\\u0085b"')
+
+    def test_empty_collections_are_written(self):
+        document = {"title": "Empty", "paragraphs": [], "pictures": {}}
+        self.assertEqual(tomllib.loads(dump_toml(document)), document)
 
     def test_documents_read_back_unchanged(self):
         document = {
@@ -187,6 +195,47 @@ class ExportContentTests(TestCase):
         ]:
             self.assertIn(expected, message)
 
+    def test_more_than_one_configuration_is_refused(self):
+        AppConfig.objects.bulk_create([AppConfig(menu_bgm=self.humoresque)])
+
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaises(CommandError) as raised:
+                self.export(directory)
+
+        self.assertIn("2 application configurations exist", str(raised.exception))
+
+    def test_control_characters_in_diagnostics_are_escaped(self):
+        self.story.title = "Rona\x1b[31m"
+        self.story.save()
+        self.paragraph(0, "No link for __BLANK_moon__.", {})
+
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaises(CommandError) as raised:
+                self.export(directory)
+
+        self.assertNotIn("\x1b", str(raised.exception))
+        self.assertIn('"Rona\\u001b[31m" paragraph 0', str(raised.exception))
+
+    def test_a_failed_write_leaves_no_files(self):
+        real = tempfile.NamedTemporaryFile
+        calls = []
+
+        def fail_on_second(*args, **kwargs):
+            calls.append(args)
+            if len(calls) == 2:
+                raise OSError("disk full")
+            return real(*args, **kwargs)
+
+        with tempfile.TemporaryDirectory() as directory:
+            with (
+                mock.patch("core.content.tempfile.NamedTemporaryFile", fail_on_second),
+                self.assertRaises(OSError),
+            ):
+                self.export(directory)
+            self.assertEqual(
+                [path for path in Path(directory).rglob("*") if path.is_file()], []
+            )
+
     def test_existing_files_are_kept_unless_overwrite_is_given(self):
         with tempfile.TemporaryDirectory() as directory:
             self.export(directory)
@@ -199,3 +248,19 @@ class ExportContentTests(TestCase):
 
             self.export(directory, overwrite=True)
             self.assertIn("[words.moon]", words.read_text(encoding="utf-8"))
+
+
+class ExportOutsideTransactionTests(TransactionTestCase):
+    """Run the export as the command does, outside any open transaction."""
+
+    def test_exports_from_a_consistent_read_only_snapshot(self):
+        word = Word(maori_word="marama", english_translation="moon")
+        word.save(skip_compression=True)
+
+        with tempfile.TemporaryDirectory() as directory:
+            call_command("export_content", output=directory, stdout=io.StringIO())
+            words = tomllib.loads(Path(directory, "words.toml").read_text("utf-8"))
+
+        self.assertEqual(
+            words, {"words": {"moon": {"maori": "marama", "english": "moon"}}}
+        )

@@ -64,12 +64,13 @@ Exporting only reads the database. Against production, open a [production databa
 python manage.py export_content
 ```
 
-It writes to `content/` at the repository root, or to `--output DIR`. It does not replace existing files unless you pass `--overwrite`, and it never deletes files.
+It writes to `content/` at the repository root, or to `--output DIR`. On PostgreSQL it reads one consistent snapshot in a read-only transaction. Files are written in full before any is moved into place, so a failed run leaves an existing package unchanged. It does not replace existing files unless you pass `--overwrite`, and it never deletes files. Run one export at a time into a directory.
 
 The export stops without writing anything if the database holds content the package cannot represent exactly, and lists each problem:
 
 - a placeholder with no Blank Link, or a Blank Link with no word;
 - a Blank Link whose placeholder is not in the paragraph text;
-- paragraph text containing `{{` or `}}`.
+- paragraph text containing `{{` or `}}`;
+- more than one application configuration.
 
 Fix these in the admin, then export again.

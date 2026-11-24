@@ -18,10 +18,14 @@ Media values are the names of objects already in media storage, such as
 (``tomllib``), so the package adds no dependency.
 """
 
+import os
 import re
+import tempfile
+import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from django.db import connection, transaction
 from django.utils.text import slugify
 
 from .blanks import PLACEHOLDER, placeholder_key, placeholders_in
@@ -43,8 +47,20 @@ class ContentError(Exception):
     """The database holds content that the package cannot represent exactly."""
 
     def __init__(self, problems):
-        super().__init__("\n".join(problems))
-        self.problems = problems
+        self.problems = [display_safe(problem) for problem in problems]
+        super().__init__("\n".join(self.problems))
+
+
+def display_safe(text):
+    """Escape control characters, so diagnostics cannot drive a terminal."""
+    return "".join(
+        (
+            f"\\u{ord(character):04x}"
+            if unicodedata.category(character) == "Cc"
+            else character
+        )
+        for character in text
+    )
 
 
 # ===== TOML writing =====
@@ -56,7 +72,7 @@ def toml_string(value):
     for character in value:
         if character in TOML_ESCAPES:
             characters.append(TOML_ESCAPES[character])
-        elif ord(character) < 0x20 or ord(character) == 0x7F:
+        elif ord(character) < 0x20 or 0x7F <= ord(character) <= 0x9F:
             characters.append(f"\\u{ord(character):04X}")
         else:
             characters.append(character)
@@ -68,6 +84,8 @@ def toml_key(key):
 
 
 def toml_value(value):
+    if value == []:
+        return "[]"
     if isinstance(value, bool) or not isinstance(value, (int, str)):
         raise TypeError(f"Unsupported TOML value: {value!r}")
     return str(value) if isinstance(value, int) else toml_string(value)
@@ -82,16 +100,19 @@ def dump_toml(document):
 
     A document maps keys to scalars (strings or integers), to tables of
     tables of scalars (``[words.moon]``), or to arrays of tables of scalars
-    (``[[paragraphs]]``). Scalars come first, as TOML requires.
+    (``[[paragraphs]]``). Scalars come first, as TOML requires. Empty
+    tables and arrays are written too, so readers see them as empty.
     """
     scalars = {
         key: value
         for key, value in document.items()
-        if not isinstance(value, (dict, list))
+        if not isinstance(value, (dict, list)) or value == []
     }
     lines = toml_fields(scalars)
     for key, value in document.items():
         if isinstance(value, dict):
+            if not value:
+                lines += ["", f"[{toml_key(key)}]"]
             for name, fields in value.items():
                 lines += ["", f"[{toml_key(key)}.{toml_key(name)}]"]
                 lines += toml_fields(fields)
@@ -218,8 +239,22 @@ def story_document(story, paragraphs, references, problems):
 def build_package():
     """Read every story, word and library item into a package.
 
-    Raises ``ContentError`` listing everything that cannot be written exactly.
+    Everything is read in one transaction. On PostgreSQL it is a read-only,
+    repeatable-read transaction, so the export sees one consistent snapshot
+    and cannot write. Raises ``ContentError`` listing everything that cannot
+    be written exactly.
     """
+    outermost = not connection.in_atomic_block
+    with transaction.atomic():
+        if outermost and connection.vendor == "postgresql":
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY"
+                )
+        return read_package()
+
+
+def read_package():
     pictures = list(StoryPicture.objects.order_by("pk"))
     music = list(BackgroundMusic.objects.order_by("pk"))
     words = list(Word.objects.order_by("pk"))
@@ -229,10 +264,15 @@ def build_package():
         "words": word_keys(words),
     }
 
+    problems = []
     library = {}
-    config = AppConfig.objects.order_by("pk").first()
-    if config and config.menu_bgm_id:
-        library["menu_music"] = references["music"][config.menu_bgm_id]
+    configs = list(AppConfig.objects.order_by("pk"))
+    if len(configs) > 1:
+        problems.append(
+            f"{len(configs)} application configurations exist; the package holds one"
+        )
+    if configs and configs[0].menu_bgm_id:
+        library["menu_music"] = references["music"][configs[0].menu_bgm_id]
     library["pictures"] = {
         references["pictures"][picture.pk]: with_media(
             {"title": picture.title}, image=picture.image_file
@@ -257,7 +297,6 @@ def build_package():
     }
     package = Package(library=library, words={"words": word_table})
 
-    problems = []
     story_slugs = set()
     for story in Story.objects.order_by("pk"):
         paragraphs = (
@@ -276,19 +315,40 @@ def build_package():
 def write_package(package, destination, overwrite=False):
     """Write the package files under ``destination``; return their paths.
 
-    Existing files are replaced only with ``overwrite``. Files that the package
-    does not contain are left in place.
+    Every file is first written to a temporary file beside its target. Files
+    are moved into place only after all of them are written, so a failed write
+    leaves the existing package as it was. Without ``overwrite``, a file is
+    placed only where no file exists, including one created after the check.
+    Files that the package does not contain are left in place.
     """
     destination = Path(destination)
     files = package.files()
-    existing = [path for path in files if (destination / path).exists()]
+    existing = sorted(path for path in files if (destination / path).exists())
     if existing and not overwrite:
         raise FileExistsError(
-            "Package files already exist: "
-            + ", ".join(str(path) for path in sorted(existing))
+            "Package files already exist: " + ", ".join(map(str, existing))
         )
-    for path, text in files.items():
-        target = destination / path
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(text, encoding="utf-8")
+    staged = {}
+    try:
+        for path, text in files.items():
+            target = destination / path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with tempfile.NamedTemporaryFile(
+                "w",
+                encoding="utf-8",
+                dir=target.parent,
+                prefix=f".{target.name}.",
+                suffix=".tmp",
+                delete=False,
+            ) as handle:
+                staged[target] = Path(handle.name)
+                handle.write(text)
+        for target, temporary in staged.items():
+            if overwrite:
+                os.replace(temporary, target)
+            else:
+                os.link(temporary, target)
+    finally:
+        for temporary in staged.values():
+            temporary.unlink(missing_ok=True)
     return sorted(files)
