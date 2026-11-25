@@ -21,14 +21,16 @@ A word entry is one meaning, such as `moon`, with a picture shared by every lang
 
 1. Open **Stories** and add a story. Choose the language it is written in, the language players learn, its picture and its background music. Players fill each blank with the word's form in the learning language; when the two languages differ, the form in the story language is shown as the translation. For a story that teaches English words, choose English for both.
 2. Add the paragraphs in the inline form. Give each one an order number, its text and, optionally, a narration recording.
-3. Mark each blank in the text with a placeholder `__BLANK_<key>__`, where the key names a word entry:
-   - its key, for example `__BLANK_moon__`; or, when no entry has that key,
-   - the text of one of its forms, in lowercase without macrons and with underscores for spaces, for example `__BLANK_korero_paki__` for *kōrero paki*.
+3. Mark each blank in the text with `{{key}}`, for example `The {{moon}} rose.`. Saving stores it as the placeholder `__BLANK_moon__`, which you can also type directly. The key names a word entry:
+   - its key, for example `{{moon}}`; or, when no entry has that key,
+   - the text of one of its forms: `{{kōrero paki}}` becomes `__BLANK_korero_paki__`.
+
+   Text between the braces is lowercased, macrons are dropped and spaces become underscores. Saving refuses empty or unclosed braces such as `{{}}` or `{{moon`.
 4. Save. If your account may add Blank Links, each new placeholder that matches exactly one word gets a Blank Link to it automatically. Any placeholder that matches no word, or more than one, is listed in a warning at the top of the page. Link those on the **Blank Links** page, where the placeholder must match the paragraph text exactly.
 
 The game's word list is made of the words linked to the story's blanks; there is no separate word selection.
 
-Saving never changes or removes an existing Blank Link. To link a placeholder to a different word, edit its Blank Link. If you remove a placeholder from the text, delete its Blank Link too; otherwise its word stays in the story's word list.
+Saving never changes an existing Blank Link; to link a placeholder to a different word, edit its Blank Link or change the key in the text. If your account may delete Blank Links, saving removes the links whose placeholder is no longer in the text and lists them at the top of the page, so removed blanks leave no extra words in the story's word list.
 
 ## Menu music
 

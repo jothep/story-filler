@@ -12,9 +12,10 @@ import unicodedata
 
 from django.db import IntegrityError, transaction
 
-from .models import BlankLink, Word
+from .models import BlankLink, Paragraph, Word
 
 PLACEHOLDER = re.compile(r"__BLANK_([A-Za-z0-9_]+)__")
+INLINE_BLANK = re.compile(r"\{\{([^{}]*)\}\}")
 
 
 def placeholder_key(value):
@@ -50,6 +51,59 @@ def find_word(index, key):
     key = placeholder_key(key)
     matches = index["key"].get(key) or index["forms"].get(key) or []
     return matches[0] if len(matches) == 1 else None
+
+
+def expand_inline_blanks(text):
+    """Store each ``{{key}}`` in ``text`` as the placeholder ``__BLANK_key__``.
+
+    The text between the braces is normalised like any placeholder key, so
+    ``{{ Moon }}`` and ``{{kōrero paki}}`` become ``__BLANK_moon__`` and
+    ``__BLANK_korero_paki__``. Raises ``ValueError`` when braces do not form a
+    blank, such as ``{{}}`` or an unclosed ``{{moon``.
+    """
+
+    def replace(match):
+        key = placeholder_key(match.group(1))
+        return f"__BLANK_{key}__" if key else match.group(0)
+
+    expanded = INLINE_BLANK.sub(replace, text or "")
+    if "{{" in expanded or "}}" in expanded:
+        raise ValueError(
+            "Write each blank as {{key}}, for example {{moon}}, with a key "
+            "made of letters or digits. Check every {{ and }} in the text."
+        )
+    return expanded
+
+
+def remove_stale_links(paragraph):
+    """Delete Blank Links whose placeholder is not a blank in the saved text.
+
+    A placeholder counts only where the game's parser finds it. The paragraph
+    row is locked and its text re-read, and a link is deleted only if its
+    placeholder is unchanged, so a concurrent edit of the text or of the link
+    is not undone. Returns the removed placeholders.
+    """
+    with transaction.atomic():
+        text = (
+            Paragraph.objects.select_for_update()
+            .filter(pk=paragraph.pk)
+            .values_list("text", flat=True)
+            .first()
+        )
+        if text is None:
+            return []
+        blanks = set(placeholders_in(text))
+        stale = BlankLink.objects.filter(paragraph_id=paragraph.pk).exclude(
+            placeholder__in=blanks
+        )
+        removed = []
+        for pk, placeholder in list(stale.values_list("pk", "placeholder")):
+            deleted, _ = BlankLink.objects.filter(
+                pk=pk, placeholder=placeholder
+            ).delete()
+            if deleted:
+                removed.append(placeholder)
+    return removed
 
 
 def placeholders_in(text):

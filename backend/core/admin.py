@@ -3,7 +3,7 @@
 # Improve usability using inlines, media previews and custom forms.
 from django.contrib import admin, messages
 from django.utils.html import format_html
-from .blanks import build_word_index, link_placeholders
+from .blanks import build_word_index, link_placeholders, remove_stale_links
 from .models import (
     Story,
     Paragraph,
@@ -15,7 +15,7 @@ from .models import (
     StoryPicture,
     AppConfig,
 )
-from .forms import BlankLinkForm
+from .forms import BlankLinkForm, ParagraphForm
 
 AUDIO_MIME_TYPES = {
     ".mp3": "audio/mpeg",
@@ -55,6 +55,7 @@ class ParagraphInline(admin.StackedInline):
     """
 
     model = Paragraph
+    form = ParagraphForm
     extra = 1
     fields = ("order", "text", "audio")
 
@@ -89,17 +90,33 @@ class StoryAdmin(admin.ModelAdmin):
     )
 
     def save_related(self, request, form, formsets, change):
-        """Link new placeholders to words once the paragraphs are saved.
+        """Bring Blank Links in line with the saved paragraph text.
 
-        Only editors who may add Blank Links get them created for them.
+        Links whose placeholder left the text are removed for editors who may
+        delete Blank Links; new placeholders are linked for editors who may add
+        them.
         """
         super().save_related(request, form, formsets, change)
-        if not request.user.has_perm("core.add_blanklink"):
+        can_add = request.user.has_perm("core.add_blanklink")
+        can_delete = request.user.has_perm("core.delete_blanklink")
+        if not (can_add or can_delete):
             return
-        index = build_word_index()
+        index = build_word_index() if can_add else None
+        removed = []
         unlinked = []
         for paragraph in form.instance.paragraphs.all():
-            unlinked.extend(link_placeholders(paragraph, index))
+            if can_delete:
+                removed.extend(remove_stale_links(paragraph))
+            if can_add:
+                unlinked.extend(link_placeholders(paragraph, index))
+        if removed:
+            self.message_user(
+                request,
+                "Removed Blank Links for blanks no longer in the text: "
+                + ", ".join(dict.fromkeys(removed))
+                + ".",
+                level=messages.INFO,
+            )
         if unlinked:
             self.message_user(
                 request,
