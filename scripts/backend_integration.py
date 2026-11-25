@@ -80,7 +80,8 @@ from core.models import (
 english = Language.objects.get(code='en')
 maori = Language.objects.get(code='mi')
 story = Story.objects.create(
-    title='Runtime verification', language=english, learning_language=maori
+    title='Runtime verification', language=english, learning_language=maori,
+    status='published',
 )
 word = Word.objects.create(key='water')
 WordForm.objects.create(word=word, language=maori, text='wai')

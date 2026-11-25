@@ -33,7 +33,9 @@ Only one person runs production migrations at a time. Agree who it is before ste
 
 ## Pending
 
-None.
+| Migration | Kind | When to apply |
+| --- | --- | --- |
+| `core.0012_story_status` | Addition: a draft/published status on stories, with a database default; marks every existing story published | Before the release that contains it |
 
 ## Applied
 

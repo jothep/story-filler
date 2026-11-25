@@ -54,8 +54,8 @@ class StoryAPITest(APITestCase):
     @classmethod
     def setUpTestData(cls):
         print("Running: setUpTestData for API tests")
-        cls.story1 = Story.objects.create(title="Rona and the Moon")
-        cls.story2 = Story.objects.create(title="The Great Waka")
+        cls.story1 = Story.objects.create(title="Rona and the Moon", status="published")
+        cls.story2 = Story.objects.create(title="The Great Waka", status="published")
 
         cls.list_url = reverse("story-list")
         cls.detail_url = reverse("story-detail", args=[cls.story1.pk])
