@@ -94,7 +94,8 @@ class LinkPlaceholdersTests(TestCase):
         self,
     ):
         long_key = "x" * 50
-        make_word(long_key, mi="roa")
+        # Keys fit a placeholder, but a match on form text can be too long.
+        make_word("roa", mi="roa", en=long_key)
         sky = make_word("sky", mi="rangi")
         paragraph = self.paragraph(f"__BLANK_moon__ __BLANK_{long_key}__ __BLANK_sky__")
         BlankLink.objects.create(
