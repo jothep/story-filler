@@ -67,18 +67,21 @@ class StoryDetailAPIView(generics.RetrieveAPIView):
         - select_related: Uses JOIN for foreign keys (1 query)
           - background_music (FK)
           - story_picture (FK)
+          - language, learning_language (FK)
 
         - prefetch_related: Uses separate queries for M2M and reverse FK (4-5 queries)
           - paragraphs (reverse FK)
           - paragraphs__blank_links (reverse FK through paragraphs)
           - paragraphs__blank_links__word (FK through blank_links)
+          - paragraphs__blank_links__word__forms (each word's language forms)
         """
         return Story.objects.select_related(
-            "background_music", "story_picture"
+            "background_music", "story_picture", "language", "learning_language"
         ).prefetch_related(
             "paragraphs",
             "paragraphs__blank_links",
             "paragraphs__blank_links__word",
+            "paragraphs__blank_links__word__forms",
         )
 
     def retrieve(self, request, *args, **kwargs):

@@ -33,7 +33,10 @@ Only one person runs production migrations at a time. Agree who it is before ste
 
 ## Pending
 
-None.
+| Migration | Kind | When to apply |
+| --- | --- | --- |
+| `core.0010_languages_and_word_forms` | Addition: languages, word forms, word keys and story languages; the old word columns become optional | Before the release that contains it |
+| `core.0011_copy_words_into_forms` | Data: creates English and Māori, copies each word's text and audio into forms, derives word keys and sets existing stories to English → Māori. Running it again changes nothing | Together with 0010, before that release |
 
 ## Applied
 

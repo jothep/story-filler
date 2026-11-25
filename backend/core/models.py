@@ -5,7 +5,7 @@ import logging
 from io import BytesIO
 from PIL import Image
 from django.core.files.base import ContentFile
-from django.core.validators import FileExtensionValidator
+from django.core.validators import FileExtensionValidator, RegexValidator
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -33,6 +33,19 @@ def validate_audio_file_size(file):
             f"Audio file size cannot exceed {max_size_mb}MB. "
             f"Current size: {file.size / 1024 / 1024:.2f}MB"
         )
+
+
+AUDIO_EXTENSIONS = ["mp3", "m4a", "aac", "wav", "ogg"]
+
+# Word keys appear in placeholders such as __BLANK_moon__, which the game
+# parser matches with [A-Za-z0-9_]+.
+WORD_KEY_VALIDATOR = RegexValidator(
+    r"^[a-z0-9_]+$", "Use lowercase letters, digits and underscores only."
+)
+LANGUAGE_CODE_VALIDATOR = RegexValidator(
+    r"^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+    "Use a language code such as en, mi or zh-Hans.",
+)
 
 
 # ===== Helper Functions =====
@@ -165,7 +178,8 @@ class StoryPicture(models.Model):
 
     def save(self, *args, **kwargs):
         """Override save to compress images automatically."""
-        if self.image_file and not kwargs.pop("skip_compression", False):
+        skip_compression = kwargs.pop("skip_compression", False)
+        if self.image_file and not skip_compression:
             try:
                 # Check if this is a new upload or changed file
                 if not self.pk or self._state.adding:
@@ -178,8 +192,48 @@ class StoryPicture(models.Model):
         super().save(*args, **kwargs)
 
 
+class Language(models.Model):
+    """A language that stories are written in or teach."""
+
+    code = models.CharField(
+        max_length=35,
+        unique=True,
+        validators=[LANGUAGE_CODE_VALIDATOR],
+        help_text="Language code, such as en, mi or zh-Hans",
+    )
+    name = models.CharField(
+        max_length=100, help_text="Name shown to players, such as Māori or 中文"
+    )
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return f"{self.name} ({self.code})"
+
+
 class Story(models.Model):
     title = models.CharField(max_length=200, verbose_name="Title")
+    # Nullable in the database until the old word columns are removed, so the
+    # previous release can still create stories; the admin requires both.
+    language = models.ForeignKey(
+        Language,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=False,
+        related_name="stories_written_in",
+        verbose_name="Story language",
+        help_text="The language the story is written in",
+    )
+    learning_language = models.ForeignKey(
+        Language,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=False,
+        related_name="stories_teaching",
+        verbose_name="Learning language",
+        help_text="The language of the words players fill in",
+    )
     background_music = models.ForeignKey(
         BackgroundMusic,
         on_delete=models.SET_NULL,
@@ -230,12 +284,33 @@ class Paragraph(models.Model):
 
 
 class Word(models.Model):
-    """Word Bank"""
+    """A word entry: one meaning, with an image shared by every language.
 
-    maori_word = models.CharField(
-        max_length=100, verbose_name="Maori word", unique=True
+    Its forms hold the text and audio in each language. The Māori and English
+    columns are legacy: the 0011 migration copies them into forms, nothing
+    reads or writes them afterwards, and a later release removes them.
+    """
+
+    # Nullable in the database until the legacy columns are removed, so the
+    # previous release can still create words; the admin requires it.
+    key = models.CharField(
+        max_length=50,
+        unique=True,
+        null=True,
+        blank=False,
+        validators=[WORD_KEY_VALIDATOR],
+        help_text="Used in blanks: the key moon matches __BLANK_moon__",
     )
-    english_translation = models.CharField(max_length=100, verbose_name="English word")
+    maori_word = models.CharField(
+        max_length=100,
+        verbose_name="Maori word (legacy)",
+        unique=True,
+        null=True,
+        blank=True,
+    )
+    english_translation = models.CharField(
+        max_length=100, verbose_name="English word (legacy)", blank=True, default=""
+    )
     image = models.ImageField(
         upload_to="word_images/",
         blank=True,
@@ -250,7 +325,7 @@ class Word(models.Model):
         upload_to="word_audio_maori/",
         blank=True,
         null=True,
-        verbose_name="Maori Audio",
+        verbose_name="Maori Audio (legacy)",
         validators=[
             FileExtensionValidator(["mp3", "m4a", "aac", "wav", "ogg"]),
             validate_audio_file_size,
@@ -260,7 +335,7 @@ class Word(models.Model):
         upload_to="word_audio_english/",
         blank=True,
         null=True,
-        verbose_name="English Audio",
+        verbose_name="English Audio (legacy)",
         validators=[
             FileExtensionValidator(["mp3", "m4a", "aac", "wav", "ogg"]),
             validate_audio_file_size,
@@ -272,11 +347,12 @@ class Word(models.Model):
         verbose_name_plural = "Word Bank"
 
     def __str__(self):
-        return f"{self.maori_word} ({self.english_translation})"
+        return self.key or f"Word {self.pk}"
 
     def save(self, *args, **kwargs):
         """Override save to compress images automatically."""
-        if self.image and not kwargs.pop("skip_compression", False):
+        skip_compression = kwargs.pop("skip_compression", False)
+        if self.image and not skip_compression:
             try:
                 # Check if this is a new upload or changed file
                 if not self.pk or self._state.adding:
@@ -290,6 +366,36 @@ class Word(models.Model):
                 logger.error(f"Failed to compress word image: {e}")
                 # Continue saving even if compression fails
         super().save(*args, **kwargs)
+
+
+class WordForm(models.Model):
+    """How a word entry is written, and optionally spoken, in one language."""
+
+    word = models.ForeignKey(Word, related_name="forms", on_delete=models.CASCADE)
+    language = models.ForeignKey(
+        Language, related_name="word_forms", on_delete=models.PROTECT
+    )
+    text = models.CharField(max_length=100)
+    audio = models.FileField(
+        upload_to="word_audio/",
+        blank=True,
+        null=True,
+        validators=[
+            FileExtensionValidator(AUDIO_EXTENSIONS),
+            validate_audio_file_size,
+        ],
+    )
+
+    class Meta:
+        ordering = ["language__code"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["word", "language"], name="unique_word_form_per_language"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.text} ({self.language.code})"
 
 
 class BlankLink(models.Model):

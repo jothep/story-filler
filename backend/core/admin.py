@@ -8,6 +8,8 @@ from .models import (
     Story,
     Paragraph,
     Word,
+    WordForm,
+    Language,
     BackgroundMusic,
     BlankLink,
     StoryPicture,
@@ -32,6 +34,21 @@ def audio_mime_type(url):
     return "audio/mpeg"
 
 
+def audio_player(file, width=300):
+    """Return an audio player for a stored file, or None when there is none."""
+    if not file:
+        return None
+    file_url = file.url
+    return format_html(
+        '<audio controls style="width:100%; max-width:{}px;">'
+        '<source src="{}" type="{}">'
+        "Your browser does not support the audio element.</audio>",
+        width,
+        file_url,
+        audio_mime_type(file_url),
+    )
+
+
 class ParagraphInline(admin.StackedInline):
     """
     Allows to add and edit Paragraphs in a stacked form within the Story edit page.
@@ -54,7 +71,10 @@ class StoryAdmin(admin.ModelAdmin):
     readonly_fields = ("picture_preview", "music_preview")
 
     fieldsets = (
-        ("Story Information", {"fields": ("title",)}),
+        (
+            "Story Information",
+            {"fields": ("title", ("language", "learning_language"))},
+        ),
         (
             "Media",
             {
@@ -243,29 +263,51 @@ class BackgroundMusicAdmin(admin.ModelAdmin):
     audio_preview.short_description = "Audio Preview"
 
 
+@admin.register(Language)
+class LanguageAdmin(admin.ModelAdmin):
+    list_display = ("name", "code")
+    search_fields = ("name", "code")
+
+
+class WordFormInline(admin.TabularInline):
+    """The word's text and audio in each language."""
+
+    model = WordForm
+    extra = 1
+    fields = ("language", "text", "audio", "audio_preview")
+    readonly_fields = ("audio_preview",)
+
+    def audio_preview(self, obj):
+        return audio_player(obj.audio) or "-"
+
+    audio_preview.short_description = "Listen"
+
+
 @admin.register(Word)
 class WordAdmin(admin.ModelAdmin):
     """
-    Manage words (Word Bank)
+    Manage word entries (Word Bank)
     """
 
-    list_display = ("english_translation", "maori_word", "has_image", "has_audio")
-    search_fields = ("english_translation", "maori_word")
-    readonly_fields = ("image_preview", "maori_audio_preview", "english_audio_preview")
+    list_display = ("key", "forms_summary", "has_image", "has_audio")
+    search_fields = ("key", "forms__text")
+    readonly_fields = ("image_preview",)
+    inlines = [WordFormInline]
 
     fieldsets = (
-        ("Word Information", {"fields": ("maori_word", "english_translation")}),
+        (None, {"fields": ("key",)}),
         ("Image", {"fields": ("image", "image_preview")}),
-        (
-            "Audio",
-            {
-                "fields": (
-                    ("maori_audio", "maori_audio_preview"),
-                    ("english_audio", "english_audio_preview"),
-                )
-            },
-        ),
     )
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related("forms__language")
+
+    def forms_summary(self, obj):
+        return ", ".join(
+            f"{form.language.code}: {form.text}" for form in obj.forms.all()
+        )
+
+    forms_summary.short_description = "Forms"
 
     def has_image(self, obj):
         return "✓" if obj.image else "-"
@@ -273,7 +315,7 @@ class WordAdmin(admin.ModelAdmin):
     has_image.short_description = "Image"
 
     def has_audio(self, obj):
-        return "✓" if (obj.maori_audio or obj.english_audio) else "-"
+        return "✓" if any(form.audio for form in obj.forms.all()) else "-"
 
     has_audio.short_description = "Audio"
 
@@ -288,44 +330,6 @@ class WordAdmin(admin.ModelAdmin):
         return "No image uploaded yet"
 
     image_preview.short_description = "Image Preview"
-
-    def maori_audio_preview(self, obj):
-        """Show Maori audio player"""
-        if obj.maori_audio:
-            file_url = obj.maori_audio.url
-            audio_type = audio_mime_type(file_url)
-            return format_html(
-                """
-                <audio controls style="width:100%; max-width:300px;">
-                    <source src="{}" type="{}">
-                    Your browser does not support the audio element.
-                </audio>
-                """,
-                file_url,
-                audio_type,
-            )
-        return "No Maori audio"
-
-    maori_audio_preview.short_description = "Maori Audio"
-
-    def english_audio_preview(self, obj):
-        """Show English audio player"""
-        if obj.english_audio:
-            file_url = obj.english_audio.url
-            audio_type = audio_mime_type(file_url)
-            return format_html(
-                """
-                <audio controls style="width:100%; max-width:300px;">
-                    <source src="{}" type="{}">
-                    Your browser does not support the audio element.
-                </audio>
-                """,
-                file_url,
-                audio_type,
-            )
-        return "No English audio"
-
-    english_audio_preview.short_description = "English Audio"
 
 
 @admin.register(BlankLink)
