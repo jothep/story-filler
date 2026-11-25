@@ -33,9 +33,7 @@ Only one person runs production migrations at a time. Agree who it is before ste
 
 ## Pending
 
-| Migration | Kind | When to apply |
-| --- | --- | --- |
-| `core.0012_story_status` | Addition: a draft/published status on stories, with a database default; marks every existing story published | Before the release that contains it |
+None.
 
 ## Applied
 
@@ -44,3 +42,4 @@ Only one person runs production migrations at a time. Agree who it is before ste
 | `core.0009_remove_story_word_bank` | Removal: drops the story word bank relation and its table | 2026-11-24, after the release that contains it |
 | `core.0010_languages_and_word_forms` | Addition: languages, word forms, word keys and story languages | 2026-11-25, before the release that contains it |
 | `core.0011_copy_words_into_forms` | Data: copies the Māori and English word data into forms | 2026-11-25, with 0010 |
+| `core.0012_story_status` | Addition: story draft/published status; existing stories published | 2026-11-26, before the release that contains it |

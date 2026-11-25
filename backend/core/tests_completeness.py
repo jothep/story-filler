@@ -9,8 +9,16 @@ from django.contrib.messages import get_messages
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from .completeness import check_story
-from .models import BlankLink, Language, Paragraph, Story, Word, WordForm
+from .completeness import CONVERT_HINT, check_story
+from .models import (
+    BackgroundMusic,
+    BlankLink,
+    Language,
+    Paragraph,
+    Story,
+    Word,
+    WordForm,
+)
 
 status_migration = importlib.import_module("core.migrations.0012_story_status")
 
@@ -42,7 +50,7 @@ class CompletenessFixture(TestCase):
             )
         return word
 
-    def page(self, story, text, links=None, order=0, audio="paragraph_audio/1.ogg"):
+    def page(self, story, text, links=None, order=0, audio="paragraph_audio/1.mp3"):
         paragraph = Paragraph.objects.create(
             story=story, order=order, text=text, audio=audio
         )
@@ -131,6 +139,39 @@ class CheckStoryTests(CompletenessFixture):
                 "The story has no picture.",
             ],
         )
+
+    def test_audio_that_is_not_mp3_is_a_warning(self):
+        music = BackgroundMusic.objects.create(
+            title="Humoresque", audio_file="bgm/h.m4a"
+        )
+        story = self.make_story(background_music=music)
+        moon = self.make_word(
+            "moon",
+            mi=("marama", "word_audio/marama.ogg"),
+            en=("moon", "word_audio/moon.mp3"),
+        )
+        self.page(
+            story,
+            "The __BLANK_moon__.",
+            {"__BLANK_moon__": moon},
+            audio="paragraph_audio/Rona_moon_01.ogg",
+        )
+
+        warnings = check_story(story).warnings
+
+        self.assertIn(
+            f"Page 1 narration is OGG, not MP3; {CONVERT_HINT}.",
+            warnings,
+        )
+        self.assertIn(
+            f"Word moon Māori audio is OGG, not MP3; {CONVERT_HINT}.",
+            warnings,
+        )
+        self.assertIn(
+            f"The background music is M4A, not MP3; {CONVERT_HINT}.",
+            warnings,
+        )
+        self.assertFalse(any("English audio" in warning for warning in warnings))
 
     def test_a_story_without_pages_or_languages(self):
         story = Story.objects.create(title="Empty")

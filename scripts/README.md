@@ -19,6 +19,10 @@ and managers, then verify that undefined names and missing model attributes fail
 even when the overall lint score exceeds the minimum. No production settings or
 database records are needed.
 
+## Preparing audio
+
+`convert_audio.py` converts recordings to MP3 on the author's machine before they are uploaded; the service never converts media. It needs a local ffmpeg (on macOS, `brew install ffmpeg`). See [preparing media](../docs/operations/content-admin.md#preparing-media). Its tests replace ffmpeg and need no media tools.
+
 ## Dependency audit coverage
 
 `check_dependency_audit.py` checks a pip-audit JSON report against one generated

@@ -17,6 +17,28 @@ Replacing a file leaves the old copy in storage.
 
 A word entry is one meaning, such as `moon`, with a picture shared by every language. Add a form for each language the word is used in: `marama` in Māori, `moon` in English, `月亮` in Chinese. Audio is optional and can be added later. To add a language, create it under **Languages** first.
 
+## Preparing media
+
+Prepare files before uploading them; the service checks formats but does not convert them.
+
+| Media | Format | Notes |
+| --- | --- | --- |
+| Word audio and page narration | MP3, mono | Name word audio by key and language code, such as `moon.mi.mp3` |
+| Background music | MP3 | Stereo is fine |
+| Pictures | JPG, PNG or WebP | Saved as JPEG and scaled on upload |
+
+`scripts/convert_audio.py` converts a batch of recordings (Ogg, WAV, M4A and others) to MP3 with your local ffmpeg (on macOS: `brew install ffmpeg`). It keeps each file's name, never changes the originals and does not replace an existing MP3 unless asked:
+
+```bash
+python3 scripts/convert_audio.py ~/Recordings/rona --speech --dry-run
+```
+
+```bash
+python3 scripts/convert_audio.py ~/Recordings/rona --speech --loudness --trim
+```
+
+`--speech` mixes to mono, `--loudness` evens out the volume between recordings, `--trim` cuts silence at the start and end, and `--output DIR` writes the MP3 files to another folder.
+
 ## Writing a story
 
 1. Open **Stories** and add a story. Choose the language it is written in, the language players learn, its picture and its background music. Players fill each blank with the word's form in the learning language; when the two languages differ, the form in the story language is shown as the translation. For a story that teaches English words, choose English for both.
@@ -52,6 +74,7 @@ A new story starts as a **Draft**, which players do not see. **Before publishing
 - **Warnings** do not block publishing, because these are often added later:
   - a page without narration or longer than 240 characters;
   - a word without audio or a picture;
+  - audio that is not MP3 (see [Preparing media](#preparing-media));
   - a story without a picture or without any blanks.
 
 Set **Status** to **Published** and save. The check runs on what was saved. If problems remain, the story stays a draft and the page lists them.

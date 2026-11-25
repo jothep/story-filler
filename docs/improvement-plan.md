@@ -99,7 +99,7 @@ Content history and rollback are not goals.
 - **Blanks written inline.** Write `{{moon}}` in the text. Saving stores it as the existing `__BLANK_moon__` placeholder, so the API and the game's parser stay unchanged, and links it to the word entry with that key. Links whose placeholder is no longer in the text are removed, so players see no stale answer choices.
 - **Many files at once.** Drop a set of files on a word or story page and match them by name: `moon.jpg` is the image of `moon`, `moon.mi.mp3` its Māori audio, `page-03.mp3` the narration for page 3. Unmatched files are listed, not guessed.
 - **Completeness check and draft status.** Each story shows what it is missing. Problems that break play keep the story in draft: a blank without a word, a word without a form in the learning language, or, when the two languages differ, without a form in the story language. Missing audio, a missing image or a long page is a warning only, because audio is often added later. The public API serves published stories only; the migration that adds the status marks existing stories as published.
-- **Formats.** Images keep their current resize and compression on upload. Audio is checked for format and size; converting it needs ffmpeg in the backend image, which is evaluated before it is added (see [Open decisions](#open-decisions)).
+- **Formats.** Converting media is part of preparing it, not of uploading or releasing it. A local script converts batches of recordings to MP3 with the author's ffmpeg, the format rules are documented, and the admin only checks formats and warns about audio that is not MP3. The backend image gains no media tools. Images keep their current resize and compression on upload.
 
 **Done when:** a new story can be entered in the admin by pasting its text and dropping its files, without visiting the Blank Link page, and the story list shows each story's state and missing items.
 
@@ -139,7 +139,7 @@ Content history and rollback are not goals.
 These were planned for phase 2 before the change of direction. They wait until they would remove work for the author.
 
 - A content package in the repository (TOML files with an `export_content` command), a folder import, CI checks of content, and a read-only admin. The export was written and closed unmerged; branch `feat/export-content` keeps it.
-- Splitting one long narration into pages by silence, loudness normalisation, and naming uploads by content hash.
+- Splitting one long narration into pages by silence, and naming uploads by content hash.
 - Removing storage objects that no record references.
 
 ## Follow-ups
@@ -149,5 +149,4 @@ These were planned for phase 2 before the change of direction. They wait until t
 ## Open decisions
 
 - Which text-to-speech tools to use for English and te reo Māori, and whether their terms allow public redistribution.
-- Whether to convert audio on upload, which needs ffmpeg in the backend image and must still pass the image scan, or only check its format.
 - Whether to also publish a static JSON snapshot of stories to Pages. It would remove the cold start from the visitor path, but Cloud Run and Neon would no longer serve public reads.
