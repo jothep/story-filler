@@ -120,19 +120,29 @@ def check_api(url, timeout=20, attempts=3, retry_delay=3):
         raise CheckFailed(
             f"{detail_path}: expected non-empty paragraphs with id/text/blank_links"
         )
+    languages = (detail.get("language"), detail.get("learning_language"))
+    if not all(
+        isinstance(language, dict) and nonempty_text(language.get("code"))
+        for language in languages
+    ):
+        raise CheckFailed(f"{detail_path}: expected story and learning languages")
+    # A translation is shown only when the story teaches another language.
+    needs_translation = languages[0]["code"] != languages[1]["code"]
     if (
         not isinstance(words, list)
         or not words
         or not all(
             isinstance(word, dict)
             and positive_id(word.get("id"))
-            and nonempty_text(word.get("maori_word"))
-            and nonempty_text(word.get("english_translation"))
+            and nonempty_text(word.get("key"))
+            and nonempty_text(word.get("text"))
+            and (not needs_translation or nonempty_text(word.get("translation")))
             for word in words
         )
     ):
         raise CheckFailed(
-            f"{detail_path}: expected a non-empty word bank with id/translations"
+            f"{detail_path}: expected a non-empty word bank with id/key/text"
+            " and, when the languages differ, a translation"
         )
     print(
         f"PASS {detail_path}: {len(paragraphs)} paragraph(s), {len(words)} word(s)",

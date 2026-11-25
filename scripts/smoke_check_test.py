@@ -17,10 +17,15 @@ smoke = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(smoke)
 
 STORIES = [{"id": 1, "title": "Story"}]
+ENGLISH = {"code": "en", "name": "English"}
+MAORI = {"code": "mi", "name": "Māori"}
+WORD = {"id": 1, "key": "home", "text": "kāinga", "translation": "home"}
 DETAIL = {
     "id": 1,
+    "language": ENGLISH,
+    "learning_language": MAORI,
     "paragraphs": [{"id": 1, "text": "A story", "blank_links": []}],
-    "words_in_bank": [{"id": 1, "maori_word": "kāinga", "english_translation": "home"}],
+    "words_in_bank": [WORD],
 }
 
 
@@ -80,6 +85,34 @@ class SmokeCheckTests(unittest.TestCase):
         ):
             with self.assertRaisesRegex(smoke.CheckFailed, "non-empty word bank"):
                 smoke.check_api("https://example.test")
+
+    def check_detail(self, detail):
+        with (
+            patch.object(
+                smoke,
+                "urlopen",
+                side_effect=[response(STORIES), response(detail), response({})],
+            ),
+            redirect_stdout(io.StringIO()),
+        ):
+            smoke.check_api("https://example.test")
+
+    def test_a_missing_translation_fails_when_the_languages_differ(self):
+        detail = {**DETAIL, "words_in_bank": [{**WORD, "translation": None}]}
+        with self.assertRaisesRegex(smoke.CheckFailed, "a translation"):
+            self.check_detail(detail)
+
+    def test_a_story_in_its_own_language_needs_no_translation(self):
+        detail = {
+            **DETAIL,
+            "learning_language": ENGLISH,
+            "words_in_bank": [{**WORD, "text": "home", "translation": None}],
+        }
+        self.check_detail(detail)
+
+    def test_missing_languages_fail(self):
+        with self.assertRaisesRegex(smoke.CheckFailed, "learning languages"):
+            self.check_detail({**DETAIL, "learning_language": None})
 
     def test_html_response_fails_without_printing_body(self):
         with patch.object(

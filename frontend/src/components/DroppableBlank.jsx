@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types';
 
 import { useDroppable, useDndContext } from '@dnd-kit/core';
+import { wordText } from '../utils/words';
 
 /**
  * @param {{blank: import('../types').BlankLink, uniqueId: string,
@@ -89,7 +90,7 @@ function DroppableBlank({ blank, uniqueId, filledWord, isWrong }) {
       style={style}
       aria-label={isAvailable ? undefined : 'Word unavailable'}
     >
-      {!isAvailable ? 'Unavailable' : isFilled ? filledWord?.maori_word : null}
+      {!isAvailable ? 'Unavailable' : isFilled ? wordText(filledWord) : null}
     </span>
   );
 }
@@ -102,7 +103,8 @@ DroppableBlank.propTypes = {
   }).isRequired,
   uniqueId: PropTypes.string.isRequired,
   filledWord: PropTypes.shape({
-    maori_word: PropTypes.string.isRequired,
+    text: PropTypes.string,
+    key: PropTypes.string,
   }),
   isWrong: PropTypes.bool.isRequired,
 };

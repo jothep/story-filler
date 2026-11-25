@@ -1,6 +1,7 @@
 import { useDroppable, useDndContext } from '@dnd-kit/core';
 import { useWordInteraction } from '../context/WordInteractionContext';
 import questionMarkIcon from '../assets/question_mark.png';
+import { wordText } from '../utils/words';
 
 function TriggerTips() {
   const { selectedWord } = useWordInteraction();
@@ -53,7 +54,7 @@ function TriggerTips() {
         {selectedWord ? (
           <p>
             <span className="nes-text is-success">
-              Selected:{selectedWord.maori_word}
+              Selected:{wordText(selectedWord)}
             </span>
           </p>
         ) : (

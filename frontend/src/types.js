@@ -3,13 +3,22 @@
  * Nullable media matches the backend serializers; these types do not replace
  * validation of data received from an external API.
  *
+ * @typedef {object} Language
+ * @property {string} code
+ * @property {string} name
+ *
+ * A word as a story uses it. `text` and `audio` are in the story's learning
+ * language; `translation` and `translation_audio` are in the story language
+ * and null when the two languages are the same. A missing form is null.
+ *
  * @typedef {object} Word
  * @property {number} id
- * @property {string} maori_word
- * @property {string} english_translation
+ * @property {string|null} key
  * @property {string|null} image
- * @property {string|null} maori_audio
- * @property {string|null} english_audio
+ * @property {string|null} text
+ * @property {string|null} audio
+ * @property {string|null} translation
+ * @property {string|null} translation_audio
  *
  * @typedef {object} BlankLink
  * @property {number} [id]
@@ -28,6 +37,8 @@
  * @property {string} title
  *
  * @typedef {StorySummary & {
+ *   language: Language|null,
+ *   learning_language: Language|null,
  *   paragraphs: Paragraph[],
  *   words_in_bank: Word[],
  *   background_music_url: string|null,

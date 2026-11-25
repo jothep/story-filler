@@ -13,8 +13,8 @@ vi.mock('../context/StoryPlaybackContext', () => ({
   useStoryPlayback: () => playback,
 }));
 
-const correctWord = { id: 1, maori_word: 'aroha' };
-const wrongWord = { id: 2, maori_word: 'kai' };
+const correctWord = { id: 1, text: 'aroha' };
+const wrongWord = { id: 2, text: 'kai' };
 
 // These controls submit dnd-kit events through the real interaction provider.
 // Pointer geometry belongs to browser testing; answer evaluation is not mocked.
