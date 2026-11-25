@@ -1,9 +1,10 @@
 """Link paragraph placeholders such as ``__BLANK_moon__`` to words in the bank.
 
-The key after ``__BLANK_`` names a word by its English translation, or by its
-Māori word, written in lowercase ASCII with underscores for spaces. Macrons
-are dropped, so ``kōrero paki`` becomes ``korero_paki``. The pattern matches
-the one the frontend uses to find blanks.
+The key after ``__BLANK_`` names a word entry by its key. When no entry has
+that key, a word whose form in any language reads the same, written in
+lowercase ASCII with underscores for spaces, is used instead. Macrons are
+dropped, so ``kōrero paki`` matches ``korero_paki``. The pattern matches the
+one the frontend uses to find blanks.
 """
 
 import re
@@ -27,25 +28,27 @@ def placeholder_key(value):
 
 
 def build_word_index(words=None):
-    """Map placeholder keys to words, separately for English and Māori."""
+    """Map placeholder keys to words, by word key and by form text."""
     if words is None:
-        words = Word.objects.only("id", "maori_word", "english_translation")
-    index = {"english": {}, "maori": {}}
+        words = Word.objects.only("id", "key").prefetch_related("forms")
+    index = {"key": {}, "forms": {}}
     for word in words:
-        english = placeholder_key(word.english_translation)
-        maori = placeholder_key(word.maori_word)
-        index["english"].setdefault(english, []).append(word)
-        index["maori"].setdefault(maori, []).append(word)
+        if word.key:
+            index["key"].setdefault(placeholder_key(word.key), []).append(word)
+        for form in word.forms.all():
+            matches = index["forms"].setdefault(placeholder_key(form.text), [])
+            if word not in matches:
+                matches.append(word)
     return index
 
 
 def find_word(index, key):
     """Return the one word for ``key``, or ``None`` if none or several match.
 
-    English translations are checked first, then Māori words.
+    Word keys are checked first, then the text of every language form.
     """
     key = placeholder_key(key)
-    matches = index["english"].get(key) or index["maori"].get(key) or []
+    matches = index["key"].get(key) or index["forms"].get(key) or []
     return matches[0] if len(matches) == 1 else None
 
 

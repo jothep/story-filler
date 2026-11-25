@@ -74,9 +74,17 @@ subprocess.run(
 )
 import django
 django.setup()
-from core.models import AppConfig, BlankLink, Paragraph, Story, Word
-story = Story.objects.create(title='Runtime verification')
-word = Word.objects.create(maori_word='wai', english_translation='water')
+from core.models import (
+    AppConfig, BlankLink, Language, Paragraph, Story, Word, WordForm,
+)
+english = Language.objects.get(code='en')
+maori = Language.objects.get(code='mi')
+story = Story.objects.create(
+    title='Runtime verification', language=english, learning_language=maori
+)
+word = Word.objects.create(key='water')
+WordForm.objects.create(word=word, language=maori, text='wai')
+WordForm.objects.create(word=word, language=english, text='water')
 paragraph = Paragraph.objects.create(
     story=story, order=1, text='Kia ora __BLANK_water__'
 )

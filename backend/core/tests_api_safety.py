@@ -11,7 +11,16 @@ from rest_framework import status
 from rest_framework.exceptions import PermissionDenied, Throttled
 from rest_framework.test import APITestCase
 
-from .models import AppConfig, BackgroundMusic, BlankLink, Paragraph, Story, Word
+from .models import (
+    AppConfig,
+    BackgroundMusic,
+    BlankLink,
+    Language,
+    Paragraph,
+    Story,
+    Word,
+    WordForm,
+)
 
 
 @override_settings(
@@ -93,8 +102,14 @@ class PublicAPIErrorTests(APITestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.story = Story.objects.create(title="Water story")
-        cls.word = Word.objects.create(maori_word="wai", english_translation="water")
+        english = Language.objects.get(code="en")
+        maori = Language.objects.get(code="mi")
+        cls.story = Story.objects.create(
+            title="Water story", language=english, learning_language=maori
+        )
+        cls.word = Word.objects.create(key="water")
+        WordForm.objects.create(word=cls.word, language=maori, text="wai")
+        WordForm.objects.create(word=cls.word, language=english, text="water")
         cls.paragraph = Paragraph.objects.create(
             story=cls.story, order=1, text="Find __BLANK_water__ and __BLANK_pending__."
         )
@@ -171,7 +186,7 @@ class PublicAPIErrorTests(APITestCase):
 
     def test_word_serialization_failure_is_not_a_null_word(self):
         with patch(
-            "core.serializers.WordSerializer.to_representation",
+            "core.serializers.word_data",
             side_effect=RuntimeError(self.internal_error),
         ):
             response = self.client.get(self.detail_url)
@@ -202,16 +217,21 @@ class PublicAPIErrorTests(APITestCase):
 
     def test_story_response_preserves_optional_media_and_unlinked_blanks(self):
         # An unlinked word in the bank must not appear in the story response.
-        Word.objects.create(maori_word="rangi", english_translation="sky")
+        Word.objects.create(key="sky")
 
         response = self.client.get(self.detail_url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         expected_word = {
             "id": self.word.pk,
+            "key": "water",
+            "image": None,
+            "text": "wai",
+            "audio": None,
+            "translation": "water",
+            "translation_audio": None,
             "maori_word": "wai",
             "english_translation": "water",
-            "image": None,
             "maori_audio": None,
             "english_audio": None,
         }
@@ -220,6 +240,8 @@ class PublicAPIErrorTests(APITestCase):
             {
                 "id": self.story.pk,
                 "title": "Water story",
+                "language": {"code": "en", "name": "English"},
+                "learning_language": {"code": "mi", "name": "Māori"},
                 "background_music_url": None,
                 "picture_url": None,
                 "words_in_bank": [expected_word],

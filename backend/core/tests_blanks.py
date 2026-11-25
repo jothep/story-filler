@@ -13,7 +13,17 @@ from .blanks import (
     placeholder_key,
     placeholders_in,
 )
-from .models import BlankLink, Paragraph, Story, Word
+from .models import BlankLink, Language, Paragraph, Story, Word, WordForm
+
+
+def make_word(key, **forms):
+    """Create a word entry with a form per language code, such as mi="marama"."""
+    word = Word.objects.create(key=key)
+    for code, text in forms.items():
+        WordForm.objects.create(
+            word=word, language=Language.objects.get(code=code), text=text
+        )
+    return word
 
 
 class PlaceholderKeyTests(TestCase):
@@ -31,20 +41,16 @@ class LinkPlaceholdersTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.story = Story.objects.create(title="Rona and the Moon")
-        cls.moon = Word.objects.create(maori_word="marama", english_translation="moon")
-        cls.tale = Word.objects.create(
-            maori_word="kōrero paki", english_translation="tale"
-        )
+        cls.moon = make_word("moon", mi="marama", en="moon")
+        cls.tale = make_word("tale", mi="kōrero paki", en="tale")
 
     def paragraph(self, text):
         return Paragraph.objects.create(story=self.story, order=1, text=text)
 
     def links(self, paragraph):
-        return dict(
-            paragraph.blank_links.values_list("placeholder", "word__maori_word")
-        )
+        return dict(paragraph.blank_links.values_list("placeholder", "word__key"))
 
-    def test_links_by_english_or_maori_and_reports_the_rest(self):
+    def test_links_by_key_or_form_text_and_reports_the_rest(self):
         paragraph = self.paragraph(
             "The __BLANK_moon__ told a __BLANK_korero_paki__ about the "
             "__BLANK_sky__ and the __BLANK_moon__."
@@ -55,7 +61,7 @@ class LinkPlaceholdersTests(TestCase):
         self.assertEqual(unlinked, ["__BLANK_sky__"])
         self.assertEqual(
             self.links(paragraph),
-            {"__BLANK_moon__": "marama", "__BLANK_korero_paki__": "kōrero paki"},
+            {"__BLANK_moon__": "moon", "__BLANK_korero_paki__": "tale"},
         )
 
     def test_existing_links_are_kept(self):
@@ -65,11 +71,18 @@ class LinkPlaceholdersTests(TestCase):
         )
 
         self.assertEqual(link_placeholders(paragraph), [])
-        self.assertEqual(self.links(paragraph), {"__BLANK_moon__": "kōrero paki"})
+        self.assertEqual(self.links(paragraph), {"__BLANK_moon__": "tale"})
+
+    def test_a_key_wins_over_form_text(self):
+        make_word("glow", en="moon")
+        paragraph = self.paragraph("The __BLANK_moon__ rose.")
+
+        self.assertEqual(link_placeholders(paragraph), [])
+        self.assertEqual(self.links(paragraph), {"__BLANK_moon__": "moon"})
 
     def test_ambiguous_keys_are_not_linked(self):
-        Word.objects.create(maori_word="rama", english_translation="light")
-        Word.objects.create(maori_word="māramatanga", english_translation="light")
+        make_word("lamp", en="light", mi="rama")
+        make_word("glow", en="light", mi="māramatanga")
         paragraph = self.paragraph("A __BLANK_light__ shone.")
 
         self.assertEqual(
@@ -81,8 +94,9 @@ class LinkPlaceholdersTests(TestCase):
         self,
     ):
         long_key = "x" * 50
-        Word.objects.create(maori_word="roa", english_translation=long_key)
-        sky = Word.objects.create(maori_word="rangi", english_translation="sky")
+        # Keys fit a placeholder, but a match on form text can be too long.
+        make_word("roa", mi="roa", en=long_key)
+        sky = make_word("sky", mi="rangi")
         paragraph = self.paragraph(f"__BLANK_moon__ __BLANK_{long_key}__ __BLANK_sky__")
         BlankLink.objects.create(
             paragraph=paragraph, placeholder="__BLANK_moon__", word=None
@@ -111,7 +125,7 @@ class StoryAdminLinkingTests(TestCase):
         cls.admin_user = get_user_model().objects.create_superuser(
             username="story-editor", email="editor@example.invalid", password=None
         )
-        Word.objects.create(maori_word="marama", english_translation="moon")
+        make_word("moon", mi="marama", en="moon")
 
     def post_story(self, user):
         self.client.force_login(user)
@@ -119,6 +133,8 @@ class StoryAdminLinkingTests(TestCase):
             reverse("admin:core_story_add"),
             {
                 "title": "Rona and the Moon",
+                "language": Language.objects.get(code="en").pk,
+                "learning_language": Language.objects.get(code="mi").pk,
                 "story_picture": "",
                 "background_music": "",
                 "paragraphs-TOTAL_FORMS": "1",
@@ -139,7 +155,7 @@ class StoryAdminLinkingTests(TestCase):
         self.assertEqual(response.status_code, 302)
         link = BlankLink.objects.get()
         self.assertEqual(link.placeholder, "__BLANK_moon__")
-        self.assertEqual(link.word.maori_word, "marama")
+        self.assertEqual(link.word.key, "moon")
         warnings = [
             str(message)
             for message in get_messages(response.wsgi_request)
