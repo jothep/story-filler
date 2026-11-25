@@ -56,13 +56,13 @@ class Migration(migrations.Migration):
             name="key",
             field=models.CharField(
                 help_text="Used in blanks: the key moon matches __BLANK_moon__",
-                max_length=50,
+                max_length=40,
                 null=True,
                 unique=True,
                 validators=[
                     django.core.validators.RegexValidator(
-                        "^[a-z0-9_]+$",
-                        "Use lowercase letters, digits and underscores only.",
+                        "^[a-z0-9]+(_[a-z0-9]+)*$",
+                        "Use lowercase letters and digits, with single underscores between them.",
                     )
                 ],
             ),

@@ -12,7 +12,7 @@ import unicodedata
 
 from django.db import migrations
 
-KEY_LENGTH = 50
+KEY_LENGTH = 40
 
 
 def key_base(value):
@@ -23,13 +23,16 @@ def key_base(value):
     return re.sub(r"[^a-z0-9]+", "_", ascii_text.lower()).strip("_")
 
 
-def unique_key(base, used):
-    base = base[: KEY_LENGTH - 4]
-    key = base
+def fit(base, suffix=""):
+    """Shorten ``base`` so that ``base + suffix`` fits the key column."""
+    return base[: KEY_LENGTH - len(suffix)].rstrip("_") + suffix
+
+
+def numbered_key(base, used):
     number = 2
-    while key in used:
-        key = f"{base}_{number}"
+    while fit(base, f"_{number}") in used:
         number += 1
+    key = fit(base, f"_{number}")
     used.add(key)
     return key
 
@@ -43,12 +46,29 @@ def copy_words_into_forms(apps, schema_editor):
     english, _ = Language.objects.get_or_create(code="en", defaults={"name": "English"})
     maori, _ = Language.objects.get_or_create(code="mi", defaults={"name": "Māori"})
 
-    used = set(Word.objects.exclude(key=None).values_list("key", flat=True))
-    for word in Word.objects.order_by("pk"):
-        if not word.key:
-            base = key_base(word.english_translation) or key_base(word.maori_word)
-            word.key = unique_key(base or f"word_{word.pk}", used)
+    words = list(Word.objects.order_by("pk"))
+    used = {word.key for word in words if word.key}
+    bases = {
+        word.pk: fit(
+            key_base(word.english_translation)
+            or key_base(word.maori_word)
+            or f"word_{word.pk}"
+        )
+        for word in words
+        if not word.key
+    }
+    # Give each base to its first word before numbering repeats, so a number
+    # never takes the key that another word's own text would produce.
+    for word in words:
+        if not word.key and bases[word.pk] not in used:
+            word.key = bases[word.pk]
+            used.add(word.key)
             word.save(update_fields=["key"])
+    for word in words:
+        if not word.key:
+            word.key = numbered_key(bases[word.pk], used)
+            word.save(update_fields=["key"])
+    for word in words:
         for language, text, audio in (
             (maori, word.maori_word, word.maori_audio),
             (english, word.english_translation, word.english_audio),

@@ -4,6 +4,7 @@ import importlib
 
 from django.apps import apps
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.db import connection
 from django.test import TestCase, override_settings
 from django.test.utils import CaptureQueriesContext
@@ -55,6 +56,39 @@ class CopyWordsIntoFormsTests(TestCase):
         story.refresh_from_db()
         self.assertEqual(story.language.code, "en")
         self.assertEqual(story.learning_language.code, "mi")
+
+    def test_numbered_keys_never_take_another_words_own_key(self):
+        first = Word.objects.create(maori_word="rama", english_translation="light")
+        repeat = Word.objects.create(maori_word="kōrama", english_translation="light")
+        second = Word.objects.create(
+            maori_word="rama rua", english_translation="light 2"
+        )
+
+        copy_migration.copy_words_into_forms(apps, None)
+
+        keys = [Word.objects.get(pk=word.pk).key for word in (first, repeat, second)]
+        self.assertEqual(keys, ["light", "light_3", "light_2"])
+
+    def test_long_keys_fit_the_column_with_their_number(self):
+        long_text = "very long word " * 4
+        words = [
+            Word.objects.create(maori_word=f"roa {n}", english_translation=long_text)
+            for n in range(3)
+        ]
+
+        copy_migration.copy_words_into_forms(apps, None)
+
+        keys = [Word.objects.get(pk=word.pk).key for word in words]
+        self.assertEqual(
+            keys,
+            [
+                "very_long_word_very_long_word_very_long",
+                "very_long_word_very_long_word_very_lon_2",
+                "very_long_word_very_long_word_very_lon_3",
+            ],
+        )
+        self.assertTrue(all(len(key) <= 40 for key in keys))
+        self.assertEqual(len(copy_migration.fit("a" * 45, "_1000")), 40)
 
 
 class WordApiTests(APITestCase):
@@ -123,6 +157,16 @@ class WordApiTests(APITestCase):
         self.assertEqual((word["text"], word["translation"]), ("moon", None))
         self.assertIsNone(word["translation_audio"])
         self.assertEqual(word["english_translation"], "moon")
+
+    def test_a_missing_translation_is_not_filled_with_the_learning_form(self):
+        star = Word.objects.create(key="star")
+        WordForm.objects.create(word=star, language=self.maori, text="whetū")
+        word = self.detail(self.story_with(self.maori, star))["words_in_bank"][0]
+
+        self.assertEqual(
+            (word["maori_word"], word["english_translation"]), ("whetū", None)
+        )
+        self.assertIsNone(word["english_audio"])
 
     def test_a_missing_form_is_null(self):
         star = Word.objects.create(key="star")
@@ -194,6 +238,12 @@ class WordAdminTests(TestCase):
         self.assertIsNone(word.maori_word)
         changelist = self.client.get(reverse("admin:core_word_changelist"))
         self.assertContains(changelist, "mi: marama")
+
+    def test_keys_must_be_normalised_and_fit_a_placeholder(self):
+        for key in ("_moon", "moon_", "moon__x", "Moon", "x" * 41):
+            with self.subTest(key=key), self.assertRaises(ValidationError):
+                Word(key=key).full_clean()
+        Word(key="full_moon_2").full_clean()
 
     def test_keys_outside_the_placeholder_alphabet_are_refused(self):
         self.client.force_login(self.admin_user)

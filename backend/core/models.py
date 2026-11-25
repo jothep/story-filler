@@ -38,9 +38,13 @@ def validate_audio_file_size(file):
 AUDIO_EXTENSIONS = ["mp3", "m4a", "aac", "wav", "ogg"]
 
 # Word keys appear in placeholders such as __BLANK_moon__, which the game
-# parser matches with [A-Za-z0-9_]+.
+# parser matches with [A-Za-z0-9_]+. Keys are already in the normalised form
+# that blank matching uses (no leading, trailing or repeated underscores), and
+# at most 40 characters, so the placeholder fits BlankLink.placeholder (50).
+WORD_KEY_LENGTH = 40
 WORD_KEY_VALIDATOR = RegexValidator(
-    r"^[a-z0-9_]+$", "Use lowercase letters, digits and underscores only."
+    r"^[a-z0-9]+(_[a-z0-9]+)*$",
+    "Use lowercase letters and digits, with single underscores between them.",
 )
 LANGUAGE_CODE_VALIDATOR = RegexValidator(
     r"^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
@@ -294,7 +298,7 @@ class Word(models.Model):
     # Nullable in the database until the legacy columns are removed, so the
     # previous release can still create words; the admin requires it.
     key = models.CharField(
-        max_length=50,
+        max_length=WORD_KEY_LENGTH,
         unique=True,
         null=True,
         blank=False,

@@ -45,12 +45,9 @@ def word_data(instance, story):
     """
     learning_id = story.learning_language_id if story else None
     story_language_id = story.language_id if story else None
+    same_language = story_language_id == learning_id
     learning = form_in(instance, learning_id)
-    translation = (
-        form_in(instance, story_language_id)
-        if story_language_id != learning_id
-        else None
-    )
+    translation = None if same_language else form_in(instance, story_language_id)
     text = learning.text if learning else None
     audio = file_url(learning and learning.audio, f"Word {instance.id} audio")
     translation_text = translation.text if translation else None
@@ -66,9 +63,9 @@ def word_data(instance, story):
         "translation": translation_text,
         "translation_audio": translation_audio,
         "maori_word": text,
-        "english_translation": translation_text if translation else text,
+        "english_translation": text if same_language else translation_text,
         "maori_audio": audio,
-        "english_audio": translation_audio if translation else audio,
+        "english_audio": audio if same_language else translation_audio,
     }
 
 

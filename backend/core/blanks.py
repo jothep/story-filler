@@ -34,7 +34,7 @@ def build_word_index(words=None):
     index = {"key": {}, "forms": {}}
     for word in words:
         if word.key:
-            index["key"].setdefault(word.key, []).append(word)
+            index["key"].setdefault(placeholder_key(word.key), []).append(word)
         for form in word.forms.all():
             matches = index["forms"].setdefault(placeholder_key(form.text), [])
             if word not in matches:
