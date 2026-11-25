@@ -22,7 +22,7 @@ class StoryListAPIView(generics.ListAPIView):
     Returns a simple list with id and title only.
     """
 
-    queryset = Story.objects.all().order_by("-id")
+    queryset = Story.objects.filter(status=Story.PUBLISHED).order_by("-id")
     serializer_class = StoryListSerializer
 
     def list(self, request, *args, **kwargs):
@@ -75,13 +75,17 @@ class StoryDetailAPIView(generics.RetrieveAPIView):
           - paragraphs__blank_links__word (FK through blank_links)
           - paragraphs__blank_links__word__forms (each word's language forms)
         """
-        return Story.objects.select_related(
-            "background_music", "story_picture", "language", "learning_language"
-        ).prefetch_related(
-            "paragraphs",
-            "paragraphs__blank_links",
-            "paragraphs__blank_links__word",
-            "paragraphs__blank_links__word__forms",
+        return (
+            Story.objects.filter(status=Story.PUBLISHED)
+            .select_related(
+                "background_music", "story_picture", "language", "learning_language"
+            )
+            .prefetch_related(
+                "paragraphs",
+                "paragraphs__blank_links",
+                "paragraphs__blank_links__word",
+                "paragraphs__blank_links__word__forms",
+            )
         )
 
     def retrieve(self, request, *args, **kwargs):

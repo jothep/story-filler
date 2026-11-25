@@ -105,7 +105,10 @@ class PublicAPIErrorTests(APITestCase):
         english = Language.objects.get(code="en")
         maori = Language.objects.get(code="mi")
         cls.story = Story.objects.create(
-            title="Water story", language=english, learning_language=maori
+            title="Water story",
+            language=english,
+            learning_language=maori,
+            status=Story.PUBLISHED,
         )
         cls.word = Word.objects.create(key="water")
         WordForm.objects.create(word=cls.word, language=maori, text="wai")

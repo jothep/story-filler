@@ -1,6 +1,6 @@
 # Adding and editing stories
 
-Stories are edited in the Django admin at `/admin/` on the backend service. See [administrator accounts](admin-account.md) for signing in. Saved changes go live straight away; there is no draft state yet.
+Stories are edited in the Django admin at `/admin/` on the backend service. See [administrator accounts](admin-account.md) for signing in. Each story is a draft or published; players see published stories only (see [Publishing](#publishing)).
 
 ## Media libraries
 
@@ -61,6 +61,22 @@ python3 scripts/convert_audio.py ~/Recordings/rona --speech --loudness --trim
 The game's word list is made of the words linked to the story's blanks; there is no separate word selection.
 
 Saving never changes an existing Blank Link; to link a placeholder to a different word, edit its Blank Link or change the key in the text. If your account may delete Blank Links, saving removes the links whose placeholder is no longer in the text and lists them at the top of the page, so removed blanks leave no extra words in the story's word list.
+
+## Publishing
+
+A new story starts as a **Draft**, which players do not see. **Before publishing** on the story page lists what it is missing, and the story list shows a summary per story:
+
+- **Problems** break play and keep the story in draft:
+  - no pages;
+  - a blank without a word;
+  - a linked word without a form in the learning language or, when the two languages differ, in the story language;
+  - a story without both languages.
+- **Warnings** do not block publishing, because these are often added later:
+  - a page without narration or longer than 240 characters;
+  - a word without audio or a picture;
+  - a story without a picture or without any blanks.
+
+Set **Status** to **Published** and save. The check runs on what was saved. If problems remain, the story stays a draft and the page lists them.
 
 ## Menu music
 

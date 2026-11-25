@@ -174,6 +174,7 @@ class WholeStoryAdminTests(TestCase):
             "title": self.story.title,
             "language": self.story.language_id,
             "learning_language": self.story.learning_language_id,
+            "status": "draft",
             "story_picture": "",
             "background_music": "",
             "story_text": text,
