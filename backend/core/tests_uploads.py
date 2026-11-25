@@ -7,11 +7,12 @@ from io import BytesIO
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase, override_settings
+from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from PIL import Image
 
 from .models import Language, Paragraph, Story, Word, WordForm
+from .uploads import page_number
 
 
 def picture(name):
@@ -140,6 +141,26 @@ class WordUploadTests(UploadTestCase):
         self.assertEqual(response.status_code, 403)
 
 
+class PageNumberTests(SimpleTestCase):
+    def test_names_ending_in_a_page_number(self):
+        cases = {
+            "page-01.mp3": 1,
+            "page03.mp3": 3,
+            "PAGE_4.mp3": 4,
+            "12.mp3": 12,
+            "Rona_moon_05.mp3": 5,
+            "rona moon 6.mp3": 6,
+            "take2.mp3": None,
+            "page-0.mp3": None,
+            "page-12345.mp3": None,
+            "page-01.ogg": None,
+            "moon.mi.mp3": None,
+        }
+        for name, expected in cases.items():
+            with self.subTest(name=name):
+                self.assertEqual(page_number(audio(name)), expected)
+
+
 class NarrationUploadTests(UploadTestCase):
     @classmethod
     def setUpTestData(cls):
@@ -163,15 +184,21 @@ class NarrationUploadTests(UploadTestCase):
                 audio("page-09.mp3"),
                 audio("page-3.ogg"),
                 audio("intro.mp3"),
+                audio("take3.mp3"),
+                audio("Rona_moon_03.mp3"),
             ],
         ).context["report"]
 
-        self.assertEqual(report.saved, ["page-01.mp3: page 1", "2.mp3: page 2"])
+        self.assertEqual(
+            report.saved,
+            ["page-01.mp3: page 1", "2.mp3: page 2", "Rona_moon_03.mp3: page 3"],
+        )
         for expected in (
             "page_02.mp3: another file in this upload is for page 2",
             "page-09.mp3: the story has 3 pages",
             "page-3.ogg: narration must be MP3",
-            "intro.mp3: name it page-01.mp3",
+            "intro.mp3: end the name with its page number",
+            "take3.mp3: end the name with its page number",
         ):
             self.assertTrue(
                 any(line.startswith(expected) for line in report.skipped), expected
@@ -183,7 +210,9 @@ class NarrationUploadTests(UploadTestCase):
         self.assertTrue(
             audio_names[1].startswith("paragraph_audio/rona-and-the-moon-page-02")
         )
-        self.assertFalse(audio_names[2])
+        self.assertTrue(
+            audio_names[2].startswith("paragraph_audio/rona-and-the-moon-page-03")
+        )
 
     def test_the_story_page_links_to_the_upload_page(self):
         self.client.force_login(self.admin_user)

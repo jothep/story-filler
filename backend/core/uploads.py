@@ -2,12 +2,12 @@
 
 Word files are named by key, and audio also by language code:
 ``moon.jpg`` is the picture of ``moon``, ``moon.mi.mp3`` its Māori audio.
-Narration files are named by page number: ``page-01.mp3``, ``page-2.mp3`` or
-``3.mp3`` for the story's first, second and third pages. Nothing is guessed:
+Narration files are named by page number: ``page-01.mp3``, ``page-2.mp3``,
+``3.mp3`` or a name ending in the number after ``-``, ``_`` or a space, such
+as ``Rona_moon_04.mp3``, for the story's first to fourth pages. Nothing is guessed:
 a file that does not match exactly is listed with the reason.
 """
 
-import re
 from dataclasses import dataclass, field
 from pathlib import PurePath
 
@@ -25,7 +25,7 @@ from .models import (
 IMAGE_EXTENSIONS = frozenset({"jpg", "jpeg", "png", "webp"})
 OTHER_AUDIO = frozenset({"aac", "aif", "aiff", "flac", "m4a", "oga", "ogg", "opus"})
 OTHER_AUDIO |= {"wav", "webm", "wma"}
-PAGE_NAME = re.compile(r"(?:page[-_ ]?)?0*(\d{1,4})", re.IGNORECASE)
+PAGE_SEPARATORS = "-_ "
 CONVERT = "convert it to MP3 with scripts/convert_audio.py first"
 
 
@@ -136,12 +136,23 @@ def save_form_audio(upload, word, language, name, report):
 
 
 def page_number(upload):
-    """Return the 1-based page number in a narration file name, or None."""
+    """Return the 1-based page number at the end of a narration file name.
+
+    The number may stand alone or follow ``page``, ``-``, ``_`` or a space,
+    so ``take2.mp3`` is not read as page 2. Returns None otherwise.
+    """
     _, parts, extension = split_name(upload)
     if extension != "mp3" or len(parts) != 2:
         return None
-    match = PAGE_NAME.fullmatch(parts[0])
-    return int(match.group(1)) if match else None
+    stem = parts[0]
+    digits = len(stem) - len(stem.rstrip("0123456789"))
+    if not 1 <= digits <= 4:
+        return None
+    prefix = stem[: len(stem) - digits]
+    if prefix and prefix[-1] not in PAGE_SEPARATORS:
+        if not prefix.lower().endswith("page"):
+            return None
+    return int(stem[-digits:]) or None
 
 
 def save_narration(story, uploads):
@@ -157,7 +168,8 @@ def save_narration(story, uploads):
         number = page_number(upload)
         if number is None:
             report.skipped.append(
-                f"{name}: name it page-01.mp3, page-02.mp3 and so on."
+                f"{name}: end the name with its page number, such as page-01.mp3 "
+                "or Rona_moon_01.mp3."
             )
             continue
         if not 1 <= number <= len(paragraphs):

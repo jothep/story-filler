@@ -186,8 +186,9 @@ class StoryAdmin(admin.ModelAdmin):
             {
                 "title": f"Upload narration: {story.title}",
                 "rules": [
-                    "Name each file by its page number: page-01.mp3, page-02.mp3 "
-                    "(or 1.mp3, 2.mp3), in the order the pages appear.",
+                    "End each file name with its page number, in the order the pages "
+                    "appear: page-01.mp3, 2.mp3 or Rona_moon_03.mp3 (after -, _, a "
+                    "space or 'page').",
                     MP3_RULE,
                     "A page that already has narration gets the new file.",
                     UPLOAD_LIMIT,
