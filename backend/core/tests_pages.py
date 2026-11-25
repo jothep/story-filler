@@ -2,6 +2,7 @@
 
 import shutil
 import tempfile
+import time
 from pathlib import Path
 
 from django.contrib import messages
@@ -13,7 +14,7 @@ from django.urls import reverse
 
 from .blanks import expand_inline_blanks
 from .models import BlankLink, Language, Paragraph, Story, Word, WordForm
-from .pages import apply_pages, page_length, split_pages, story_text
+from .pages import apply_pages, page_length, sentences_in, split_pages, story_text
 
 LIVE_PAGES = [
     "Long ago, in Aotearoa, there lived a woman named Rona. She was quick with "
@@ -46,6 +47,18 @@ class SplitPagesTests(SimpleTestCase):
         sentence = "word " * 30 + "end."
 
         self.assertEqual(split_pages(sentence, limit=50), [" ".join(sentence.split())])
+
+    def test_sentences_end_at_punctuation_followed_by_space(self):
+        self.assertEqual(
+            sentences_in("A b. C d! He said “Go.” Then left… 3.14 is pi"),
+            ["A b.", "C d!", "He said “Go.”", "Then left…", "3.14 is pi"],
+        )
+
+    def test_long_runs_of_punctuation_or_newlines_stay_fast(self):
+        started = time.perf_counter()
+        sentences_in("!" * 200_000 + "a")
+        split_pages("\n" * 200_000 + "a" + " b." * 1000)
+        self.assertLess(time.perf_counter() - started, 2)
 
     def test_blanks_count_as_a_fixed_width(self):
         self.assertEqual(page_length("a __BLANK_village__ b"), 14)

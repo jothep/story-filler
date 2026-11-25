@@ -6,16 +6,14 @@ ends, packing as many sentences onto each page as fit. A single sentence
 longer than the limit stays on one page.
 """
 
-import re
-
 from .blanks import PLACEHOLDER
 
 # The longest live page is 216 characters by this measure; a blank counts as
 # BLANK_LENGTH characters because the game shows it as a fixed-width box.
 PAGE_LENGTH = 240
 BLANK_LENGTH = 10
-PAGE_BREAK = re.compile(r"\n\s*\n")
-SENTENCE = re.compile(r"\S.*?(?:[.!?…]+[\"”’)\]]*(?=\s|$)|$)", re.S)
+SENTENCE_END = frozenset(".!?…")
+CLOSING = frozenset('"”’)]')
 
 
 def page_length(text):
@@ -23,17 +21,55 @@ def page_length(text):
     return len(PLACEHOLDER.sub("x" * BLANK_LENGTH, text))
 
 
+def blocks_in(text):
+    """Return the text's blocks: runs of non-blank lines, joined by spaces."""
+    blocks = []
+    lines = []
+    for line in (text or "").splitlines():
+        if line.strip():
+            lines.append(line)
+        elif lines:
+            blocks.append(" ".join(" ".join(lines).split()))
+            lines = []
+    if lines:
+        blocks.append(" ".join(" ".join(lines).split()))
+    return blocks
+
+
 def sentences_in(text):
-    return [match.group(0).strip() for match in SENTENCE.finditer(text)]
+    """Split text after sentence-ending punctuation and any closing quotes.
+
+    A sentence ends where ``.``, ``!``, ``?`` or ``…`` (and any closing quotes
+    or brackets after them) are followed by whitespace or the end of the text.
+    The scan is linear, so pasted text cannot make it slow.
+    """
+    sentences = []
+    start = 0
+    index = 0
+    length = len(text)
+    while index < length:
+        if text[index] not in SENTENCE_END:
+            index += 1
+            continue
+        end = index + 1
+        while end < length and (text[end] in SENTENCE_END or text[end] in CLOSING):
+            end += 1
+        if end == length or text[end].isspace():
+            sentence = text[start:end].strip()
+            if sentence:
+                sentences.append(sentence)
+            start = end
+        index = end
+    rest = text[start:].strip()
+    if rest:
+        sentences.append(rest)
+    return sentences
 
 
 def split_pages(text, limit=PAGE_LENGTH):
     """Return the pages of a whole story."""
     pages = []
-    for block in PAGE_BREAK.split((text or "").replace("\r\n", "\n").strip()):
-        block = " ".join(block.split())
-        if not block:
-            continue
+    for block in blocks_in(text):
         current = ""
         for sentence in sentences_in(block):
             candidate = f"{current} {sentence}".strip()
