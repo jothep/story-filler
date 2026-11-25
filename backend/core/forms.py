@@ -1,9 +1,30 @@
 # core/forms.py
 # Provide custom forms for Django admin to enhance data validation.
+import re
+
 from django import forms
 from django.core.exceptions import ValidationError
-import re
-from .models import BlankLink
+
+from .blanks import expand_inline_blanks
+from .models import BlankLink, Paragraph
+
+
+class ParagraphForm(forms.ModelForm):
+    """A story page. Blanks can be written as {{key}}."""
+
+    class Meta:
+        model = Paragraph
+        fields = ("order", "text", "audio")
+        help_texts = {
+            "text": "Write each blank as {{key}}, for example {{moon}}. Saving "
+            "stores it as __BLANK_moon__ and links it to the word with that key."
+        }
+
+    def clean_text(self):
+        try:
+            return expand_inline_blanks(self.cleaned_data.get("text"))
+        except ValueError as error:
+            raise ValidationError(str(error)) from error
 
 
 class BlankLinkForm(forms.ModelForm):

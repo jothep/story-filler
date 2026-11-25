@@ -4,11 +4,12 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.contrib.messages import get_messages
-from django.test import TestCase, override_settings
+from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 
 from .blanks import (
     build_word_index,
+    expand_inline_blanks,
     link_placeholders,
     placeholder_key,
     placeholders_in,
@@ -35,6 +36,22 @@ class PlaceholderKeyTests(TestCase):
     def test_placeholders_are_distinct_and_ordered(self):
         text = "__BLANK_moon__ and __BLANK_tale__, then __BLANK_moon__ again"
         self.assertEqual(placeholders_in(text), ["__BLANK_moon__", "__BLANK_tale__"])
+
+
+class InlineBlankTests(SimpleTestCase):
+    def test_inline_blanks_become_placeholders(self):
+        self.assertEqual(
+            expand_inline_blanks("The {{moon}} told a {{ Kōrero Paki }}."),
+            "The __BLANK_moon__ told a __BLANK_korero_paki__.",
+        )
+        self.assertEqual(
+            expand_inline_blanks("Kept: __BLANK_sky__."), "Kept: __BLANK_sky__."
+        )
+
+    def test_braces_that_are_not_blanks_are_refused(self):
+        for text in ("Empty {{}}.", "Open {{moon.", "Close moon}}.", "{{!}}"):
+            with self.subTest(text=text), self.assertRaises(ValueError):
+                expand_inline_blanks(text)
 
 
 class LinkPlaceholdersTests(TestCase):
@@ -127,7 +144,7 @@ class StoryAdminLinkingTests(TestCase):
         )
         make_word("moon", mi="marama", en="moon")
 
-    def post_story(self, user):
+    def post_story(self, user, text="The __BLANK_moon__ lit the __BLANK_sky__."):
         self.client.force_login(user)
         return self.client.post(
             reverse("admin:core_story_add"),
@@ -144,10 +161,89 @@ class StoryAdminLinkingTests(TestCase):
                 "paragraphs-0-id": "",
                 "paragraphs-0-story": "",
                 "paragraphs-0-order": "1",
-                "paragraphs-0-text": "The __BLANK_moon__ lit the __BLANK_sky__.",
+                "paragraphs-0-text": text,
                 "_save": "Save",
             },
         )
+
+    def edit_paragraph(self, user, story, text):
+        """Save the story's only paragraph with new text."""
+        paragraph = story.paragraphs.get()
+        self.client.force_login(user)
+        return self.client.post(
+            reverse("admin:core_story_change", args=[story.pk]),
+            {
+                "title": story.title,
+                "language": story.language_id,
+                "learning_language": story.learning_language_id,
+                "story_picture": "",
+                "background_music": "",
+                "paragraphs-TOTAL_FORMS": "1",
+                "paragraphs-INITIAL_FORMS": "1",
+                "paragraphs-MIN_NUM_FORMS": "0",
+                "paragraphs-MAX_NUM_FORMS": "1000",
+                "paragraphs-0-id": paragraph.pk,
+                "paragraphs-0-story": story.pk,
+                "paragraphs-0-order": paragraph.order,
+                "paragraphs-0-text": text,
+                "_save": "Save",
+            },
+        )
+
+    def test_inline_blanks_are_stored_as_placeholders_and_linked(self):
+        response = self.post_story(self.admin_user, text="The {{ Moon }} rose.")
+
+        self.assertEqual(response.status_code, 302)
+        story = Story.objects.get()
+        self.assertEqual(story.paragraphs.get().text, "The __BLANK_moon__ rose.")
+        self.assertEqual(BlankLink.objects.get().word.key, "moon")
+
+    def test_unclosed_inline_blanks_are_refused(self):
+        response = self.post_story(self.admin_user, text="The {{moon rose.")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Write each blank as {{key}}")
+        self.assertFalse(Story.objects.exists())
+
+    def test_links_for_removed_blanks_are_deleted(self):
+        self.post_story(self.admin_user, text="The {{moon}} rose.")
+        story = Story.objects.get()
+
+        response = self.edit_paragraph(self.admin_user, story, "The sun rose.")
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(BlankLink.objects.exists())
+        infos = [
+            str(message)
+            for message in get_messages(response.wsgi_request)
+            if message.level == messages.INFO
+        ]
+        self.assertTrue(any("__BLANK_moon__" in message for message in infos))
+
+    def test_editors_who_may_not_delete_links_keep_them(self):
+        self.post_story(self.admin_user, text="The {{moon}} rose.")
+        story = Story.objects.get()
+        editor = get_user_model().objects.create_user(
+            username="page-editor", is_staff=True
+        )
+        editor.user_permissions.add(
+            *Permission.objects.filter(
+                content_type__app_label="core",
+                codename__in=[
+                    "change_story",
+                    "view_story",
+                    "add_paragraph",
+                    "change_paragraph",
+                    "view_paragraph",
+                    "add_blanklink",
+                ],
+            )
+        )
+
+        response = self.edit_paragraph(editor, story, "The sun rose.")
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(BlankLink.objects.get().placeholder, "__BLANK_moon__")
 
     def test_saving_a_story_links_placeholders_and_warns_about_the_rest(self):
         response = self.post_story(self.admin_user)

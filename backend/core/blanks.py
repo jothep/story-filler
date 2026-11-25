@@ -15,6 +15,7 @@ from django.db import IntegrityError, transaction
 from .models import BlankLink, Word
 
 PLACEHOLDER = re.compile(r"__BLANK_([A-Za-z0-9_]+)__")
+INLINE_BLANK = re.compile(r"\{\{([^{}]*)\}\}")
 
 
 def placeholder_key(value):
@@ -50,6 +51,42 @@ def find_word(index, key):
     key = placeholder_key(key)
     matches = index["key"].get(key) or index["forms"].get(key) or []
     return matches[0] if len(matches) == 1 else None
+
+
+def expand_inline_blanks(text):
+    """Store each ``{{key}}`` in ``text`` as the placeholder ``__BLANK_key__``.
+
+    The text between the braces is normalised like any placeholder key, so
+    ``{{ Moon }}`` and ``{{kōrero paki}}`` become ``__BLANK_moon__`` and
+    ``__BLANK_korero_paki__``. Raises ``ValueError`` when braces do not form a
+    blank, such as ``{{}}`` or an unclosed ``{{moon``.
+    """
+
+    def replace(match):
+        key = placeholder_key(match.group(1))
+        return f"__BLANK_{key}__" if key else match.group(0)
+
+    expanded = INLINE_BLANK.sub(replace, text or "")
+    if "{{" in expanded or "}}" in expanded:
+        raise ValueError(
+            "Write each blank as {{key}}, for example {{moon}}, with a key "
+            "made of letters or digits. Check every {{ and }} in the text."
+        )
+    return expanded
+
+
+def remove_stale_links(paragraph):
+    """Delete Blank Links whose placeholder is no longer in the text.
+
+    Returns the removed placeholders.
+    """
+    stale = [
+        link
+        for link in paragraph.blank_links.all()
+        if link.placeholder not in (paragraph.text or "")
+    ]
+    BlankLink.objects.filter(pk__in=[link.pk for link in stale]).delete()
+    return [link.placeholder for link in stale]
 
 
 def placeholders_in(text):
