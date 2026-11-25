@@ -15,7 +15,8 @@ from .models import (
     StoryPicture,
     AppConfig,
 )
-from .forms import BlankLinkForm, ParagraphForm
+from .forms import BlankLinkForm, ParagraphForm, StoryAdminForm
+from .pages import apply_pages
 
 AUDIO_MIME_TYPES = {
     ".mp3": "audio/mpeg",
@@ -66,6 +67,7 @@ class StoryAdmin(admin.ModelAdmin):
     Main menu of "Story"
     """
 
+    form = StoryAdminForm
     list_display = ("title", "preview_picture")
     inlines = [ParagraphInline]
     search_fields = ("title",)
@@ -76,6 +78,7 @@ class StoryAdmin(admin.ModelAdmin):
             "Story Information",
             {"fields": ("title", ("language", "learning_language"))},
         ),
+        ("Pages", {"fields": ("story_text", "story_text_version")}),
         (
             "Media",
             {
@@ -97,6 +100,7 @@ class StoryAdmin(admin.ModelAdmin):
         them.
         """
         super().save_related(request, form, formsets, change)
+        self.apply_story_text(request, form, formsets)
         can_add = request.user.has_perm("core.add_blanklink")
         can_delete = request.user.has_perm("core.delete_blanklink")
         if not (can_add or can_delete):
@@ -124,6 +128,53 @@ class StoryAdmin(admin.ModelAdmin):
                 + ", ".join(dict.fromkeys(unlinked))
                 + ". Add these on the Blank Links page.",
                 level=messages.WARNING,
+            )
+
+    def apply_story_text(self, request, form, formsets):
+        """Replace the pages with the whole-story text, if it changed."""
+        pages = form.new_pages()
+        if pages is None:
+            return
+        needed = ("add", "change", "delete")
+        if not all(request.user.has_perm(f"core.{a}_paragraph") for a in needed):
+            self.message_user(
+                request,
+                "The whole-story text was not applied: replacing pages needs "
+                "permission to add, change and delete paragraphs.",
+                level=messages.WARNING,
+            )
+            return
+        if any(formset.has_changed() for formset in formsets):
+            # The page forms were saved first; mapping narration by position
+            # onto pages that just moved could attach it to the wrong page.
+            self.message_user(
+                request,
+                "The whole-story text was not applied because pages were also "
+                "edited below. The page edits were saved; apply the whole story "
+                "in a separate save.",
+                level=messages.WARNING,
+            )
+            return
+        changed, removed = apply_pages(form.instance, pages)
+        self.message_user(
+            request, f"The story now has {len(pages)} pages.", level=messages.INFO
+        )
+        notes = []
+        if changed:
+            notes.append(
+                "check the narration of pages "
+                + ", ".join(map(str, changed))
+                + ", whose text changed"
+            )
+        if removed:
+            notes.append(
+                "pages "
+                + ", ".join(map(str, removed))
+                + " had narration and were removed"
+            )
+        if notes:
+            self.message_user(
+                request, "Audio: " + "; ".join(notes) + ".", level=messages.WARNING
             )
 
     def preview_picture(self, obj):
