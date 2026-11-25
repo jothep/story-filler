@@ -1,5 +1,6 @@
 # core/forms.py
 # Provide custom forms for Django admin to enhance data validation.
+import hashlib
 import re
 
 from django import forms
@@ -8,6 +9,10 @@ from django.core.exceptions import ValidationError
 from .blanks import expand_inline_blanks
 from .models import BlankLink, Paragraph, Story
 from .pages import PAGE_LENGTH, split_pages, story_text
+
+
+def text_version(text):
+    return hashlib.sha256(text.encode()).hexdigest()[:16]
 
 
 class StoryAdminForm(forms.ModelForm):
@@ -21,10 +26,13 @@ class StoryAdminForm(forms.ModelForm):
             "Paste or edit the whole story. A blank line starts a new page, and a "
             f"page longer than {PAGE_LENGTH} characters is split at sentence ends. "
             "Write blanks as {{key}}. Saving a change here replaces the pages "
-            "below; each page keeps the narration at its position. Leaving the "
-            "box empty changes nothing."
+            "below; each page keeps the narration at its position, and pages are "
+            "numbered from 0. Leaving the box empty changes nothing."
         ),
     )
+    # A fingerprint of the pages when the form was opened, so a save from an
+    # older tab cannot put back pages that were changed since.
+    story_text_version = forms.CharField(required=False, widget=forms.HiddenInput)
 
     class Meta:
         model = Story
@@ -34,6 +42,9 @@ class StoryAdminForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.story_text_initial = story_text(self.instance) if self.instance.pk else ""
         self.fields["story_text"].initial = self.story_text_initial
+        self.fields["story_text_version"].initial = text_version(
+            self.story_text_initial
+        )
 
     def clean_story_text(self):
         text = (self.cleaned_data.get("story_text") or "").replace("\r\n", "\n")
@@ -42,6 +53,18 @@ class StoryAdminForm(forms.ModelForm):
         except ValueError as error:
             raise ValidationError(str(error)) from error
         return text
+
+    def clean(self):
+        cleaned = super().clean()
+        text = cleaned.get("story_text", "")
+        changed = text.strip() and text.strip() != self.story_text_initial.strip()
+        opened = cleaned.get("story_text_version")
+        if changed and opened and opened != text_version(self.story_text_initial):
+            raise ValidationError(
+                "The pages changed after this page was opened. Copy your text, "
+                "reload the page and apply it again."
+            )
+        return cleaned
 
     def new_pages(self):
         """Return the pages from the whole-story text, or None if unchanged."""

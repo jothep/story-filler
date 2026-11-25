@@ -54,6 +54,20 @@ class SplitPagesTests(SimpleTestCase):
             ["A b.", "C d!", "He said “Go.”", "Then left…", "3.14 is pi"],
         )
 
+    def test_other_scripts_and_abbreviations(self):
+        self.assertEqual(
+            sentences_in("我喜欢月亮。它很亮！真的吗？好"),
+            ["我喜欢月亮。", "它很亮！", "真的吗？", "好"],
+        )
+        self.assertEqual(sentences_in("هل ترى؟ نعم."), ["هل ترى؟", "نعم."])
+        self.assertEqual(
+            sentences_in("Mr. Smith met Dr. Rona, e.g. at night. Then left."),
+            ["Mr. Smith met Dr. Rona, e.g. at night.", "Then left."],
+        )
+
+    def test_wide_characters_count_twice(self):
+        self.assertEqual(page_length("月亮 moon"), 9)
+
     def test_long_runs_of_punctuation_or_newlines_stay_fast(self):
         started = time.perf_counter()
         sentences_in("!" * 200_000 + "a")
@@ -149,10 +163,14 @@ class WholeStoryAdminTests(TestCase):
         moon = Word.objects.create(key="moon")
         WordForm.objects.create(word=moon, language=maori, text="marama")
 
-    def save(self, user, text):
-        """Save the story with ``text`` in the whole-story box."""
+    def save(self, user, text, version="", page_text=None):
+        """Save the story with ``text`` in the whole-story box.
+
+        ``page_text`` also changes the first page in its page form.
+        """
         self.client.force_login(user)
         data = {
+            "story_text_version": version,
             "title": self.story.title,
             "language": self.story.language_id,
             "learning_language": self.story.learning_language_id,
@@ -170,7 +188,9 @@ class WholeStoryAdminTests(TestCase):
             data[f"paragraphs-{index}-id"] = paragraph.pk
             data[f"paragraphs-{index}-story"] = self.story.pk
             data[f"paragraphs-{index}-order"] = paragraph.order
-            data[f"paragraphs-{index}-text"] = paragraph.text
+            data[f"paragraphs-{index}-text"] = (
+                page_text if page_text is not None and index == 0 else paragraph.text
+            )
         return self.client.post(
             reverse("admin:core_story_change", args=[self.story.pk]), data
         )
@@ -245,3 +265,41 @@ class WholeStoryAdminTests(TestCase):
         )
 
         self.assertContains(response, "Old page.\n\nA {{moon}}.")
+
+    def test_a_save_from_an_older_tab_is_refused(self):
+        self.client.force_login(self.admin_user)
+        page = self.client.get(reverse("admin:core_story_change", args=[self.story.pk]))
+        version = page.context["adminform"].form["story_text_version"].value()
+        Paragraph.objects.filter(story=self.story).update(text="Changed elsewhere.")
+
+        response = self.save(self.admin_user, "My older text.", version=version)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "The pages changed after this page was opened")
+        self.assertEqual(
+            self.pages(), [("Changed elsewhere.", "paragraph_audio/1.ogg")]
+        )
+
+    def test_the_box_is_not_applied_with_page_form_edits(self):
+        response = self.save(
+            self.admin_user, "A whole new story.", page_text="Edited in its form."
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            self.pages(), [("Edited in its form.", "paragraph_audio/1.ogg")]
+        )
+        self.assertTrue(
+            any(
+                "was not applied because pages were also edited" in note
+                for note in self.messages(response, messages.WARNING)
+            )
+        )
+
+    def test_stored_line_breaks_do_not_count_as_a_change(self):
+        Paragraph.objects.filter(story=self.story).update(text="Old\r\npage.")
+
+        response = self.save(self.admin_user, "Old\r\npage.\r\n")
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(self.pages(), [("Old\r\npage.", "paragraph_audio/1.ogg")])

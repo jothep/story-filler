@@ -78,7 +78,7 @@ class StoryAdmin(admin.ModelAdmin):
             "Story Information",
             {"fields": ("title", ("language", "learning_language"))},
         ),
-        ("Pages", {"fields": ("story_text",)}),
+        ("Pages", {"fields": ("story_text", "story_text_version")}),
         (
             "Media",
             {
@@ -145,11 +145,16 @@ class StoryAdmin(admin.ModelAdmin):
             )
             return
         if any(formset.has_changed() for formset in formsets):
+            # The page forms were saved first; mapping narration by position
+            # onto pages that just moved could attach it to the wrong page.
             self.message_user(
                 request,
-                "The whole-story text replaced the page edits made in the same save.",
+                "The whole-story text was not applied because pages were also "
+                "edited below. The page edits were saved; apply the whole story "
+                "in a separate save.",
                 level=messages.WARNING,
             )
+            return
         changed, removed = apply_pages(form.instance, pages)
         self.message_user(
             request, f"The story now has {len(pages)} pages.", level=messages.INFO
