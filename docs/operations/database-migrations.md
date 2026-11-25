@@ -33,13 +33,12 @@ Only one person runs production migrations at a time. Agree who it is before ste
 
 ## Pending
 
-| Migration | Kind | When to apply |
-| --- | --- | --- |
-| `core.0010_languages_and_word_forms` | Addition: languages, word forms, word keys and story languages; the old word columns become optional | Before the release that contains it |
-| `core.0011_copy_words_into_forms` | Data: creates English and Māori, copies each word's text and audio into forms, derives word keys and sets existing stories to English → Māori. Running it again changes nothing | Together with 0010, before that release. Do not edit words or stories in the admin between the migration and the release: the previous release still writes only the old columns |
+None.
 
 ## Applied
 
 | Migration | Kind | Applied |
 | --- | --- | --- |
 | `core.0009_remove_story_word_bank` | Removal: drops the story word bank relation and its table | 2026-11-24, after the release that contains it |
+| `core.0010_languages_and_word_forms` | Addition: languages, word forms, word keys and story languages | 2026-11-25, before the release that contains it |
+| `core.0011_copy_words_into_forms` | Data: copies the Māori and English word data into forms | 2026-11-25, with 0010 |

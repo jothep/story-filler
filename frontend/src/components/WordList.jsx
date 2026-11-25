@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types';
 import { useDraggable, useDndContext } from '@dnd-kit/core';
 import { useWordInteraction } from '../context/WordInteractionContext';
+import { wordText } from '../utils/words';
 
 /** @param {{word: import('../types').Word}} props */
 function DraggableWordButton({ word }) {
@@ -35,7 +36,7 @@ function DraggableWordButton({ word }) {
       {...listeners}
       {...attributes}
     >
-      {word.maori_word}
+      {wordText(word)}
     </button>
   );
 }
@@ -43,7 +44,8 @@ function DraggableWordButton({ word }) {
 DraggableWordButton.propTypes = {
   word: PropTypes.shape({
     id: PropTypes.number.isRequired,
-    maori_word: PropTypes.string.isRequired,
+    text: PropTypes.string,
+    key: PropTypes.string,
   }).isRequired,
 };
 
@@ -84,7 +86,8 @@ WordList.propTypes = {
   words: PropTypes.arrayOf(
     PropTypes.shape({
       id: PropTypes.number.isRequired,
-      maori_word: PropTypes.string.isRequired,
+      text: PropTypes.string,
+      key: PropTypes.string,
     })
   ),
 };

@@ -16,8 +16,9 @@ const MOCK_SUCCESS_DATA = {
   words_in_bank: [
     {
       id: 1,
-      maori_word: 'kātao',
-      english_translation: 'water',
+      key: 'water',
+      text: 'kātao',
+      translation: 'water',
     },
   ],
 };

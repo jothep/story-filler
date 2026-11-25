@@ -5,7 +5,7 @@
 
 export const CREDITS_CONTENT = {
   about: [
-    'Story Filler helps you practise Māori vocabulary through interactive stories. Fill in the missing words and listen to their pronunciation.',
+    'Story Filler helps you learn words in any language through interactive stories. Fill in the missing words and listen to how they are pronounced.',
     'Originally a postgraduate course project, it now brings together application development, cloud deployment and CI/CD, with ongoing improvements to code quality and security.',
   ],
   author: {

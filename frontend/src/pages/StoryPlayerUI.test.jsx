@@ -30,7 +30,7 @@ vi.mock('../context/StoryPlaybackContext', () => ({
     story: {
       title: 'Story',
       paragraphs: [],
-      words_in_bank: [{ id: 1, maori_word: 'aroha' }],
+      words_in_bank: [{ id: 1, text: 'aroha' }],
     },
   }),
 }));

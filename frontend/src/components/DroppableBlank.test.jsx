@@ -27,7 +27,7 @@ describe('DroppableBlank', () => {
       <DroppableBlank
         blank={{ word: null }}
         uniqueId="missing"
-        filledWord={{ id: 1, maori_word: 'stale answer' }}
+        filledWord={{ id: 1, text: 'stale answer' }}
         isWrong={true}
       />
     );
@@ -55,7 +55,7 @@ describe('DroppableBlank', () => {
     });
 
     rerender(
-      <DroppableBlank {...props} filledWord={{ id: 4, maori_word: 'aroha' }} />
+      <DroppableBlank {...props} filledWord={{ id: 4, text: 'aroha' }} />
     );
     expect(screen.getByText('aroha')).toBeInTheDocument();
     expect(useDroppable).toHaveBeenLastCalledWith(

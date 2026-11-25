@@ -20,6 +20,7 @@ import TriggerTips from '../components/TriggerTips';
 
 import { useWordInteraction } from '../context/WordInteractionContext';
 import { useStoryPlayback } from '../context/StoryPlaybackContext';
+import { wordText } from '../utils/words';
 
 /** @param {{word: import('../types').Word}} props */
 function WordOverlay({ word }) {
@@ -35,14 +36,15 @@ function WordOverlay({ word }) {
         border: '3px solid #ffd700', // Yellow/gold border
       }}
     >
-      {word.maori_word}
+      {wordText(word)}
     </button>
   );
 }
 
 WordOverlay.propTypes = {
   word: PropTypes.shape({
-    maori_word: PropTypes.string.isRequired,
+    text: PropTypes.string,
+    key: PropTypes.string,
   }).isRequired,
 };
 
@@ -189,7 +191,10 @@ function StoryPlayerUI() {
         </div>
 
         <div className="layout-w-audio">
-          <WordAudio />
+          <WordAudio
+            learningLanguage={story.learning_language}
+            storyLanguage={story.language}
+          />
         </div>
 
         <div className="layout-tips">

@@ -10,11 +10,15 @@ vi.mock('../context/WordInteractionContext', () => ({
 
 const word = {
   id: 1,
-  maori_word: 'wai',
-  english_translation: 'water',
-  maori_audio: '/wai.mp3',
-  english_audio: '/water.mp3',
+  key: 'water',
+  text: 'wai',
+  audio: '/wai.mp3',
+  translation: 'water',
+  translation_audio: '/water.mp3',
 };
+
+const maori = { code: 'mi', name: 'Māori' };
+const english = { code: 'en', name: 'English' };
 
 beforeEach(() => {
   useWordInteraction.mockReturnValue({ selectedWord: word });
@@ -83,10 +87,42 @@ describe('word audio ownership', () => {
   it('disables unavailable recordings', () => {
     mockAudio();
     useWordInteraction.mockReturnValue({
-      selectedWord: { ...word, maori_audio: null, english_audio: null },
+      selectedWord: { ...word, audio: null, translation_audio: null },
     });
     render(<WordAudio />);
     for (const button of screen.getAllByRole('button'))
       expect(button).toBeDisabled();
+  });
+
+  it('labels each recording by its language', () => {
+    mockAudio();
+    render(<WordAudio learningLanguage={maori} storyLanguage={english} />);
+    expect(
+      screen.getByRole('button', { name: 'Play Māori audio' })
+    ).toBeEnabled();
+    expect(
+      screen.getByRole('button', { name: 'Play English audio' })
+    ).toBeEnabled();
+    expect(screen.getByText('wai')).toBeInTheDocument();
+    expect(screen.getByText('water')).toBeInTheDocument();
+  });
+
+  it('shows one row when the story teaches its own language', () => {
+    mockAudio();
+    useWordInteraction.mockReturnValue({
+      selectedWord: { ...word, text: 'water', translation: null },
+    });
+    render(<WordAudio learningLanguage={english} storyLanguage={english} />);
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+    expect(
+      screen.getByRole('button', { name: 'Play English audio' })
+    ).toBeInTheDocument();
+  });
+
+  it('names the languages before a word is selected', () => {
+    useWordInteraction.mockReturnValue({ selectedWord: null });
+    render(<WordAudio learningLanguage={maori} storyLanguage={english} />);
+    expect(screen.getByText('Māori word')).toBeInTheDocument();
+    expect(screen.getByText('English word')).toBeInTheDocument();
   });
 });
