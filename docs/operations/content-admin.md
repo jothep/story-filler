@@ -44,7 +44,7 @@ python3 scripts/convert_audio.py ~/Recordings/rona --speech --loudness --trim
 Instead of attaching files one form at a time, upload a whole set and let the names decide where each file goes. Files that do not match are listed with the reason and nothing is guessed. A file for a slot that already has one replaces it (the old file stays in storage). Upload at most about 30 MB at a time.
 
 - **Word pictures and audio:** **Word Bank** → **Upload files**. Name pictures by key, such as `moon.jpg` (or `.png`, `.webp`), and audio by key and language code, such as `moon.mi.mp3` and `moon.en.mp3`. A word needs a form in that language before its audio can be uploaded. Pictures are scaled and saved as JPEG as usual.
-- **Page narration:** on a story's page → **Upload narration**. Name files by page number in the story's order: `page-01.mp3`, `page-02.mp3` (or `1.mp3`, `2.mp3`).
+- **Page narration:** on a story's page → **Upload narration**. End each file name with its page number in the story's order, alone or after `page`, `-`, `_` or a space: `page-01.mp3`, `2.mp3` or `Rona_moon_03.mp3` (the names `convert_audio.py` keeps). A name like `take2.mp3` is not read as a page number.
 
 Audio must be MP3; convert other recordings first, as described in [Preparing media](#preparing-media).
 
