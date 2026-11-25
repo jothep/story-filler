@@ -20,7 +20,15 @@ A word entry is one meaning, such as `moon`, with a picture shared by every lang
 ## Writing a story
 
 1. Open **Stories** and add a story. Choose the language it is written in, the language players learn, its picture and its background music. Players fill each blank with the word's form in the learning language; when the two languages differ, the form in the story language is shown as the translation. For a story that teaches English words, choose English for both.
-2. Add the paragraphs in the inline form. Give each one an order number, its text and, optionally, a narration recording.
+2. Paste the whole story into **Whole story** under **Pages**. Each page of the game is a paragraph: a blank line starts a new page, and a page longer than 240 characters is split at sentence ends. A blank counts as 10 characters and a wide character, such as Chinese, as 2. Sentence ends are `.`, `!`, `?`, `…` and `؟` before a space, and `。`, `！` and `？` anywhere; a full stop after a common abbreviation such as `Mr.` or `e.g.` is not one. Saving a change in the box replaces the pages listed below it:
+   - page *n* keeps the narration recording of the story's *n*-th page, and saving warns about pages whose text changed while they had a recording, so you can check it still matches;
+   - extra pages are deleted (with a warning if they had a recording) and new pages start without one;
+   - pages are numbered from 0 in their new order;
+   - leaving the box unchanged or empty changes nothing;
+   - if you also edit pages in the page forms in the same save, those edits are saved and the box is not applied; apply it in a separate save;
+   - if the pages changed after you opened the story (for example in another tab), saving is refused; copy your text, reload and apply it again.
+
+   You can still add or edit single pages in the page forms below the box, with an order number, text and an optional narration recording.
 3. Mark each blank in the text with `{{key}}`, for example `The {{moon}} rose.`. Saving stores it as the placeholder `__BLANK_moon__`, which you can also type directly. The key names a word entry:
    - its key, for example `{{moon}}`; or, when no entry has that key,
    - the text of one of its forms: `{{kōrero paki}}` becomes `__BLANK_korero_paki__`.
