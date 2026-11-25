@@ -74,6 +74,7 @@ A new story starts as a **Draft**, which players do not see. **Before publishing
 - **Warnings** do not block publishing, because these are often added later:
   - a page without narration or longer than 240 characters;
   - a word without audio or a picture;
+  - audio that is not MP3 (see [Preparing media](#preparing-media));
   - a story without a picture or without any blanks.
 
 Set **Status** to **Published** and save. The check runs on what was saved. If problems remain, the story stays a draft and the page lists them.
