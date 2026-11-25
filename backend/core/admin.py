@@ -2,8 +2,9 @@
 # Configure the Django admin interface for all core models.
 # Improve usability using inlines, media previews and custom forms.
 from django.contrib import admin, messages
-from django.utils.html import format_html
+from django.utils.html import format_html, format_html_join
 from .blanks import build_word_index, link_placeholders, remove_stale_links
+from .completeness import check_story
 from .models import (
     Story,
     Paragraph,
@@ -68,16 +69,18 @@ class StoryAdmin(admin.ModelAdmin):
     """
 
     form = StoryAdminForm
-    list_display = ("title", "preview_picture")
+    list_display = ("title", "status", "completeness", "preview_picture")
+    list_filter = ("status",)
     inlines = [ParagraphInline]
     search_fields = ("title",)
-    readonly_fields = ("picture_preview", "music_preview")
+    readonly_fields = ("completeness_report", "picture_preview", "music_preview")
 
     fieldsets = (
         (
             "Story Information",
-            {"fields": ("title", ("language", "learning_language"))},
+            {"fields": ("title", "status", ("language", "learning_language"))},
         ),
+        ("Before publishing", {"fields": ("completeness_report",)}),
         ("Pages", {"fields": ("story_text", "story_text_version")}),
         (
             "Media",
@@ -104,6 +107,7 @@ class StoryAdmin(admin.ModelAdmin):
         can_add = request.user.has_perm("core.add_blanklink")
         can_delete = request.user.has_perm("core.delete_blanklink")
         if not (can_add or can_delete):
+            self.keep_unplayable_stories_in_draft(request, form.instance)
             return
         index = build_word_index() if can_add else None
         removed = []
@@ -129,6 +133,43 @@ class StoryAdmin(admin.ModelAdmin):
                 + ". Add these on the Blank Links page.",
                 level=messages.WARNING,
             )
+        self.keep_unplayable_stories_in_draft(request, form.instance)
+
+    def keep_unplayable_stories_in_draft(self, request, story):
+        """Return a published story with problems to draft, and say why."""
+        if story.status != Story.PUBLISHED:
+            return
+        problems = check_story(story).problems
+        if problems:
+            Story.objects.filter(pk=story.pk).update(status=Story.DRAFT)
+            story.status = Story.DRAFT
+            self.message_user(
+                request,
+                "Kept as a draft until these are fixed: " + " ".join(problems),
+                level=messages.ERROR,
+            )
+
+    def completeness(self, obj):
+        return check_story(obj).summary
+
+    completeness.short_description = "Completeness"
+
+    def completeness_report(self, obj):
+        if not obj.pk:
+            return "Save the story to check what it is missing."
+        report = check_story(obj)
+        if not report.problems and not report.warnings:
+            return "Ready to publish: nothing is missing."
+        items = [
+            ("Problem (keeps the story in draft)", text) for text in report.problems
+        ]
+        items += [("Warning", text) for text in report.warnings]
+        return format_html(
+            "<ul style='margin:0; padding-left:1.2em'>{}</ul>",
+            format_html_join("", "<li><strong>{}:</strong> {}</li>", items),
+        )
+
+    completeness_report.short_description = "Completeness"
 
     def apply_story_text(self, request, form, formsets):
         """Replace the pages with the whole-story text, if it changed."""

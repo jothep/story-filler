@@ -110,7 +110,10 @@ class WordApiTests(APITestCase):
 
     def story_with(self, learning_language, *words):
         story = Story.objects.create(
-            title="Moon", language=self.english, learning_language=learning_language
+            title="Moon",
+            language=self.english,
+            learning_language=learning_language,
+            status=Story.PUBLISHED,
         )
         paragraph = Paragraph.objects.create(
             story=story,

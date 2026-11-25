@@ -217,7 +217,21 @@ class Language(models.Model):
 
 
 class Story(models.Model):
+    DRAFT = "draft"
+    PUBLISHED = "published"
+    STATUS_CHOICES = [(DRAFT, "Draft"), (PUBLISHED, "Published")]
+
     title = models.CharField(max_length=200, verbose_name="Title")
+    # The database default lets the previous release keep creating stories
+    # between the migration and this release.
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default=DRAFT,
+        db_default=DRAFT,
+        help_text="Only published stories are shown to players. A story with "
+        "problems that break play stays a draft.",
+    )
     # Nullable in the database until the old word columns are removed, so the
     # previous release can still create stories; the admin requires both.
     language = models.ForeignKey(
