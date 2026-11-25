@@ -12,7 +12,7 @@ import unicodedata
 
 from django.db import IntegrityError, transaction
 
-from .models import BlankLink, Word
+from .models import BlankLink, Paragraph, Word
 
 PLACEHOLDER = re.compile(r"__BLANK_([A-Za-z0-9_]+)__")
 INLINE_BLANK = re.compile(r"\{\{([^{}]*)\}\}")
@@ -76,17 +76,34 @@ def expand_inline_blanks(text):
 
 
 def remove_stale_links(paragraph):
-    """Delete Blank Links whose placeholder is no longer in the text.
+    """Delete Blank Links whose placeholder is not a blank in the saved text.
 
-    Returns the removed placeholders.
+    A placeholder counts only where the game's parser finds it. The paragraph
+    row is locked and its text re-read, and a link is deleted only if its
+    placeholder is unchanged, so a concurrent edit of the text or of the link
+    is not undone. Returns the removed placeholders.
     """
-    stale = [
-        link
-        for link in paragraph.blank_links.all()
-        if link.placeholder not in (paragraph.text or "")
-    ]
-    BlankLink.objects.filter(pk__in=[link.pk for link in stale]).delete()
-    return [link.placeholder for link in stale]
+    with transaction.atomic():
+        text = (
+            Paragraph.objects.select_for_update()
+            .filter(pk=paragraph.pk)
+            .values_list("text", flat=True)
+            .first()
+        )
+        if text is None:
+            return []
+        blanks = set(placeholders_in(text))
+        stale = BlankLink.objects.filter(paragraph_id=paragraph.pk).exclude(
+            placeholder__in=blanks
+        )
+        removed = []
+        for pk, placeholder in list(stale.values_list("pk", "placeholder")):
+            deleted, _ = BlankLink.objects.filter(
+                pk=pk, placeholder=placeholder
+            ).delete()
+            if deleted:
+                removed.append(placeholder)
+    return removed
 
 
 def placeholders_in(text):

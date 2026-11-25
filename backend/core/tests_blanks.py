@@ -12,6 +12,7 @@ from .blanks import (
     expand_inline_blanks,
     link_placeholders,
     placeholder_key,
+    remove_stale_links,
     placeholders_in,
 )
 from .models import BlankLink, Language, Paragraph, Story, Word, WordForm
@@ -52,6 +53,39 @@ class InlineBlankTests(SimpleTestCase):
         for text in ("Empty {{}}.", "Open {{moon.", "Close moon}}.", "{{!}}"):
             with self.subTest(text=text), self.assertRaises(ValueError):
                 expand_inline_blanks(text)
+
+
+class RemoveStaleLinksTests(TestCase):
+    def test_only_links_that_are_not_parsed_blanks_are_removed(self):
+        story = Story.objects.create(title="Rona and the Moon")
+        moon = make_word("moon", mi="marama")
+        paragraph = Paragraph.objects.create(
+            story=story, order=0, text="The __BLANK_moon__ and __BLANK_moon__x__."
+        )
+        for placeholder in ("__BLANK_moon__", "__BLANK_moon__x__", "__BLANK_sky__"):
+            BlankLink.objects.create(
+                paragraph=paragraph, placeholder=placeholder, word=moon
+            )
+
+        removed = remove_stale_links(paragraph)
+
+        self.assertEqual(sorted(removed), ["__BLANK_sky__"])
+        self.assertEqual(
+            sorted(paragraph.blank_links.values_list("placeholder", flat=True)),
+            ["__BLANK_moon__", "__BLANK_moon__x__"],
+        )
+
+    def test_the_saved_text_decides_not_a_stale_copy(self):
+        story = Story.objects.create(title="Rona and the Moon")
+        moon = make_word("moon", mi="marama")
+        paragraph = Paragraph.objects.create(story=story, order=0, text="No blank.")
+        BlankLink.objects.create(
+            paragraph=paragraph, placeholder="__BLANK_moon__", word=moon
+        )
+        Paragraph.objects.filter(pk=paragraph.pk).update(text="The __BLANK_moon__.")
+
+        self.assertEqual(remove_stale_links(paragraph), [])
+        self.assertTrue(paragraph.blank_links.exists())
 
 
 class LinkPlaceholdersTests(TestCase):
