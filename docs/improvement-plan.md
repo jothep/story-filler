@@ -80,14 +80,15 @@ Content history and rollback are not goals.
 ### 3. Words in any language
 
 - Replace the Māori-specific word fields with:
-  - **word entries**: an ASCII key (used in blanks, such as `moon`) and an image shared by every language;
+  - **word entries**: a unique key of lowercase letters, digits and underscores (used in blanks, such as `moon`, and accepted by the game's placeholder parser) and an image shared by every language;
   - **word forms**: one per entry and language, with its text and optional audio.
+- The existing word rows become the word entries, so Blank Links keep pointing at them. Only their Māori and English columns move into forms.
 - Give each story a story language and a learning language. A blank shows the word in the learning language, with the story-language form as its translation when the two differ. When they are the same, only that form is shown.
 - Keep the model ready for players to choose the learning language before opening a story, without building that choice now. The language stays fixed during play.
 - Ship it in three releases so the live game keeps working:
-  1. Add the new tables and fields, copy the Māori and English data into them, and return both the new and the old fields from the API. This is an addition: migrate, then release.
-  2. Switch the game to the new fields, label audio buttons by language name, and make the About text language-neutral.
-  3. Remove the old fields. This is a removal: release, then migrate.
+  1. Add the new tables and fields. The migration copies each word's Māori and English text and audio into forms, derives its key from the English translation, and sets existing stories to English with Māori as the learning language. From this release the admin edits the forms, and the API derives the old field names from them, so the current game keeps working and no edit goes stale. This is an addition: migrate, then release.
+  2. Switch the game to the new fields, label audio buttons by language name, show a placeholder when a word has no image, and make the About text language-neutral.
+  3. Remove the old database columns. This is a removal: release, then migrate. The API keeps returning the old field names, derived from the forms, for at least a week after the game switches, so browsers with an older game bundle still work.
 - Keep the cloud resource names (`maori-story-*`) and the Django project name. Renaming them changes infrastructure with no benefit to players.
 
 **Done when:** *Rona and the Moon* plays as before from the new model, and a story can teach Chinese or English words without code changes.
@@ -95,9 +96,9 @@ Content history and rollback are not goals.
 ### 4. Admin entry automation
 
 - **Pages from pasted text.** Paste a whole story into the story form. A blank line starts a new page (paragraph), and a page longer than the limit is split at sentence ends. Existing pages keep their audio when their text is unchanged.
-- **Blanks written inline.** Write `{{moon}}` in the text. Saving links each blank to the word entry with that key, extending the automatic Blank Links from workstream 2 to any language.
+- **Blanks written inline.** Write `{{moon}}` in the text. Saving stores it as the existing `__BLANK_moon__` placeholder, so the API and the game's parser stay unchanged, and links it to the word entry with that key. Links whose placeholder is no longer in the text are removed, so players see no stale answer choices.
 - **Many files at once.** Drop a set of files on a word or story page and match them by name: `moon.jpg` is the image of `moon`, `moon.mi.mp3` its Māori audio, `page-03.mp3` the narration for page 3. Unmatched files are listed, not guessed.
-- **Completeness check and draft status.** Each story shows what it is missing. Problems that break play, such as a blank without a word or a word without a form in the learning language, keep the story in draft. Missing audio, a missing image or a long page is a warning only, because audio is often added later. The public API serves published stories only.
+- **Completeness check and draft status.** Each story shows what it is missing. Problems that break play keep the story in draft: a blank without a word, a word without a form in the learning language, or, when the two languages differ, without a form in the story language. Missing audio, a missing image or a long page is a warning only, because audio is often added later. The public API serves published stories only; the migration that adds the status marks existing stories as published.
 - **Formats.** Images keep their current resize and compression on upload. Audio is checked for format and size; converting it needs ffmpeg in the backend image, which is evaluated before it is added (see [Open decisions](#open-decisions)).
 
 **Done when:** a new story can be entered in the admin by pasting its text and dropping its files, without visiting the Blank Link page, and the story list shows each story's state and missing items.
