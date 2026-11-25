@@ -1,0 +1,31 @@
+{% extends "admin/base_site.html" %}
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Home</a> &rsaquo; <a href="{{ back }}">{{ back_label }}</a> &rsaquo; {{ title }}
+</div>
+{% endblock %}
+{% block content %}
+<div id="content-main">
+  <ul>
+    {% for rule in rules %}<li>{{ rule }}</li>{% endfor %}
+  </ul>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Upload" class="default">
+  </form>
+  {% if report %}
+    <h2>Saved ({{ report.saved|length }})</h2>
+    <ul>
+      {% for line in report.saved %}<li>{{ line }}</li>{% empty %}<li>Nothing was saved.</li>{% endfor %}
+    </ul>
+    {% if report.skipped %}
+      <h2>Not saved ({{ report.skipped|length }})</h2>
+      <ul class="errorlist">
+        {% for line in report.skipped %}<li>{{ line }}</li>{% endfor %}
+      </ul>
+    {% endif %}
+  {% endif %}
+  <p><a href="{{ back }}">Back to {{ back_label }}</a></p>
+</div>
+{% endblock %}

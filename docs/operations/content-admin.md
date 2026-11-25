@@ -39,6 +39,15 @@ python3 scripts/convert_audio.py ~/Recordings/rona --speech --loudness --trim
 
 `--speech` mixes to mono, `--loudness` evens out the volume between recordings, `--trim` cuts silence at the start and end, and `--output DIR` writes the MP3 files to another folder.
 
+## Uploading many files at once
+
+Instead of attaching files one form at a time, upload a whole set and let the names decide where each file goes. Files that do not match are listed with the reason and nothing is guessed. A file for a slot that already has one replaces it (the old file stays in storage). Upload at most about 30 MB at a time.
+
+- **Word pictures and audio:** **Word Bank** → **Upload files**. Name pictures by key, such as `moon.jpg` (or `.png`, `.webp`), and audio by key and language code, such as `moon.mi.mp3` and `moon.en.mp3`. A word needs a form in that language before its audio can be uploaded. Pictures are scaled and saved as JPEG as usual.
+- **Page narration:** on a story's page → **Upload narration**. Name files by page number in the story's order: `page-01.mp3`, `page-02.mp3` (or `1.mp3`, `2.mp3`).
+
+Audio must be MP3; convert other recordings first, as described in [Preparing media](#preparing-media).
+
 ## Writing a story
 
 1. Open **Stories** and add a story. Choose the language it is written in, the language players learn, its picture and its background music. Players fill each blank with the word's form in the learning language; when the two languages differ, the form in the story language is shown as the translation. For a story that teaches English words, choose English for both.

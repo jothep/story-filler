@@ -11,6 +11,31 @@ from .models import BlankLink, Paragraph, Story
 from .pages import PAGE_LENGTH, split_pages, story_text
 
 
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+
+class MultipleFileField(forms.FileField):
+    """A file field that accepts several files and returns them as a list."""
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("widget", MultipleFileInput())
+        super().__init__(*args, **kwargs)
+
+    def clean(self, data, initial=None):
+        items = data if isinstance(data, (list, tuple)) else [data]
+        cleaned = []
+        for item in items:
+            cleaned.append(forms.FileField.clean(self, item, initial))
+        return cleaned
+
+
+class UploadFilesForm(forms.Form):
+    files = MultipleFileField(
+        label="Files", help_text="Select or drop many files at once."
+    )
+
+
 def text_version(text):
     return hashlib.sha256(text.encode()).hexdigest()[:16]
 

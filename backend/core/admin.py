@@ -2,6 +2,10 @@
 # Configure the Django admin interface for all core models.
 # Improve usability using inlines, media previews and custom forms.
 from django.contrib import admin, messages
+from django.core.exceptions import PermissionDenied
+from django.shortcuts import get_object_or_404
+from django.template.response import TemplateResponse
+from django.urls import path, reverse
 from django.utils.html import format_html, format_html_join
 from .blanks import build_word_index, link_placeholders, remove_stale_links
 from .completeness import check_story
@@ -16,7 +20,8 @@ from .models import (
     StoryPicture,
     AppConfig,
 )
-from .forms import BlankLinkForm, ParagraphForm, StoryAdminForm
+from .forms import BlankLinkForm, ParagraphForm, StoryAdminForm, UploadFilesForm
+from .uploads import save_narration, save_word_files
 from .pages import apply_pages
 
 AUDIO_MIME_TYPES = {
@@ -51,6 +56,29 @@ def audio_player(file, width=300):
     )
 
 
+# Cloud Run accepts requests up to 32 MiB.
+UPLOAD_LIMIT = "Upload at most about 30 MB at a time; split larger sets."
+MP3_RULE = (
+    "Audio must be MP3. Convert other formats first with scripts/convert_audio.py."
+)
+
+
+def upload_page(model_admin, request, page):
+    """Render a many-file upload page and save the files on POST."""
+    form = UploadFilesForm(request.POST or None, request.FILES or None)
+    report = None
+    if request.method == "POST" and form.is_valid():
+        report = page["save"](form.cleaned_data["files"])
+    context = {
+        **model_admin.admin_site.each_context(request),
+        "opts": model_admin.model._meta,
+        "form": form,
+        "report": report,
+        **{key: value for key, value in page.items() if key != "save"},
+    }
+    return TemplateResponse(request, "admin/core/upload_files.html", context)
+
+
 class ParagraphInline(admin.StackedInline):
     """
     Allows to add and edit Paragraphs in a stacked form within the Story edit page.
@@ -69,6 +97,7 @@ class StoryAdmin(admin.ModelAdmin):
     """
 
     form = StoryAdminForm
+    change_form_template = "admin/core/story/change_form.html"
     list_display = ("title", "status", "completeness", "preview_picture")
     list_filter = ("status",)
     inlines = [ParagraphInline]
@@ -134,6 +163,40 @@ class StoryAdmin(admin.ModelAdmin):
                 level=messages.WARNING,
             )
         self.keep_unplayable_stories_in_draft(request, form.instance)
+
+    def get_urls(self):
+        upload = path(
+            "<int:story_id>/narration/",
+            self.admin_site.admin_view(self.narration_view),
+            name="core_story_narration",
+        )
+        return [upload] + super().get_urls()
+
+    def narration_view(self, request, story_id):
+        """Upload narration for many pages at once, matched by page number."""
+        story = get_object_or_404(Story, pk=story_id)
+        if not (
+            self.has_change_permission(request, story)
+            and request.user.has_perm("core.change_paragraph")
+        ):
+            raise PermissionDenied
+        return upload_page(
+            self,
+            request,
+            {
+                "title": f"Upload narration: {story.title}",
+                "rules": [
+                    "Name each file by its page number: page-01.mp3, page-02.mp3 "
+                    "(or 1.mp3, 2.mp3), in the order the pages appear.",
+                    MP3_RULE,
+                    "A page that already has narration gets the new file.",
+                    UPLOAD_LIMIT,
+                ],
+                "back": reverse("admin:core_story_change", args=[story.pk]),
+                "back_label": story.title,
+                "save": lambda files: save_narration(story, files),
+            },
+        )
 
     def keep_unplayable_stories_in_draft(self, request, story):
         """Return a published story with problems to draft, and say why."""
@@ -398,6 +461,7 @@ class WordAdmin(admin.ModelAdmin):
     Manage word entries (Word Bank)
     """
 
+    change_list_template = "admin/core/word/change_list.html"
     list_display = ("key", "forms_summary", "has_image", "has_audio")
     search_fields = ("key", "forms__text")
     readonly_fields = ("image_preview",)
@@ -410,6 +474,40 @@ class WordAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         return super().get_queryset(request).prefetch_related("forms__language")
+
+    def get_urls(self):
+        upload = path(
+            "upload/",
+            self.admin_site.admin_view(self.upload_view),
+            name="core_word_upload",
+        )
+        return [upload] + super().get_urls()
+
+    def upload_view(self, request):
+        """Upload pictures and audio for many words at once, matched by name."""
+        if not (
+            self.has_change_permission(request)
+            and request.user.has_perm("core.change_wordform")
+        ):
+            raise PermissionDenied
+        return upload_page(
+            self,
+            request,
+            {
+                "title": "Upload word files",
+                "rules": [
+                    "Name a picture by the word's key: moon.jpg (or .png, .webp).",
+                    "Name audio by key and language code: moon.mi.mp3, moon.en.mp3. "
+                    "The word needs a form in that language first.",
+                    MP3_RULE,
+                    "A word that already has the picture or audio gets the new file.",
+                    UPLOAD_LIMIT,
+                ],
+                "back": reverse("admin:core_word_changelist"),
+                "back_label": "Word Bank",
+                "save": save_word_files,
+            },
+        )
 
     def forms_summary(self, obj):
         return ", ".join(
