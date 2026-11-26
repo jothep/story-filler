@@ -78,6 +78,7 @@ class ConvertAudioTests(unittest.TestCase):
         self.assertEqual(command[command.index("-ac") + 1], "1")
         filters = command[command.index("-af") + 1]
         self.assertTrue(filters.startswith("silenceremove") and "loudnorm" in filters)
+        self.assertEqual(command[command.index("-ar") + 1], "44100")
 
     def test_plain_conversion_has_no_filters_or_mono(self):
         command = convert_audio.ffmpeg_command(
@@ -86,6 +87,7 @@ class ConvertAudioTests(unittest.TestCase):
 
         self.assertNotIn("-af", command)
         self.assertNotIn("-ac", command)
+        self.assertNotIn("-ar", command)
 
     def test_files_are_converted_beside_their_inputs(self):
         code, run, out = self.run_main(self.folder, "--speech")

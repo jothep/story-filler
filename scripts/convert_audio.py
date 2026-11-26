@@ -67,6 +67,9 @@ def ffmpeg_command(ffmpeg, source, target, options):
         command += ["-ac", "1"]
     if filters:
         command += ["-af", ",".join(filters)]
+    if options.loudness:
+        # loudnorm works at 192 kHz; set the standard MP3 rate explicitly.
+        command += ["-ar", "44100"]
     command += ["-codec:a", "libmp3lame", "-q:a", "4", "-f", "mp3"]
     return command + [str(target.resolve())]
 
