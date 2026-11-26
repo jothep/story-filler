@@ -6,12 +6,21 @@ Narration files are named by page number: ``page-01.mp3``, ``page-2.mp3``,
 ``3.mp3`` or a name ending in the number after ``-``, ``_`` or a space, such
 as ``Rona_moon_04.mp3``, for the story's first to fourth pages. Nothing is guessed:
 a file that does not match exactly is listed with the reason.
+
+Uploading is planned first, so a dry run reports exactly what saving would
+do. The admin pages and the ``upload_narration`` and ``upload_word_files``
+commands share this module.
 """
 
+from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass, field
-from pathlib import PurePath
+from functools import partial
+from pathlib import Path, PurePath
+from typing import Callable
 
 from django.core.exceptions import ValidationError
+from django.core.files import File
+from django.core.files.storage import storages
 from django.utils.text import slugify
 
 from .models import (
@@ -35,6 +44,15 @@ class UploadReport:
     skipped: list = field(default_factory=list)
 
 
+@dataclass
+class Item:
+    """One file and what saving it does."""
+
+    name: str
+    target: str
+    save: Callable[[], str]
+
+
 def split_name(upload):
     """Return the file's base name, its dot-separated parts and extension."""
     name = PurePath(upload.name).name
@@ -42,14 +60,13 @@ def split_name(upload):
     return name, parts, parts[-1].lower() if len(parts) > 1 else ""
 
 
-def checked(validator, upload, name, report):
-    """Run a size validator; record and return False when it fails."""
+def size_problem(validator, upload):
+    """Return the size validator's message for ``upload``, or None."""
     try:
         validator(upload)
     except ValidationError as error:
-        report.skipped.append(f"{name}: {' '.join(error.messages)}")
-        return False
-    return True
+        return " ".join(error.messages)
+    return None
 
 
 def match_word_file(upload, words, languages):
@@ -75,9 +92,10 @@ def match_word_file(upload, words, languages):
     )
 
 
-def save_word_files(uploads):
-    """Save pictures and audio to the words their names match."""
-    report = UploadReport()
+def plan_word_files(uploads):
+    """Return the word files to save and the reasons others are skipped."""
+    items = []
+    skipped = []
     words = {word.key: word for word in Word.objects.exclude(key=None)}
     languages = {language.code.lower(): language for language in Language.objects.all()}
     seen = set()
@@ -86,53 +104,52 @@ def save_word_files(uploads):
         try:
             kind, word, language = match_word_file(upload, words, languages)
         except ValueError as error:
-            report.skipped.append(str(error))
+            skipped.append(str(error))
             continue
         slot = (kind, word.pk, language.pk if language else None)
         if slot in seen:
-            report.skipped.append(
-                f"{name}: another file in this upload has the same target."
-            )
+            skipped.append(f"{name}: another file in this upload has the same target.")
             continue
         seen.add(slot)
-        if kind == "image":
-            save_word_image(upload, word, name, report)
+        item, problem = word_item(upload, name, kind, word, language)
+        if problem:
+            skipped.append(f"{name}: {problem}")
         else:
-            save_form_audio(upload, word, language, name, report)
-    return report
+            items.append(item)
+    return items, skipped
 
 
-def save_word_image(upload, word, name, report):
-    if not checked(validate_image_file_size, upload, name, report):
-        return
-    try:
-        content, _ = compress_image(upload, max_width=800, max_height=800, quality=80)
-    except ValidationError as error:
-        report.skipped.append(f"{name}: {' '.join(error.messages)}")
-        return
-    replaced = bool(word.image)
-    word.image.save(f"{word.key}.jpg", content, save=False)
-    word.save(skip_compression=True)
-    report.saved.append(
-        f"{name}: picture of {word.key}" + (" (replaced)" if replaced else "")
-    )
-
-
-def save_form_audio(upload, word, language, name, report):
+def word_item(upload, name, kind, word, language):
+    """Return (item, None) for a matched word file, or (None, problem)."""
+    if kind == "image":
+        problem = size_problem(validate_image_file_size, upload)
+        item = Item(
+            name, f"picture of {word.key}", partial(save_word_image, upload, word)
+        )
+        return (None, problem) if problem else (item, None)
     form = word.forms.filter(language=language).first()
     if form is None:
-        report.skipped.append(
-            f"{name}: {word.key} has no {language.name} form yet; add its text first."
-        )
-        return
-    if not checked(validate_audio_file_size, upload, name, report):
-        return
-    replaced = bool(form.audio)
-    form.audio.save(f"{word.key}.{language.code}.mp3", upload, save=True)
-    report.saved.append(
-        f"{name}: {language.name} audio of {word.key}"
-        + (" (replaced)" if replaced else "")
-    )
+        return None, f"{word.key} has no {language.name} form yet; add its text first."
+    problem = size_problem(validate_audio_file_size, upload)
+    target = f"{language.name} audio of {word.key}"
+    item = Item(name, target, partial(save_form_audio, upload, form))
+    return (None, problem) if problem else (item, None)
+
+
+def save_word_image(upload, word):
+    """Save a scaled JPEG as the word's picture; return the replaced name."""
+    previous = word.image.name or ""
+    content, _ = compress_image(upload, max_width=800, max_height=800, quality=80)
+    word.image.save(f"{word.key}.jpg", content, save=False)
+    word.save(skip_compression=True)
+    return previous
+
+
+def save_form_audio(upload, form):
+    """Save the form's audio; return the replaced name."""
+    previous = form.audio.name or ""
+    form.audio.save(f"{form.word.key}.{form.language.code}.mp3", upload, save=True)
+    return previous
 
 
 def page_number(upload):
@@ -155,39 +172,109 @@ def page_number(upload):
     return int(stem[-digits:]) or None
 
 
-def save_narration(story, uploads):
-    """Save narration files to the story's pages by their page numbers."""
-    report = UploadReport()
+def plan_narration(story, uploads):
+    """Return the narration files to save and the reasons others are skipped."""
+    items = []
+    skipped = []
     paragraphs = list(story.paragraphs.order_by("order", "pk"))
+    slug = slugify(story.title) or "story"
     seen = set()
     for upload in uploads:
         name, _, extension = split_name(upload)
         if extension in OTHER_AUDIO:
-            report.skipped.append(f"{name}: narration must be MP3; {CONVERT}.")
+            skipped.append(f"{name}: narration must be MP3; {CONVERT}.")
             continue
         number = page_number(upload)
         if number is None:
-            report.skipped.append(
+            skipped.append(
                 f"{name}: end the name with its page number, such as page-01.mp3 "
                 "or Rona_moon_01.mp3."
             )
             continue
         if not 1 <= number <= len(paragraphs):
-            report.skipped.append(f"{name}: the story has {len(paragraphs)} pages.")
+            skipped.append(f"{name}: the story has {len(paragraphs)} pages.")
             continue
         if number in seen:
-            report.skipped.append(
-                f"{name}: another file in this upload is for page {number}."
-            )
+            skipped.append(f"{name}: another file in this upload is for page {number}.")
             continue
         seen.add(number)
-        if not checked(validate_audio_file_size, upload, name, report):
+        problem = size_problem(validate_audio_file_size, upload)
+        if problem:
+            skipped.append(f"{name}: {problem}")
             continue
-        paragraph = paragraphs[number - 1]
-        replaced = bool(paragraph.audio)
-        slug = slugify(story.title) or "story"
-        paragraph.audio.save(f"{slug}-page-{number:02d}.mp3", upload, save=True)
-        report.saved.append(
-            f"{name}: page {number}" + (" (replaced)" if replaced else "")
+        save = partial(
+            save_page_audio,
+            upload,
+            paragraphs[number - 1],
+            f"{slug}-page-{number:02d}.mp3",
         )
+        items.append(Item(name, f"page {number}", save))
+    return items, skipped
+
+
+def save_page_audio(upload, paragraph, stored_name):
+    """Save a page's narration; return the replaced name."""
+    previous = paragraph.audio.name or ""
+    paragraph.audio.save(stored_name, upload, save=True)
+    return previous
+
+
+def run(items, skipped, dry_run=False):
+    """Save the planned items, or only report them for a dry run."""
+    report = UploadReport(skipped=list(skipped))
+    for item in items:
+        if dry_run:
+            report.saved.append(f"{item.name}: would be {item.target}")
+            continue
+        try:
+            previous = item.save()
+        except ValidationError as error:
+            report.skipped.append(f"{item.name}: {' '.join(error.messages)}")
+            continue
+        replaced = f" (replaced {previous})" if previous else ""
+        report.saved.append(f"{item.name}: {item.target}{replaced}")
     return report
+
+
+def save_word_files(uploads):
+    """Save pictures and audio to the words their names match."""
+    return run(*plan_word_files(uploads))
+
+
+def save_narration(story, uploads):
+    """Save narration files to the story's pages by their page numbers."""
+    return run(*plan_narration(story, uploads))
+
+
+@contextmanager
+def opened_files(paths):
+    """Open the files named by ``paths``, looking inside folders.
+
+    Hidden files such as ``.DS_Store`` in folders are ignored.
+    """
+    found = []
+    for path in map(Path, paths):
+        if path.is_dir():
+            found += sorted(
+                item
+                for item in path.iterdir()
+                if item.is_file() and not item.name.startswith(".")
+            )
+        elif path.is_file():
+            found.append(path)
+        else:
+            raise FileNotFoundError(f"No such file or folder: {path}")
+    with ExitStack() as stack:
+        yield [
+            File(stack.enter_context(path.open("rb")), name=path.name)
+            for path in dict.fromkeys(found)
+        ]
+
+
+def storage_description():
+    """Name the storage that saved files go to."""
+    storage = storages["default"]
+    backend = type(storage).__name__
+    bucket = getattr(storage, "bucket_name", None)
+    location = getattr(storage, "location", "")
+    return f"{backend} ({'bucket ' + bucket if bucket else location})"

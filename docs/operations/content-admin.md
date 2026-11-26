@@ -48,6 +48,18 @@ Instead of attaching files one form at a time, upload a whole set and let the na
 
 Audio must be MP3; convert other recordings first, as described in [Preparing media](#preparing-media).
 
+The same uploads work from the command line, from `backend/`, with the same matching rules. Run with `--dry-run` first to see where each file would go without saving anything:
+
+```bash
+python manage.py upload_narration "Rona and the Moon" ../media-work/rona-and-the-moon/mp3 --dry-run
+```
+
+```bash
+python manage.py upload_word_files ~/Pictures/words --dry-run
+```
+
+The story is given by its id or exact title. The commands print which storage they write to, then each saved, planned or skipped file, and name the file each upload replaced. They fail if any file is skipped. For production, open a [production database shell](production-shell.md#uploading-media-from-the-shell) with media storage set up.
+
 ## Writing a story
 
 1. Open **Stories** and add a story. Choose the language it is written in, the language players learn, its picture and its background music. Players fill each blank with the word's form in the learning language; when the two languages differ, the form in the story language is shown as the translation. For a story that teaches English words, choose English for both.

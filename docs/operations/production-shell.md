@@ -33,6 +33,16 @@ python manage.py shell -c "from django.db import connection as c; s=c.settings_d
 
 The host must be the Neon endpoint in the service's `DATABASE_URL`. Stop if the command shows another host, `localhost`, or an error.
 
+## Uploading media from the shell
+
+`upload_narration` and `upload_word_files` write files to media storage as well as rows to the database. In the same shell, also set:
+
+```bash
+export USE_GCS=true GS_BUCKET_NAME=maori-story-media GS_DEFAULT_ACL=
+```
+
+The empty `GS_DEFAULT_ACL` uploads without an object ACL. The bucket grants public read to everyone through its IAM policy, so the files are public anyway, and an account that may create objects but not set their ACLs can still upload. The service itself keeps its default (`publicRead`). Storage uses Application Default Credentials. Create them once with `gcloud auth application-default login`, signed in with an account that may create objects in the bucket. Each command first prints the storage it writes to; it must say `GoogleCloudStorage (bucket maori-story-media)`. Always run with `--dry-run` first. Replaced files stay in the bucket, and the output names them, so a page can be pointed back at its old file if needed. After an upload, open one new file's public URL to check it is readable.
+
 ## Neon branches
 
 Create restore points from the `production` branch, and give them an expiry. After a branch is created, Neon shows the connection details for the new branch. Close that dialog: its connection string points at the new branch, not at production.

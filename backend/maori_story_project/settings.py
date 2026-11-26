@@ -125,7 +125,10 @@ USE_GCS = env.bool("USE_GCS", default=False)
 if USE_GCS:
     # Google Cloud Storage Configuration (Django 4.2+ style)
     GS_BUCKET_NAME = env("GS_BUCKET_NAME")
-    GS_DEFAULT_ACL = "publicRead"
+    # Each object is made public by default. The bucket also grants public read
+    # through IAM, so a local shell whose account may not set object ACLs can
+    # set GS_DEFAULT_ACL to an empty value and upload without one.
+    GS_DEFAULT_ACL = env("GS_DEFAULT_ACL", default="publicRead") or None
     GS_FILE_OVERWRITE = False
     # Use Application Default Credentials (from Cloud Run service account)
     GS_CREDENTIALS = None  # Use ADC instead of explicit credentials
